@@ -188,7 +188,7 @@ python {} {} {}'''.format(path_to_parse_relax_script, path_to_scorefile, path_to
         sbatch.write('''#!/bin/sh
 #SBATCH --job-name=Rosetta_cartesian_ddg
 #SBATCH --array=0-{}
-#SBATCH --time=60:00:00
+#SBATCH --time=24:00:00
 #SBATCH --mem 5000
 #SBATCH --partition=sbinlab
 #SBATCH --nice
