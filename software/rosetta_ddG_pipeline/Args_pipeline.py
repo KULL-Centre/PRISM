@@ -17,7 +17,7 @@ def parse_args2():
                     help="Structure file"
                     )
     parser.add_argument( '--uniprot', '-u',
-                    default='',
+                    default="",
                     dest="UNIPROT_FILE",
                     help="Uniprot sequence"
                     )
@@ -42,12 +42,12 @@ def parse_args2():
                     help="Relaxation flag file"
                     )
     parser.add_argument( '--mode', '-i',
-                    default="Create",
+                    default="create",
                     dest="MODE",
                     help="Mode to run"
                     )    
     parser.add_argument( '--chainid',
-                    default="nochain",
+                    default="ignorechain",
                     dest="CHAIN",
                     help="chain ID"
                     )  
