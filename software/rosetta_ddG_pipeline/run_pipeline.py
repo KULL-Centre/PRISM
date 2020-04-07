@@ -27,7 +27,7 @@ def predict_stability(argv):
 
     ## System name
     name = structure_list.split('/')[-1].split('.')[0] 
-    path_to_input = '{}/{}/{}/'.format(outpath,name,"inputs"
+    path_to_input = '{}/{}/{}/'.format(outpath,name,"inputs")
     path_to_run_folder = '{}/{}/rosetta_runs/{}_{}'.format(outpath, name, name, chain_id)
     structure_instance = structure(name, output_path=outpath) 
                                        
