@@ -6,7 +6,6 @@ import numpy as np
 def compare_mutfile(fasta_seq, path_to_run_folder,mutation_input=None):
     mutfiles_folder = path_to_run_folder + '/mutfiles/'
     error=False
-    #output_path="/groups/sbinlab/haagenb/project/msh2/test"
     path_to_alignment = '{}/uniprot_index_list.txt'.format(output_path)
     alignment = np.loadtxt(path_to_alignment)   
     alignment_dic={}
@@ -48,12 +47,12 @@ def compare_mutfile(fasta_seq, path_to_run_folder,mutation_input=None):
                 break
         return(error)
 
-def pdbxmut(path,resdata):
+def pdbxmut(input_mutfiles,resdata):
     
-    p=os.listdir(path+"/mutfiles");errors =0;check3 = False;
+    p=os.listdir(input_mutfiles);errors =0;check3 = False;
     for files in p:
         decs=6
-        with open(path+"/mutfiles/"+files,'r') as mutfiles:
+        with open(input_mutfiles+files,'r') as mutfiles:
             mutfile_lines = mutfiles.readlines()
             mutations = (mutfile_lines[2:40:2])
         

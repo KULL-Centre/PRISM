@@ -5,9 +5,9 @@ from parse_cartesian_functions import rosetta_cartesian_read, ddgs_from_dg
 
 
 
-def parse_rosetta_ddgs(sys_name, chain_id, fasta_seq, out_path):
+def parse_rosetta_ddgs(sys_name, chain_id, fasta_seq, ddG_input,ddG_output):
 
-    path_to_run_folder = '{}/{}/rosetta_runs/{}_{}'.format(out_path, sys_name, sys_name, chain_id)
+    path_to_run_folder = ddG_input
     print('the path to run folder is')
     print(path_to_run_folder)
 
@@ -22,11 +22,12 @@ def parse_rosetta_ddgs(sys_name, chain_id, fasta_seq, out_path):
     line = []  
     list_keys=list(rosetta_cartesian_ddgs_dict.keys())
     uniprot_numbering_ddgs_dict = {}
-    scorefile = open('{}/{}/predictions/{}_{}_ddg.txt'.format(out_path, sys_name, sys_name, chain_id), 'w')
+    scorefile = open(ddG_output+sys_name'_ddg.txt', 'w')
     scorefile.close    
-    scorefile = open('{}/{}/predictions/{}_{}_ddg.txt'.format(out_path, sys_name, sys_name, chain_id), 'w')
+    scorefile = open(ddG_output+sys_name'_ddg.txt', 'w')
     
     for key in rosetta_cartesian_ddgs_dict:
+
         position = int(key[1:-1])   
         uniprot_position = position
         uniprot_numbering_ddgs_dict[key[0]+str(uniprot_position)+key[-1]] = rosetta_cartesian_ddgs_dict[key]
@@ -40,7 +41,7 @@ def parse_rosetta_ddgs(sys_name, chain_id, fasta_seq, out_path):
         refs = 'ACDEFGHIKLMNPQRSTVWY'
             
         for AA in refs:
-            a = str(fasta_seq[i-1])+str(i)+str(AA)
+            a = str(fasta_seq[i-1])+str(i+)+str(AA)
             if a in str(list_keys):
     
                 line.append(rosetta_cartesian_ddgs_dict[str(a)])

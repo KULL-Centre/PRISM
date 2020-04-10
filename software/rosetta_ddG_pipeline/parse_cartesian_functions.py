@@ -79,6 +79,7 @@ def ddgs_from_dg(dictionary_of_dGs):
 
         residue_number = mutation[1:-1]
         ddgs[mutation] = np.divide((np.mean(dgs_as_floats[mutation])-np.mean(wt_dGs[residue_number])),2.9)
+        
 
     return ddgs
 

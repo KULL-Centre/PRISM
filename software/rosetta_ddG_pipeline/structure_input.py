@@ -10,49 +10,23 @@ import pdb_to_fasta_seq
 
 class structure:
 
-    def __init__(self, name, output_path=rosetta_paths.default_output_path):
 
-        self.name = name
-
-        if output_path[-1] == '/':
-            self.out_path = output_path[:-1]
-        else:
-            self.out_path = output_path
-            
-        if not os.path.isdir('{}/{}/'.format(self.out_path, self.name)):
-            os.mkdir('{}/{}/'.format(self.out_path, self.name))
-     
-        if not os.path.isdir('{}/{}/cleaned_structures'.format(self.out_path, self.name)):
-            os.mkdir('{}/{}/cleaned_structures'.format(self.out_path, self.name))
-
-        if not os.path.isdir('{}/{}/rosetta_runs'.format(self.out_path, self.name)):
-            os.mkdir('{}/{}/rosetta_runs'.format(self.out_path, self.name))
-
-        if not os.path.isdir('{}/{}/predictions'.format(self.out_path, self.name)):
-            os.mkdir('{}/{}/predictions'.format(self.out_path, self.name))
-            
-        if not os.path.isdir('{}/{}/inputs'.format(self.out_path, self.name)):
-            os.mkdir('{}/{}/inputs'.format(self.out_path, self.name))
-
-        if not os.path.isdir('{}/{}/alignment'.format(self.out_path, self.name)):
-            os.mkdir('{}/{}/alignment'.format(self.out_path, self.name))
-        print(rosetta_paths.path_to_rosetta)
 
 ################################################################################################
 #                                   Cleaning and isolating pdb
 ################################################################################################
         
-    def clean_up_and_isolate(self, path_to_pdb, chains):
+    def clean_up_and_isolate(self,input_cleaning, path_to_pdb, chains,name):
 
         path_to_clean_pdb = rosetta_paths.path_to_clean_pdb
 
         shell_command = 'python2 {} {} {}'.format(path_to_clean_pdb, path_to_pdb, chains)
         print('here is some output from the clean_pdb.py script')
-        subprocess.call(shell_command, cwd='{}/{}/cleaned_structures/'.format(self.out_path, self.name), shell=True)
+        subprocess.call(shell_command, cwd='{}'.format(input_cleaning), shell=True)
         print('end of output from clean_pdb.py')
         
-        self.path_to_cleaned_pdb = '{}/{}/cleaned_structures/{}_{}.pdb'.format(self.out_path, self.name, self.sys_name, chains)
-        self.path_to_cleaned_fasta = '{}/{}/cleaned_structures/{}_{}.fasta'.format(self.out_path, self.name, self.sys_name, chains)
+        self.path_to_cleaned_pdb = '{}{}_{}.pdb'.format(input_cleaning,self.sys_name, chains)
+        self.path_to_cleaned_fasta = '{}{}_{}.fasta'.format(input_cleaning,self.sys_name, chains)
         fasta_file = open(self.path_to_cleaned_fasta, 'r')
         fasta_lines = fasta_file.readlines()
         fasta_file.close()
@@ -82,11 +56,11 @@ class structure:
 ################################################################################################    
     
     
-    def muscle_align_to_uniprot(self,uniprot_sequence):
+    def muscle_align_to_uniprot(self,input_checking,uniprot_sequence):
 
         path_to_muscle= rosetta_paths.path_to_muscle
-        self.path_to_fasta = self.out_path+'/fasta_file.fasta'
-        self.path_to_alignment = self.out_path+'/alignment.txt'
+        self.path_to_fasta = input_checking+'fasta_file.fasta'
+        self.path_to_alignment = input_checking+'alignment.txt'
         with open(self.path_to_fasta, 'w') as fasta_file:
             fasta_file.write('>{}_structure_sequence\n'.format(self.sys_name))
             fasta_file.write('{}\n'.format(self.fasta_seq))
@@ -133,29 +107,27 @@ class structure:
     
         self.structure_index_numbers = structure_index_numbers
 
-        path_to_index_string = '{}/{}/uniprot_index_list.txt'.format(self.out_path, self.name)
-        with open(path_to_index_string, 'w') as index_file:
+        self.path_to_index_string = input_checking + 'uniprot_index_list.txt'
+        with open(self.path_to_index_string, 'w') as index_file:
             index_list_as_string = '\n'.join(structure_index_numbers)
             index_file.write(str(index_list_as_string))
     
-        path_to_index_string = path_to_index_string
+        path_to_index_string = self.path_to_index_string
         return(path_to_index_string)    
     
 ################################################################################################
 #                                     Making mutfiles
 ################################################################################################    
 
-    def make_mutfiles(self,mutation_input):
+    def make_mutfiles(self,mutation_input,input_mutfiles):
         check2 = False
         resids = []
-        self.path_to_run_folder = '{}/{}/rosetta_runs/{}_{}'.format(self.out_path, self.name, self.sys_name, self.chain_id)
-        path_to_alignment = '{}/{}/uniprot_index_list.txt'.format(self.out_path,self.name)
+        
+        path_to_alignment = self.path_to_index_string
         alignment = np.loadtxt(path_to_alignment)
-        if not os.path.isdir(self.path_to_run_folder):
-            os.mkdir(self.path_to_run_folder)
-        path_to_mutfiles = '{}/mutfiles/'.format(self.path_to_run_folder)
-        if not os.path.isdir(path_to_mutfiles):
-            os.mkdir(path_to_mutfiles)
+
+        path_to_mutfiles = input_mutfiles
+
         alignment_dic={}
         for n in enumerate(alignment):
             alignment_dic[int(n[1])] = int(n[0]+1)
@@ -215,14 +187,11 @@ class structure:
 #                                     Creating sbatch relax
 ################################################################################################
 
-    def rosetta_sbatch_relax(self, structure_path='defaults to self.path_to_cleaned',relaxfile=None):
+    def rosetta_sbatch_relax(self,relax_input, structure_path='defaults to self.path_to_cleaned',relaxfile=None):
         structure_path = self.path_to_cleaned_pdb
 
-        self.path_to_run_folder = '{}/{}/rosetta_runs/{}_{}'.format(self.out_path, self.name, self.sys_name, self.chain_id)
-        if not os.path.isdir(self.path_to_run_folder):
-            os.makedirs(self.path_to_run_folder)
 
-        path_to_sbatch = '{}/rosetta_relax.sbatch'.format(self.path_to_run_folder)
+        path_to_sbatch = relax_input+'rosetta_relax.sbatch'
         if relaxfile==None:
             path_to_relaxflags = rosetta_paths.path_to_parameters + '/relax_flagfile'
         else: 
@@ -232,11 +201,11 @@ class structure:
         sbatch.write('''#!/bin/sh
 #SBATCH --job-name=relax_{}
 #SBATCH --time=10:00:00
-#SBATCH --mem 8000
+#SBATCH --mem 5000
 #SBATCH --partition=sbinlab
 
 # launching rosetta relax
-{}bin/relax.linuxgccrelease -s {} -relax:script {}/cart2.script @{}'''.format(self.name,rosetta_paths.path_to_rosetta, structure_path, rosetta_paths.path_to_parameters, path_to_relaxflags))
+{}bin/relax.linuxgccrelease -s {} -relax:script {}/cart2.script @{}'''.format(self.sys_name,rosetta_paths.path_to_rosetta, structure_path, rosetta_paths.path_to_parameters, path_to_relaxflags))
         sbatch.close()
         print(path_to_sbatch)
         return(path_to_sbatch)
@@ -245,19 +214,19 @@ class structure:
 #                                     Creating sbatch parse relax
 ################################################################################################    
     
-    def parse_relax_sbatch(self, path_to_scorefile, path_to_run_folder):
+    def parse_relax_sbatch(self, relax_input,relax_output):
         path_to_parse_relax_script = rosetta_paths.path_to_stability_pipeline + '/relax_parse_results.py'
-
-        path_to_sbatch = '{}/parse_relax.sbatch'.format(self.path_to_run_folder)
+        path_to_scorefile= relax_output + 'score_bn15_calibrated.sc'
+        path_to_sbatch = '{}/parse_relax.sbatch'.format(relax_input)
         sbatch = open(path_to_sbatch, 'w')
         sbatch.write('''#!/bin/sh
 #SBATCH --job-name=parse_relax_rosetta
-#SBATCH --time=00:10:00
+#SBATCH --time=00:20:00
 #SBATCH --mem 5000
 #SBATCH --partition=sbinlab
 
 # launching parsing script
-python {} {} {}'''.format(path_to_parse_relax_script, path_to_scorefile, path_to_run_folder))
+python {} {} {}'''.format(path_to_parse_relax_script, path_to_scorefile, relax_output))
         sbatch.close()
         print(path_to_sbatch)
         return(path_to_sbatch)
@@ -266,14 +235,14 @@ python {} {} {}'''.format(path_to_parse_relax_script, path_to_scorefile, path_to
 #                                     Creating sbatch Rosetta cartesian
 ################################################################################################    
     
-    def write_rosetta_cartesian_sbatch(self,cartesianfile=None,resids=None):
-        path_to_sbatch = '{}/rosetta_cartesian_saturation_mutagenesis.sbatch'.format(self.path_to_run_folder)
+    def write_rosetta_cartesian_sbatch(self,relax_input,ddG_input,input_mutfiles,cartesianfile=None,resids=None):
+        path_to_sbatch = ddG_input + 'rosetta_cartesian_saturation_mutagenesis.sbatch'
         resids=resids
         if cartesianfile==None:
             path_to_cartesianflags = rosetta_paths.path_to_parameters + '/cartesian_ddg_flagfile'
         else: 
             path_to_cartesianflags = cartesianfile
-        muts=os.listdir(self.path_to_run_folder + '/mutfiles/')
+        muts=os.listdir(input_mutfiles)
         
         sbatch = open(path_to_sbatch, 'w')
         sbatch.write('''#!/bin/sh
@@ -289,7 +258,7 @@ INDEX=$((OFFSET+SLURM_ARRAY_TASK_ID))
 echo $INDEX
 
 # launching rosetta
-{}/bin/cartesian_ddg.linuxgccrelease -s {} -ddg:mut_file ${{LST[$INDEX]}} -out:prefix ddg-$SLURM_ARRAY_JOB_ID-$SLURM_ARRAY_TASK_ID @{}'''.format(self.name,len(muts), rosetta_paths.path_to_rosetta, '*_bn15_calibrated*.pdb', path_to_cartesianflags))
+{}/bin/cartesian_ddg.linuxgccrelease -s {} -ddg:mut_file ${{LST[$INDEX]}} -out:prefix ddg-$SLURM_ARRAY_JOB_ID-$SLURM_ARRAY_TASK_ID @{}'''.format(self.sys_name,len(muts), rosetta_paths.path_to_rosetta, relax_input+'*_bn15_calibrated*.pdb', path_to_cartesianflags))
         sbatch.close()
         print(path_to_sbatch)
         return path_to_sbatch
@@ -299,19 +268,18 @@ echo $INDEX
 ################################################################################################    
     
     
-    def write_parse_ddg_sbatch(self):
-        score_sbatch_path = '{}/parse_ddgs.sbatch'.format(self.path_to_run_folder)
+    def write_parse_ddg_sbatch(self,ddG_input,ddG_output):
+        score_sbatch_path = ddG_input+'parse_ddgs.sbatch'
         score_sbatch = open(score_sbatch_path, 'w')
         score_sbatch.write('''#!/bin/sh
 #SBATCH --job-name=collect_rosetta_ddgs
 #SBATCH --array=1
 #SBATCH --nodes=1
-#SBATCH --time=0:20:00
+#SBATCH --time=0:10:00
 #SBATCH --partition=sbinlab
 
 # This sbatch script launches the parse parse_rosetta_ddgs function, from the parse_cartesian_ddgs
-# it will output a file in the prediction_files/ folder.
-python3 {}/parse_rosetta_ddgs.py {} {} {} {}'''.format(rosetta_paths.path_to_stability_pipeline, self.sys_name, self.chain_id, self.fasta_seq, self.out_path))
+python3 {}/parse_rosetta_ddgs.py {} {} {} {}'''.format(rosetta_paths.path_to_stability_pipeline, self.sys_name, self.chain_id, self.fasta_seq, ddG_input, ddG_output))
         score_sbatch.close()
         return(score_sbatch_path)
 

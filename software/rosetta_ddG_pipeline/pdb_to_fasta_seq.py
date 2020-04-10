@@ -3,7 +3,7 @@ import sys
 
 
 def pdb_to_fasta_seq(path_to_pdb):
-
+    
     with open(path_to_pdb, 'r') as pdb_file:
         pdblines = pdb_file.readlines()
 
