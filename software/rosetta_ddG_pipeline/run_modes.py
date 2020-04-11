@@ -26,7 +26,7 @@ def ddg_calculation(ddG_input,ddG_output,parse_relax_process_id=None):
     print(cart_ddg_process_id_info)      
     cart_ddg_process_id = str(cart_ddg_process_id_info[0]).split()[3][0:-3]
 
-    parse_results_call = subprocess.Popen(f'sbatch --dependency=afterany:{cart_ddg_process_id} {os.path.join(ddG_input,"parse_ddgs.sbatch")}' stdout=subprocess.PIPE, shell=True, cwd=ddG_output) 
+    parse_results_call = subprocess.Popen(f'sbatch --dependency=afterany:{cart_ddg_process_id} {os.path.join(ddG_input,"parse_ddgs.sbatch")}', stdout=subprocess.PIPE, shell=True, cwd=ddG_output) 
 
     return
 
