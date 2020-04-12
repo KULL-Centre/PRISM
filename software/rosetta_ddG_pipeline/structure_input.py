@@ -252,13 +252,13 @@ python {} {} {}'''.format(path_to_parse_relax_script, path_to_scorefile, relax_o
 #SBATCH --mem 5000
 #SBATCH --partition=sbinlab
 #SBATCH --nice
-LST=(`ls mutfiles/mutfile*`)
+LST=(`ls {}mutfile*`)
 OFFSET=0
 INDEX=$((OFFSET+SLURM_ARRAY_TASK_ID))
 echo $INDEX
 
 # launching rosetta
-{}/bin/cartesian_ddg.linuxgccrelease -s {} -ddg:mut_file ${{LST[$INDEX]}} -out:prefix ddg-$SLURM_ARRAY_JOB_ID-$SLURM_ARRAY_TASK_ID @{}'''.format(self.sys_name,len(muts), rosetta_paths.path_to_rosetta, relax_input+'*_bn15_calibrated*.pdb', path_to_cartesianflags))
+{}/bin/cartesian_ddg.linuxgccrelease -s {} -ddg:mut_file ${{LST[$INDEX]}} -out:prefix ddg-$SLURM_ARRAY_JOB_ID-$SLURM_ARRAY_TASK_ID @{}'''.format(self.sys_name,len(muts),input_mutfiles, rosetta_paths.path_to_rosetta, relax_input+'*_bn15_calibrated*.pdb', path_to_cartesianflags))
         sbatch.close()
         print(path_to_sbatch)
         return path_to_sbatch
