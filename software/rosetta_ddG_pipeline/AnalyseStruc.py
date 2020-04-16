@@ -6,7 +6,7 @@ parser = PDBParser(PERMISSIVE=1)
 from Bio.PDB import *
 import json
 
-def get_structure_parameters(outpath,structure_id):
+def get_structure_parameters(outpath,structure_id,chain_id):
     name = structure_id.split("/")
     name = name[-1].split(".")[-2] 
     structure = parser.get_structure(name, structure_id)
@@ -33,7 +33,7 @@ def get_structure_parameters(outpath,structure_id):
     "TRP": "W",
     "TYR": "Y"
     }
-    resdata={};count=0;exceptions = 0
+    resdata={};strucdata={};count=0;exceptions = 0
     
     for model in structure:
         for chain in model:
@@ -47,8 +47,20 @@ def get_structure_parameters(outpath,structure_id):
                         residue_letter = str(residue.get_resname())
                         exceptions += 1
                         resdata[count] = residue_letter,str(residue.get_id()[1]),chain.get_id()
-    print("Special residues in structure = ",exceptions)            
-    with open(os.path.join(outpath, f"structure_{name}.txt"),'w') as strucfile:
+    print("Special residues in structure = ",exceptions)
+    
+    
+    for chain in model:
+        sequence = []
+        for res in range(1,len(resdata)+1):
+    
+            if str(resdata[res][2]) == str(chain)[-2:-1]:
+                sequence.append(resdata[res][0])
+        sequence_chain = ''.join([str(elem) for elem in sequence]) 
+        strucdata[str(chain)[-2:-1]]= sequence_chain
+        
+    structure_dic = {"resdata": resdata, "strucdata": strucdata}
+    with open(outpath +"structure_{}.txt".format(name),'w') as strucfile:
 
         strucfile.write('#Structure features \n')
         strucfile_line = '{}' + '\t {}'+ '\t {}' +  '\t {}' + '\n'
@@ -57,8 +69,8 @@ def get_structure_parameters(outpath,structure_id):
             AA, pdbnumber, chainid = resdata[rosnumber]
             strucfile.write(strucfile_line.format(str(rosnumber),str(pdbnumber),str(AA),str(chainid)))
     with open(outpath +f"structure_{name}.json", 'w') as outfile:
-        json.dump(resdata, outfile)        
-    return(resdata)
+        json.dump(structure_dic, outfile)        
+    return(structure_dic)
 
 if __name__ == '__main__':
     structure_id = sys.argv[1]

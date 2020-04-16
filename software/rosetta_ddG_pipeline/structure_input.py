@@ -20,7 +20,7 @@ import numpy as np
 import pdb_to_fasta_seq
 import rosetta_paths
 
-newline = '\n'
+
 
 
 class structure:
@@ -128,13 +128,14 @@ class structure:
 #                                     Making mutfiles
 ##########################################################################
 
-    def make_mutfiles(self, mutation_input, path_to_mutfiles):
+    def make_mutfiles(self, mutation_input, path_to_mutfiles,structure_dic):
         check2 = False
-        resids = []
-
+        resdata = structure_dic["resdata"]
+        strucdata = structure_dic["strucdata"]
+        
         path_to_alignment = self.path_to_index_string
         alignment = np.loadtxt(path_to_alignment)
-
+        
         alignment_dic = {}
         for n in enumerate(alignment):
             alignment_dic[int(n[1])] = int(n[0] + 1)
@@ -159,7 +160,7 @@ class structure:
 
                 check = self.fasta_seq[residue_number_ros] in list(
                     mutate[residue_number][0])
-                resids += [residue_number]
+                
 
                 if check == False:
                     check2 = True
@@ -178,19 +179,18 @@ class structure:
                                   residue_number_ros - 1] + ' ' + str(residue_number_ros) + ' ' + AAtype)
                 mutfile.close()
 
-        if mutation_input == None:
-            for residue_number in alignment:
-                residue_number_ros = alignment_dic[residue_number]
-                mutfile = open(os.path.join(path_to_mutfiles, f'mutfile{str(residue_number_ros):0>5}'), 'w')
-                mutfile.write('total 20')
-                resids += [residue_number]
-                # and then a line for each type of AA
-                for AAtype in 'ACDEFGHIKLMNPQRSTVWY':
-                    mutfile.write('\n1\n')
-                    mutfile.write(self.fasta_seq[
-                                  residue_number_ros - 1] + ' ' + str(residue_number_ros) + ' ' + AAtype)
-                mutfile.close()
-        return(check2, resids)
+        if mutation_input == None:            
+            for residue_number_ros in resdata:
+                if resdata[residue_number_ros][2] == chain_id:
+                    mutfile = open('mutfile{:0>5}'.format(str(residue_number_ros)), 'w')
+                    mutfile.write('total 20')
+    
+                    # and then a line for each type of AA
+                    for AAtype in 'ACDEFGHIKLMNPQRSTVWY':
+                        mutfile.write('\n1\n')
+                        mutfile.write(strucdata[chain_id][residue_number_ros-1] + ' ' + str(residue_number_ros) + ' ' + AAtype )
+                    mutfile.close()
+        return(check2)
 
 ##########################################################################
 #                                     Creating sbatch relax
@@ -271,9 +271,9 @@ class structure:
 # SBATCH --time=32:00:00
 # SBATCH --mem 5000
 # SBATCH --partition={partition}
-# SBATCH --nice {newline}
+# SBATCH --nice 
 LST=(`ls {input_mutfiles}mutfile*`)
-OFFSET=0 {newline}
+OFFSET=0 
 INDEX=$((OFFSET+SLURM_ARRAY_TASK_ID))
 echo $INDEX
 

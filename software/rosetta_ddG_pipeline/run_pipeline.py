@@ -79,8 +79,8 @@ def predict_stability(argv):
         structure_instance.sys_name = name
         structure_instance.chain_id = chain_id
         structure_instance.path = prep_struc
-        resdata = get_structure_parameters(
-            folder.prepare_checking, prep_struc)
+        structure_dic = get_structure_parameters(
+            folder.prepare_checking, prep_struc,chain_id)
 
         # Cleaning pdb and making fasta based on pdb or uniprot-id if provided
         logger.info(f'Prepare the pdb and extract fasta file')
@@ -99,12 +99,13 @@ def predict_stability(argv):
 
         # Making mutfiles and checks
         logger.info(f'Generate mutfiles.')
-        check2, resids = structure_instance.make_mutfiles(
-            input_dict['MUTATION_INPUT'], folder.prepare_mutfiles)
+        check2 = structure_instance.make_mutfiles(
+            input_dict['MUTATION_INPUT'], folder.prepare_mutfiles, structure_dic)
         # check1 = compare_mutfile(structure_instance.fasta_seq,structure_instance.path_to_run_folder,mutation_input)
-        check3, errors = pdbxmut(folder.prepare_mutfiles, resdata)
+        #check3, errors = pdbxmut(folder.prepare_mutfiles, resdata)
         check1 = False
         check2 = False
+        check3 = False
         if check1 == True or check2 == True or check3 == True:
             logger.error(
                 "ERROR: STOPPING SCRIPT DUE TO RESIDUE MISMATCH BETWEEN MUTFILE AND PDB SEQUENCE")
