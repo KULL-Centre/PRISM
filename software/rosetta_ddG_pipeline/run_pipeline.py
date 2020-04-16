@@ -25,8 +25,9 @@ def predict_stability(argv):
     folder=folder2(outpath)    
     ## System name
     name = structure_list.split('/')[-1].split('.')[0] 
-    structure_instance = structure()
-      
+    
+    resdata=get_structure_parameters(folder.input_checking,structure_list)
+    
     if mode=="proceed" or mode =="relax" or mode == "ddg_calculation":
         mutation_input == "proceed"
     
@@ -35,9 +36,9 @@ def predict_stability(argv):
 ########################################################################################################
         
     ## Defining structure parameters
-       
+    structure_instance = structure()   
     structure_instance.sys_name = name; structure_instance.chain_id = chain_id; structure_instance.path = structure_list;                                       
-    resdata=get_structure_parameters(folder.input_checking,structure_list)
+    
                                        
     ## Cleaning pdb and making fasta based on pdb
     
