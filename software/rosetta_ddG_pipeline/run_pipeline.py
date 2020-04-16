@@ -25,13 +25,8 @@ def predict_stability(argv):
     folder=folder2(outpath)    
     ## System name
     name = structure_list.split('/')[-1].split('.')[0] 
-  #  path_to_input = '{}/{}/{}/'.format(outpath,name,"inputs")
-  #   path_to_run_folder = '{}/{}/rosetta_runs/{}_{}'.format(outpath, name, name, chain_id)
     structure_instance = structure()
-                                       
-   # if mode == "print":
-   #     open("relax_flag_file_copy", "w").writelines(open(relax_flag_file).readlines())     
-   #     open("ddg_flag_file_copy", "w").writelines(open(ddg_flag_file).readlines())        
+      
     if mode=="proceed" or mode =="relax" or mode == "ddg_calculation":
         mutation_input == "proceed"
     
