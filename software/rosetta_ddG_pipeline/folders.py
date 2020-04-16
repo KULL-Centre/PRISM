@@ -1,55 +1,71 @@
-import sys
-import os
+"""folder.py creates and stores all relevant folders.
+
+Author: Anders Frederiksen
+Contribution: Johanna K.S. Tiemann
+
+Date of last major changes: 2020-04-15
+
+"""
+
+# Standard library imports
 import logging as logger
+from os import makedirs
+from os.path import join
+from sys import exit
+
+# Local application imports
 from args_pipeline import parse_args2
 
 
-def check_paths(path):
-    args = parse_args2()
-    overwrite_path = args.OVERWRITE_PATH
+def check_paths(dir_path, overwrite_path=True):
     try:
-        os.makedirs(path)
-        logger.info(f"Global working directory ({path}) created.")
+        makedirs(dir_path)
+        logger.info(f'Global working directory ({dir_path}) created.')
     except FileExistsError:
         if overwrite_path:
-            logger.warn(f"Directory {path} already exists. overwrite_path set to {overwrite_path}, so we will use this path.")
+            logger.warn(f'Directory {dir_path} already exists. overwrite_path set to {overwrite_path}, so we will use this path.')
         else:
-            logger.error(f"Directory {path} already exists. overwrite_path set to {overwrite_path}, so we stop the execution. Please provide a different output directory.")
-            sys.exit() #will terminate the complete script
-    return(path)        
+            logger.error(f'Directory {dir_path} already exists. overwrite_path set to {overwrite_path}, so we stop the execution. Please provide a different output directory.')
+            exit()  # will terminate the complete script
+    return dir_path
+
 
 class folder2:
-    
-    def __init__(self,output_path):
-        ##Create
-        #Main folders
-        if output_path[-1] == '/':
-            output_path = output_path[:-1]
-        else:
-            output_path = output_path
-            
-        self.output_path = output_path+'/'
-        self.input = check_paths(self.output_path + 'input/') 
-        self.prepare = check_paths(self.output_path + 'prepare/') 
-        self.relax = check_paths(self.output_path + 'relax/') 
-        self.ddG = check_paths(self.output_path + 'ddG/') 
-        self.output = check_paths(self.output_path + 'output/') 
-        self.analysis = check_paths(self.output_path + 'analysis/') 
-        
-        #Subfolders
-        self.input_mutfiles = check_paths(self.input +'mutfiles/')
-        self.input_cleaning = check_paths(self.input +'cleaning/')
-        self.input_checking = check_paths(self.input +'checking/')
-        self.input_mp_files = check_paths(self.input +'mp_files/')
-        self.input_output = check_paths(self.input +'output/')
-        
-        self.relax_input = check_paths(self.relax +'input/')
-        self.relax_run = check_paths(self.relax +'run/')
-        self.relax_output = check_paths(self.relax +'output/')        
-    
-        self.ddG_input = check_paths(self.ddG +'input/')
-        self.ddG_run = check_paths(self.ddG +'run/')
-        self.ddG_output = check_paths(self.ddG +'output/') 
-        
-        
-        return;
+
+    def __init__(self, output_path, overwrite_path):
+        # Create
+        # Global folder
+        self.output_path = check_paths(
+            output_path, overwrite_path=overwrite_path)
+
+        # Main folders
+        self.logs = check_paths(join(self.output_path, 'logs'))
+        self.input = check_paths(join(self.output_path, 'input'))
+        self.prepare = check_paths(join(self.output_path, 'prepare'))
+        self.relax = check_paths(join(self.output_path, 'relax'))
+        self.ddG = check_paths(join(self.output_path, 'ddG'))
+        self.output = check_paths(join(self.output_path, 'output'))
+        self.analysis = check_paths(join(self.output_path, 'analysis'))
+
+        # Subfolders
+        self.prepare_input = check_paths(join(self.prepare, 'input'))
+        self.prepare_mutfiles = check_paths(join(self.prepare, 'mutfiles'))
+        self.prepare_cleaning = check_paths(join(self.prepare, 'cleaning'))
+        self.prepare_checking = check_paths(join(self.prepare, 'checking'))
+        self.prepare_output = check_paths(join(self.prepare, 'output'))
+        # Membrane Protein sub-subfolders
+        self.prepare_mp_files = check_paths(join(self.prepare, 'mp_files'))
+        self.prepare_mp_superpose = check_paths(
+            join(self.prepare_mp_files, 'superpose'))
+        self.prepare_mp_memframe = check_paths(
+            join(self.prepare_mp_files, 'membrane_framework'))
+
+        self.relax_input = check_paths(join(self.relax, 'input'))
+        self.relax_run = check_paths(join(self.relax, 'run'))
+        self.relax_output = check_paths(join(self.relax, 'output'))
+
+        self.ddG_input = check_paths(join(self.ddG, 'input'))
+        self.ddG_run = check_paths(join(self.ddG, 'run'))
+        self.ddG_output = check_paths(join(self.ddG, 'output'))
+
+        return

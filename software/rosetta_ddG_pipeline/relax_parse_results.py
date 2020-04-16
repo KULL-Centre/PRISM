@@ -38,9 +38,11 @@ def parse_relax_results(path_to_scorefile, path_to_run_folder):
     # it seems a little crude, but whatever.
     for key in relax_scores:
         if key != most_relaxed:
-            path_to_tense = path_to_run_folder +'/' + key + '.pdb'
+            path_to_tense = os.path.join(path_to_run_folder, f'{key}.pdb')
             print('deleting', path_to_tense)
             os.remove(path_to_tense)
+
+    return os.path.join(path_to_run_folder, f'{most_relaxed}.pdb')
 
 
 if __name__ == '__main__':

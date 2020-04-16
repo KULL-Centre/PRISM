@@ -4,9 +4,9 @@ import os
 import numpy as np
 
 def compare_mutfile(fasta_seq, path_to_run_folder,mutation_input=None):
-    mutfiles_folder = path_to_run_folder + '/mutfiles/'
+    mutfiles_folder = os.path.join(path_to_run_folder, 'mutfiles/')
     error=False
-    path_to_alignment = '{}/uniprot_index_list.txt'.format(output_path)
+    path_to_alignment = os.path.join(output_path, 'uniprot_index_list.txt')
     alignment = np.loadtxt(path_to_alignment)   
     alignment_dic={}
     for n in enumerate(alignment):
@@ -15,7 +15,7 @@ def compare_mutfile(fasta_seq, path_to_run_folder,mutation_input=None):
     
     if mutation_input == None:
         for residue_number in range(1, len(fasta_seq)+1):
-            mutfile = open(mutfiles_folder+'mutfile{:0>5}'.format(str(residue_number)), 'r')
+            mutfile = open(os.path.join(mutfiles_folder,f'mutfile{str(residue_number):0>5}'), 'r')
             f= mutfile.readlines()
             fasta_seq_list=list(fasta_seq)
             print(residue_number," ",f[2][0]," ",fasta_seq_list[residue_number-1][0])
@@ -37,7 +37,7 @@ def compare_mutfile(fasta_seq, path_to_run_folder,mutation_input=None):
             res = a[residue_number+1]
 
             residue_number_ros = alignment_dic[res] 
-            mutfile = open(mutfiles_folder+'mutfile{:0>5}'.format(str(residue_number_ros)), 'r')
+            mutfile = open(os.path.join(mutfiles_folder,f'mutfile{str(residue_number_ros):0>5}'), 'r')
             f= mutfile.readlines()
             fasta_seq_list=list(fasta_seq)
             print(res," ",f[2][0]," ",fasta_seq_list[int(residue_number_ros)-1][0])
@@ -52,7 +52,7 @@ def pdbxmut(input_mutfiles,resdata):
     p=os.listdir(input_mutfiles);errors =0;check3 = False;
     for files in p:
         decs=6
-        with open(input_mutfiles+files,'r') as mutfiles:
+        with open(os.path.join(input_mutfiles,files),'r') as mutfiles:
             mutfile_lines = mutfiles.readlines()
             mutations = (mutfile_lines[2:40:2])
         

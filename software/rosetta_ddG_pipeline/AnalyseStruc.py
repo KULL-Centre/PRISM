@@ -1,4 +1,5 @@
 import sys
+import os
 import Bio
 from Bio.PDB.PDBParser import PDBParser
 parser = PDBParser(PERMISSIVE=1)
@@ -47,7 +48,7 @@ def get_structure_parameters(outpath,structure_id):
                         exceptions += 1
                         resdata[count] = residue_letter,str(residue.get_id()[1]),chain.get_id()
     print("Special residues in structure = ",exceptions)            
-    with open(outpath +"structure_{}.txt".format(name),'w') as strucfile:
+    with open(os.path.join(outpath, f"structure_{name}.txt"),'w') as strucfile:
 
         strucfile.write('#Structure features \n')
         strucfile_line = '{}' + '\t {}'+ '\t {}' +  '\t {}' + '\n'

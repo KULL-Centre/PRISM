@@ -7,6 +7,7 @@ default_path = {
     'Rosetta_main_path': '/sbinlab/software/Rosetta_2018_Oct_d557f8/source/',
     'Rosetta_tools_path': '/sbinlab/software/Rosetta_tools/tools/',
     'Rosetta_database_path': '/sbinlab/software/Rosetta_2018_Oct_d557f8/database/',
+    'Rosetta_extension': 'linuxgccrelease',
 }
 
 
@@ -24,9 +25,10 @@ ddG_pipeline = load_env('ddG_pipeline')
 Rosetta_main_path = load_env('Rosetta_main_path')
 Rosetta_tools_path = load_env('Rosetta_tools_path')
 Rosetta_database_path = load_env('Rosetta_database_path')
+Rosetta_extension = load_env('Rosetta_extension')
 
 print('current env paths & exec:', muscle_exec, ddG_pipeline,
-      Rosetta_main_path, Rosetta_tools_path, Rosetta_database_path)
+      Rosetta_main_path, Rosetta_tools_path, Rosetta_database_path, Rosetta_extension)
 
 # Rosetta paths
 path_to_rosetta = Rosetta_main_path
