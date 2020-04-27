@@ -52,4 +52,6 @@ def storeinputfuc(name, args, folder):
     if args.MUTATION_INPUT:
         copyfile(args.MUTATION_INPUT, join(folder.input, 'mutations'))
         input_dict['MUTATION_INPUT'] = join(folder.input, 'mutations')
+    else:
+        input_dict['MUTATION_INPUT'] = None
     return input_dict

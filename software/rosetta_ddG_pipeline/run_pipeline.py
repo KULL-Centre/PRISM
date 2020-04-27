@@ -47,6 +47,11 @@ def predict_stability(argv):
     relaxfile = args.RELAX_FLAG_FILE
     structure_list = args.STRUC_FILE
     uniprot_accesion = args.UNIPROT_FILE
+    run_struc = args.RUN_STRUC
+    ligand = args.LIGAND
+    
+    if run_struc == None:
+        run_struc = chain_id
     # System name
     name = os.path.splitext(os.path.basename(structure_list))[0]
 
@@ -59,10 +64,6 @@ def predict_stability(argv):
     if mode == "proceed" or mode == "relax" or mode == "ddg_calculation":
         mutation_input == "proceed"
         logger.info(f'No preparation, proceeding to execution')
-
-##########################################################################
-#                                         HANDLING THE STRUCTURES
-##########################################################################
 
     # Preprocessing
     if mode == 'create' or mode == 'fullrun':
@@ -85,7 +86,7 @@ def predict_stability(argv):
         # Cleaning pdb and making fasta based on pdb or uniprot-id if provided
         logger.info(f'Prepare the pdb and extract fasta file')
         structure_instance.path_to_cleaned_pdb = structure_instance.clean_up_and_isolate(
-            folder.prepare_cleaning, prep_struc, chain_id, name='input')
+            folder.prepare_cleaning, prep_struc, chain_id, run_struc, name='input', ligand = ligand)
         structure_instance.fasta_seq = pdb_to_fasta_seq(
             structure_instance.path_to_cleaned_pdb)
         if uniprot_accesion != "":
@@ -99,14 +100,15 @@ def predict_stability(argv):
 
         # Making mutfiles and checks
         logger.info(f'Generate mutfiles.')
+        print(input_dict['MUTATION_INPUT'])
         check2 = structure_instance.make_mutfiles(
-            input_dict['MUTATION_INPUT'], folder.prepare_mutfiles, structure_dic)
-        # check1 = compare_mutfile(structure_instance.fasta_seq,structure_instance.path_to_run_folder,mutation_input)
-        #check3, errors = pdbxmut(folder.prepare_mutfiles, resdata)
-        check1 = False
-        check2 = False
-        check3 = False
+            input_dict['MUTATION_INPUT'], folder.prepare_mutfiles, structure_dic,chain_id)
+        check1 = compare_mutfile(structure_instance.fasta_seq,folder.prepare_mutfiles,folder.prepare_checking,mutation_input)
+        check3, errors = pdbxmut(folder.prepare_mutfiles, structure_dic)
+        check2 == False
+
         if check1 == True or check2 == True or check3 == True:
+            print("check1:",check1,"check2:",check2,"check3:",check3)
             logger.error(
                 "ERROR: STOPPING SCRIPT DUE TO RESIDUE MISMATCH BETWEEN MUTFILE AND PDB SEQUENCE")
             sys.exit()
@@ -155,18 +157,16 @@ def predict_stability(argv):
     if mode == 'proceed' or mode == 'fullrun':
         # Start relax calculation
         parse_relax_process_id = run_modes.relaxation(folder)
-        relax_output_strucfile = find_copy(
-            folder.relax_run, '.pdb', folder.relax_output, 'output.pdb')
+        #relax_output_strucfile = find_copy(
+            #folder.relax_run, '.pdb', folder.relax_output, 'output.pdb')
         # Start ddG calculation
-        ddg_input_struc = create_copy(
-            os.path.join(folder.relax_output, 'output.pdb'), folder.ddG_input, name='input.pdb')
+        #ddg_input_struc = create_copy(
+            #os.path.join(folder.relax_output, 'output.pdb'), folder.ddG_input, name='input.pdb')
         run_modes.ddg_calculation(folder, parse_relax_process_id)
         ddg_output_score = find_copy(
             folder.ddG_run, '.sc', folder.ddG_output, 'output.sc')
 
-   # if mode == "print":
-   #     open("relax_flag_file_copy", "w").writelines(open(relax_flag_file).readlines())
-   #     open("ddg_flag_file_copy", "w").writelines(open(ddg_flag_file).readlines())
+
 
 ##########################################################################
 #                                          Initiate scripts

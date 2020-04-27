@@ -3,10 +3,11 @@ import sys
 import os
 import numpy as np
 
-def compare_mutfile(fasta_seq, path_to_run_folder,mutation_input=None):
-    mutfiles_folder = os.path.join(path_to_run_folder, 'mutfiles/')
+def compare_mutfile(fasta_seq, path_to_run_folder,prepare_checking,mutation_input=None):
+    mutfiles_folder = path_to_run_folder +'/'
     error=False
-    path_to_alignment = os.path.join(output_path, 'uniprot_index_list.txt')
+    path_to_alignment = os.path.join(prepare_checking, 'uniprot_index_list.txt')
+    print(path_to_alignment)
     alignment = np.loadtxt(path_to_alignment)   
     alignment_dic={}
     for n in enumerate(alignment):
@@ -36,19 +37,20 @@ def compare_mutfile(fasta_seq, path_to_run_folder,mutation_input=None):
         for residue_number in ran:
             res = a[residue_number+1]
 
-            residue_number_ros = alignment_dic[res] 
+            residue_number_ros = alignment_dic[int(res)] 
             mutfile = open(os.path.join(mutfiles_folder,f'mutfile{str(residue_number_ros):0>5}'), 'r')
             f= mutfile.readlines()
             fasta_seq_list=list(fasta_seq)
             print(res," ",f[2][0]," ",fasta_seq_list[int(residue_number_ros)-1][0])
             if f[2][0] != fasta_seq_list[int(residue_number_ros)-1][0]:
+                print(f[2][0],fasta_seq_list[int(residue_number_ros)-1][0])
                 error=True
                 print("ERROR: RESIDUE MISMATCH")
                 break
         return(error)
 
-def pdbxmut(input_mutfiles,resdata):
-    
+def pdbxmut(input_mutfiles,structure_dic):
+    resdata = structure_dic["resdata"]
     p=os.listdir(input_mutfiles);errors =0;check3 = False;
     for files in p:
         decs=6

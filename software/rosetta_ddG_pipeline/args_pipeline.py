@@ -86,9 +86,23 @@ def parse_args2():
 
                         )
     parser.add_argument('--chainid',
-                        default='ignorechain',
+                        default='A',
                         dest='CHAIN',
                         help='chain ID'
+                        )
+    parser.add_argument('--run_struc',
+                        default=None,
+                        dest='RUN_STRUC',
+                        help=(
+                            'Insert what chains you want to be part of the full structure format: ABC \n' 
+                            'ignorechain for full structure'
+                        )
+                        
+                        )
+    parser.add_argument('--ligand',
+                        default=None,
+                        dest='LIGAND',
+                        help='Set to true if you want to keep ligand'
                         )
     parser.add_argument('--overwrite_path',
                         default=False,
