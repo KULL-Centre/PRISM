@@ -41,7 +41,9 @@ class structure:
     
             self.path_to_cleaned_pdb = os.path.join(input_cleaning, f'{name}_{run_struc}.pdb')
             print(str(run_struc))
-            for chain in list(str(run_struc)):
+            if type(run_struc) != list:
+                run_struc = [run_struc]
+            for chain in run_struc:
                 self.path_to_cleaned_fasta = os.path.join(input_cleaning, f'{name}_{chain}.fasta')
                 fasta_lines = open(self.path_to_cleaned_fasta, 'r').readlines()
                 self.fasta_seq = ''

@@ -25,7 +25,7 @@ def storeinputfuc(name, args, folder):
              f'CHAIN = {args.CHAIN}\n'
              f'STRUCTURE = {args.STRUC_FILE}\n'
              f'OUTPATH = {folder.output_path}\n'
-             f'{args.UNIPROT_FILE}\n')
+             f'{args.UNIPROT_ID}\n')
         )
 
     # Create json file from input args
@@ -54,4 +54,16 @@ def storeinputfuc(name, args, folder):
         input_dict['MUTATION_INPUT'] = join(folder.input, 'mutations')
     else:
         input_dict['MUTATION_INPUT'] = None
+
+    if args.MP_SPAN_INPUT:
+        copyfile(args.MP_SPAN_INPUT, join(folder.input, 'input.span'))
+        input_dict['MP_SPAN_INPUT'] = join(folder.input, 'input.span')
+    else:
+        input_dict['MP_SPAN_INPUT'] = None
+
+    if args.RELAX_XML_INPUT:
+        copyfile(args.RELAX_XML_INPUT, join(folder.input, 'relax.xml'))
+        input_dict['RELAX_XML_INPUT'] = join(folder.input, 'relax.xml')
+    else:
+        input_dict['RELAX_XML_INPUT'] = None
     return input_dict

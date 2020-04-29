@@ -4,14 +4,15 @@ from helper import create_symlinks, create_copy, find_copy
 # this function will parse the results of a rosetta pre_relax run.
 # it will be callable from an sbatch script, that can wait for the relaxation to finish,
 # and then select the best one.
-# the point is to implement the 20x pre relaxation for the stability pipeline, that Amelie requested
+# the point is to implement the 20x pre relaxation for the stability
+# pipeline, that Amelie requested
 
 
-def parse_relax_results(relax_run, path_to_run_folder, ddG_input):
+def parse_relax_results(folder, sc_name='score_bn15_calibrated'):
     '''This function parses the scorefile from a rosetta
     pre-relaxation, and selects the lowest scoring one'''
     path_to_scorefile = os.path.join(
-            relax_run, 'score_bn15_calibrated.sc')
+        folder.relax_run, f'{sc_name}.sc')
     with open(path_to_scorefile) as scorefile:
         scorelines = scorefile.readlines()
 
@@ -40,17 +41,18 @@ def parse_relax_results(relax_run, path_to_run_folder, ddG_input):
     # it seems a little crude, but whatever.
     for key in relax_scores:
         if key != most_relaxed:
-            path_to_tense = os.path.join(relax_run, f'{key}.pdb')
+            path_to_tense = os.path.join(folder.relax_run, f'{key}.pdb')
             print('deleting', path_to_tense)
             os.remove(path_to_tense)
     relax_output_strucfile = find_copy(
-            relax_run, '.pdb', path_to_run_folder, 'output.pdb')
-    
+        folder.relax_run, '.pdb', folder.relax_output, 'output.pdb')
+
     create_copy(
-            os.path.join(path_to_run_folder, 'output.pdb'), ddG_input, name='input.pdb')
-    
-    return os.path.join(path_to_run_folder, f'{most_relaxed}.pdb')
+        os.path.join(folder.relax_output, 'output.pdb'), folder.ddG_input, name='input.pdb')
+
+    return os.path.join(folder.relax_output, f'{most_relaxed}.pdb')
 
 
 if __name__ == '__main__':
-    parse_relax_results(relax_run=sys.argv[1], path_to_run_folder=sys.argv[2] ,ddG_input=sys.argv[3])
+    folder = ['relax_run':sys.argv[1], 'relax_output' = sys.argv[2], 'ddG_input' = sys.argv[3]]
+    parse_relax_results(folder)
