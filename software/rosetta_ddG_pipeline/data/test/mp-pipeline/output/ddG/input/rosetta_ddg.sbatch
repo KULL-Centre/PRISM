@@ -11,4 +11,4 @@ INDEX=$((OFFSET+SLURM_ARRAY_TASK_ID))
 echo $INDEX
 
 # launching rosetta 
-/home/j0kaso/repos/Rosetta/main/source/bin/cartesian_ddg.default.linuxgccdebug -s /ddG/input/input.pdb -ddg:mut_file ${LST[$INDEX]} -out:prefix ddg-$SLURM_ARRAY_JOB_ID-$SLURM_ARRAY_TASK_ID @/ddG/input/ddg_flagfile
+bin/cartesian_ddg. -s /ddG/input/input.pdb -ddg:mut_file ${LST[$INDEX]} -out:prefix ddg-$SLURM_ARRAY_JOB_ID-$SLURM_ARRAY_TASK_ID @/ddG/input/ddg_flagfile

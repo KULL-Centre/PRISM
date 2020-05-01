@@ -22,10 +22,11 @@ sys.path.insert(1, sys.path.insert(0, PARENT_DIR))
 
 # Local application imports
 import run_pipeline
+import rosetta_paths
 
 
-DATA_DIR = os.path.join(PARENT_DIR, "data", "test")
-TMP_DIR = os.path.join(DIR, "tmp")
+DATA_DIR = os.path.join(PARENT_DIR, 'data', 'test')
+TMP_DIR = os.path.join(DIR, 'tmp')
 
 
 def data(file_name):
@@ -33,16 +34,19 @@ def data(file_name):
 
 
 def tmp(*dir_name):
-    return os.path.join(TMP_DIR, "mp-pipeline", *dir_name)
+    return os.path.join(TMP_DIR, 'mp-pipeline', *dir_name)
 
 
 def clean_reference_from_local_path(dir_name, local_path):
     for dname, dirs, files in os.walk(dir_name):
         for fname in files:
             fpath = os.path.join(dname, fname)
-            s = open(fpath, 'r').read()
+            s = ''
+            with open(fpath, 'r') as fp:
+                s = fp.read()
             s = s.replace(local_path, '')
-            open(fpath, "w").write(s)
+            with open(fpath, 'w') as fp:
+                fp.write(s)
 
 
 class MPpipelineCreateTestCase(unittest.TestCase):
@@ -109,22 +113,31 @@ class MPpipelineCreateTestCase(unittest.TestCase):
             for file in f:
                 parent_directory = r.split(self.output_dir)[1]
                 # remove local paths within files
-                file_read = open(os.path.join(r, file), 'r').read()
-                file_read = file_read.replace(self.output_dir, '')
-                file_read = file_read.replace(PARENT_DIR, '')
-
-                output_dic[os.path.join(parent_directory, file)] = file_read
+                with open(os.path.join(r, file), 'r') as fp:
+                    file_read = fp.read()
+                    print(self.output_dir, PARENT_DIR, rosetta_paths.ddG_pipeline,
+                                 rosetta_paths.Rosetta_main_path, rosetta_paths.Rosetta_tools_path,
+                                 rosetta_paths.Rosetta_database_path, rosetta_paths.Rosetta_extension)
+                    for elem in [self.output_dir, PARENT_DIR, rosetta_paths.ddG_pipeline,
+                                 rosetta_paths.Rosetta_main_path, rosetta_paths.Rosetta_tools_path,
+                                 rosetta_paths.Rosetta_database_path, rosetta_paths.Rosetta_extension]:
+                        file_read = file_read.replace(elem, '')
+                    output_dic[os.path.join(
+                        parent_directory, file)] = file_read
 
         reference_dic = {}
         for r, d, f in os.walk(self.reference_dir):
             for file in f:
                 parent_directory = r.split(self.reference_dir)[1]
                 # remove local paths within files
-                clean_reference_from_local_path(
-                    self.reference_dir, self.output_dir)
-                clean_reference_from_local_path(self.reference_dir, PARENT_DIR)
+                for elem in [self.output_dir, PARENT_DIR, rosetta_paths.ddG_pipeline,
+                             rosetta_paths.Rosetta_main_path, rosetta_paths.Rosetta_tools_path,
+                             rosetta_paths.Rosetta_database_path, rosetta_paths.Rosetta_extension]:
+                    clean_reference_from_local_path(
+                        self.reference_dir, elem)
 
-                reference_dic[os.path.join(parent_directory, file)] = open(
-                    os.path.join(r, file), 'r').read()
+                with open(os.path.join(r, file), 'r') as fp:
+                    reference_dic[os.path.join(
+                        parent_directory, file)] = fp.read()
         self.maxDiff = None
         self.assertDictEqual(output_dic, reference_dic)

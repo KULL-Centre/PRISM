@@ -3,7 +3,7 @@
 Author: Anders Frederiksen
 Contribution: Johanna K.S. Tiemann
 
-Date of last major changes: 2020-04-15
+Date of last major changes: 2020-04-30
 
 """
 
@@ -50,3 +50,10 @@ def find_copy(searchfolder, searchword, resultfolder, resultname):
     for file in os.listdir(searchfolder):
         if file.endswith(searchword):
             return create_copy(os.path.join(searchfolder, file), resultfolder, name=resultname)
+
+
+class AttrDict(dict):
+
+    def __init__(self, *args, **kwargs):
+        super(AttrDict, self).__init__(*args, **kwargs)
+        self.__dict__ = self

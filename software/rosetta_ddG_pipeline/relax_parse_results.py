@@ -1,14 +1,24 @@
-import sys
+"""relax_parse_results.py 
+This function will parse the results of a rosetta pre_relax run. it will be callable from an 
+sbatch script, that can wait for the relaxation to finish, and then select the best one. The 
+point is to implement the 20x pre relaxation for the stability pipeline, that Amelie requested.
+
+Author: Anders Frederiksen
+
+Date of last major changes: 2020-04
+
+"""
+
+# Standard library imports
+import logging as logger
 import os
-from helper import create_symlinks, create_copy, find_copy
-# this function will parse the results of a rosetta pre_relax run.
-# it will be callable from an sbatch script, that can wait for the relaxation to finish,
-# and then select the best one.
-# the point is to implement the 20x pre relaxation for the stability
-# pipeline, that Amelie requested
+import sys
+
+# Local application imports
+from helper import AttrDict, create_symlinks, create_copy, find_copy
 
 
-def parse_relax_results(folder, sc_name='score_bn15_calibrated'):
+def parse_relax_results(folder, sc_name='score_bn15_calibrated', logger_mode='info'):
     '''This function parses the scorefile from a rosetta
     pre-relaxation, and selects the lowest scoring one'''
     path_to_scorefile = os.path.join(
@@ -35,8 +45,8 @@ def parse_relax_results(folder, sc_name='score_bn15_calibrated'):
         if relax_scores[key] < relax_scores[most_relaxed]:
             most_relaxed = key
 
-    print('most relaxed structure is ', most_relaxed)
-    print('deleting the rest')
+    logger.info(f'most relaxed structure is {most_relaxed}.')
+    logger.info('deleting the rest')
     # and now delete all the structures that are not the best scoring one.
     # it seems a little crude, but whatever.
     for key in relax_scores:
@@ -54,5 +64,10 @@ def parse_relax_results(folder, sc_name='score_bn15_calibrated'):
 
 
 if __name__ == '__main__':
-    folder = ['relax_run':sys.argv[1], 'relax_output' = sys.argv[2], 'ddG_input' = sys.argv[3]]
-    parse_relax_results(folder)
+    folder = AttrDict()
+    folder.update({'relax_run': sys.argv[1], 'relax_output': sys.argv[
+                  2], 'ddG_input': sys.argv[3]})
+    if len(sys.argv) > 4:
+        parse_relax_results(folder, sc_name=sys.argv[4])
+    else:
+        parse_relax_results(folder)
