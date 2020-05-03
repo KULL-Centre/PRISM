@@ -116,8 +116,8 @@ class MPpipelineCreateTestCase(unittest.TestCase):
                 with open(os.path.join(r, file), 'r') as fp:
                     file_read = fp.read()
                     print(self.output_dir, PARENT_DIR, rosetta_paths.ddG_pipeline,
-                                 rosetta_paths.Rosetta_main_path, rosetta_paths.Rosetta_tools_path,
-                                 rosetta_paths.Rosetta_database_path, rosetta_paths.Rosetta_extension)
+                          rosetta_paths.Rosetta_main_path, rosetta_paths.Rosetta_tools_path,
+                          rosetta_paths.Rosetta_database_path, rosetta_paths.Rosetta_extension)
                     for elem in [self.output_dir, PARENT_DIR, rosetta_paths.ddG_pipeline,
                                  rosetta_paths.Rosetta_main_path, rosetta_paths.Rosetta_tools_path,
                                  rosetta_paths.Rosetta_database_path, rosetta_paths.Rosetta_extension]:

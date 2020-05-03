@@ -22,9 +22,11 @@ from AnalyseStruc import get_structure_parameters
 from args_pipeline import parse_args2
 from checks import compare_mutfile, pdbxmut
 from folders import folder2
-from helper import create_symlinks, create_copy, find_copy
+from helper import create_symlinks, create_copy, find_copy, get_mut_dict
 import mp_prepare
+import mp_ddG
 from pdb_to_fasta_seq import pdb_to_fasta_seq
+from prism_rosetta_parser import prism_to_mut
 import rosetta_paths
 import run_modes
 import storeinputs
@@ -144,10 +146,17 @@ def predict_stability(args):
                     input_dict['MP_SPAN_INPUT'], folder.prepare_mp_span, name='input.span')
 
         # Making mutfiles and checks
+        if input_dict['PRIMS_INPUT'] == None:
+            new_mut_input = input_dict['MUTATION_INPUT']
+            mut_dic = get_mut_dict(input_dict['MUTATION_INPUT'])
+        else:
+            new_mut_input = os.path.join(folder.prepare_input, 'input_mutfile')
+            mut_dic = prism_to_mut(input_dict['PRISM_INPUT'], new_mut_input)
+
         logger.info(f'Generate mutfiles.')
         print(input_dict['MUTATION_INPUT'])
         check2 = structure_instance.make_mutfiles(
-            input_dict['MUTATION_INPUT'], folder.prepare_mutfiles, structure_dic, structure_instance.chain_id)
+            new_mut_input, folder.prepare_mutfiles, structure_dic, structure_instance.chain_id)
         check1 = compare_mutfile(structure_instance.fasta_seq,
                                  folder.prepare_mutfiles, folder.prepare_checking, mutation_input)
         check3, errors = pdbxmut(folder.prepare_mutfiles, structure_dic)
@@ -160,12 +169,13 @@ def predict_stability(args):
             sys.exit()
 
         # Create hard link to mutfile directory and to output structure
-        prepare_output_ddg_mutfile_dir = create_copy(
-            folder.prepare_mutfiles, folder.prepare_output, name='mutfiles', directory=True)
         prepare_output_struc = create_copy(
             structure_instance.path_to_cleaned_pdb, folder.prepare_output, name='output.pdb')
         if args.IS_MP == True:
             prepare_output_span_dir = create_copy(folder.prepare_mp_span, f'{folder.prepare_output}', name='spanfiles', directory=True)
+        else:
+            prepare_output_ddg_mutfile_dir = create_copy(
+                folder.prepare_mutfiles, folder.prepare_output, name='mutfiles', directory=True)
 
         # Copy files for relax & run
         relax_input_struc = create_copy(
@@ -194,10 +204,9 @@ def predict_stability(args):
             # Parse sbatch ddg file
             ddg_input_ddgfile = create_copy(
                 input_dict['DDG_FLAG_FILE'], folder.ddG_input, name='ddg_flagfile')
-            ddg_input_mutfile_dir = create_copy(
-                prepare_output_ddg_mutfile_dir, folder.ddG_input, name='mutfiles', directory=True)
-            path_to_ddg_calc_sbatch = structure_instance.write_rosetta_cartesian_ddg_sbatch(
-                folder, ddg_input_mutfile_dir, ddgfile=ddg_input_ddgfile, sys_name=name)
+
+            path_to_ddg_calc_sbatch = mp_ddG.rosetta_ddg_mp_pyrosetta(
+                folder, mut_dic, SLURM=True, sys_name=name)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = structure_instance.write_parse_cartesian_ddg_sbatch(
                 folder)

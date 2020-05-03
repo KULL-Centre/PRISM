@@ -166,18 +166,21 @@ def mp_span_from_pdb_dssp(pdbinput, outdir_path, thickness=15, SLRUM=False):
         return spanfiles
 
 
-def rosetta_relax_mp(folder, SLURM=False, num_struc=3, sys_name='mp', partition='sbinlab'):
+def rosetta_relax_mp(folder, SLURM=False, num_struc=3, sys_name='mp', partition='sbinlab', repeats=2, lipid_type='DLPC'):
     Rosetta_script_exec = os.path.join(
         rosetta_paths.path_to_rosetta, f'bin/rosetta_scripts.{rosetta_paths.Rosetta_extension}')
     relax_command = (f'{Rosetta_script_exec} '
                       # Use the membrane relax protocol Rosetta script
                       f'-parser:protocol {os.path.join(folder.relax_input, "relax.xml")} '
+                      # Repeatition of FastRelax
+                      f'-parser:script_vars repeats={repeats}'
                       # Input PDB Structure: PDB file for protein structure
                       f'-in:file:s {os.path.join(folder.relax_input, "input.pdb")} '
                       # Spanfile describing trans-membrane spans of the
                       # starting structure
                       f'-mp:setup:spanfiles {os.path.join(folder.relax_input, "spanfiles/input.span")} '
                       '-mp:scoring:hbond '  # Turn on membrane depth-dependent hydrogen bonding weight
+                      f'-mp:lipids:composition {lipid_type}'
                       # Use the FastRelax mode of Rosetta Relax (uses 5-8
                       # repeat cycles)
                       '-relax:fast '
