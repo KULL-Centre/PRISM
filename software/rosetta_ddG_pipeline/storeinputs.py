@@ -55,6 +55,12 @@ def storeinputfuc(name, args, folder):
     else:
         input_dict['MUTATION_INPUT'] = None
 
+    if args.PRIMS_INPUT:
+        copyfile(args.PRIMS_INPUT, join(folder.input, 'prism_input.txt'))
+        input_dict['PRIMS_INPUT'] = join(folder.input, 'prims_input.txt')
+    else:
+        input_dict['PRIMS_INPUT'] = None
+
     if args.MP_SPAN_INPUT:
         copyfile(args.MP_SPAN_INPUT, join(folder.input, 'input.span'))
         input_dict['MP_SPAN_INPUT'] = join(folder.input, 'input.span')

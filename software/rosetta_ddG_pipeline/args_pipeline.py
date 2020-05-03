@@ -53,18 +53,23 @@ def parse_args2():
                         dest='MUTATION_INPUT',
                         help='mutation input file'
                         )
+    parser.add_argument('--prism', '-p',
+                        default=None,
+                        dest='PRIMS_INPUT',
+                        help='Prism input file to extract mutations'
+                        )
     parser.add_argument('--outputpath', '-o',
-                        default=os.getcwd() + '/Run',
+                        default=os.path.join(os.getcwd(), 'Run'),
                         dest='OUTPUT_FILE',
                         help='Output path'
                         )
     parser.add_argument('--ddgflags', '-d',
-                        default=rosetta_paths.path_to_parameters + '/cartesian_ddg_flagfile',
+                        default=os.path.join(rosetta_paths.path_to_parameters, 'cartesian_ddg_flagfile'),
                         dest='DDG_FLAG_FILE',
                         help='ddG flag file'
                         )
     parser.add_argument('--relaxflags', '-r',
-                        default=rosetta_paths.path_to_parameters + '/relax_flagfile',
+                        default=os.path.join(rosetta_paths.path_to_parameters, 'relax_flagfile'),
                         dest='RELAX_FLAG_FILE',
                         help='Relaxation flag file'
                         )
