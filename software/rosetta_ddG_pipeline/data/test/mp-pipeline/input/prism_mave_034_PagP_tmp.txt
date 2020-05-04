@@ -1,0 +1,45 @@
+# ------------------
+# version: 1
+# protein:
+#     name: PagP
+#     organism: XXX
+#     sequence: MNADEWMTTFRENIAQTWQQPEHYDLYIPAITWHARFAYNERPWGGGFGLSRWDEKGNWHGLYAMAFKDSWNKWEPIAGYGWESTWRPLADENFHLGLGFTAGVTARDNWNYIPLPVLLPLASVGYGPVTFQMTYIPGTYNNGNVYFAWMRFQFL
+#     uniprot: XXX
+# mave:
+#     organism: XXX
+#     cloning: 0
+#     expression: 0
+#     technology: XX
+#     doi: XXX
+#     year: 9999
+# variants:
+#     number: 20
+#     coverage: 0.01
+#     width: single-mutant
+# columns:
+#     score: XXX
+# --------------------
+#
+# version 1 - May 2020 - johanna.tiemann@gmail.com
+#
+variant	score
+V104A 0.00
+V104C -0.72
+V104D 2.49
+V104E 1.18
+V104F -2.44
+V104G 1.64
+V104H 3.32
+V104I -2.17
+V104K 3.54
+V104L -2.01
+V104M -1.15
+V104N -2.95
+V104P 3.82
+V104Q 2.54
+V104R 3.22
+V104S 1.83
+V104T 0.95
+V104V -1.75
+V104W -2.21
+V104Y -1.02

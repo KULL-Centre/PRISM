@@ -26,7 +26,8 @@ from helper import create_symlinks, create_copy, find_copy, get_mut_dict
 import mp_prepare
 import mp_ddG
 from pdb_to_fasta_seq import pdb_to_fasta_seq
-from prism_rosetta_parser import prism_to_mut
+from plotting import plot_all
+from prism_rosetta_parser import prism_to_mut, read_from_prism
 import rosetta_paths
 import run_modes
 import storeinputs
@@ -47,7 +48,7 @@ def predict_stability(args):
     overwrite_path = args.OVERWRITE_PATH
     relaxfile = args.RELAX_FLAG_FILE
     structure_list = args.STRUC_FILE
-    uniprot_accesion = args.UNIPROT_ID
+    uniprot_accesion = ''  # args.UNIPROT_ID
     run_struc = args.RUN_STRUC
     ligand = args.LIGAND
     mp_span = args.MP_SPAN_INPUT
@@ -93,7 +94,7 @@ def predict_stability(args):
                     structure_instance.path = os.path.join(
                         folder.prepare_mp_superpose, f'{run_name}.pdb')
                     mp_prepare.mp_superpose_opm(
-                        args.MP_ALIGN_REF, prep_struc, structure_instance.path, write_opm=True)
+                        args.MP_ALIGN_REF, prep_struc, structure_instance.path, target_chain=structure_instance.chain_id, write_opm=True)
                 elif args.UNIPROT_ID != '':
                     logger.error('Uniprot-ID to ref pdb not implemented yet')
                     sys.exit()
@@ -146,7 +147,8 @@ def predict_stability(args):
                     input_dict['MP_SPAN_INPUT'], folder.prepare_mp_span, name='input.span')
 
         # Making mutfiles and checks
-        if input_dict['PRIMS_INPUT'] == None:
+        print(f'Convert prism file if present: {input_dict["PRISM_INPUT"]}')
+        if input_dict['PRISM_INPUT'] == None:
             new_mut_input = input_dict['MUTATION_INPUT']
             mut_dic = get_mut_dict(input_dict['MUTATION_INPUT'])
         else:
@@ -158,7 +160,7 @@ def predict_stability(args):
         check2 = structure_instance.make_mutfiles(
             new_mut_input, folder.prepare_mutfiles, structure_dic, structure_instance.chain_id)
         check1 = compare_mutfile(structure_instance.fasta_seq,
-                                 folder.prepare_mutfiles, folder.prepare_checking, mutation_input)
+                                 folder.prepare_mutfiles, folder.prepare_checking, new_mut_input)
         check3, errors = pdbxmut(folder.prepare_mutfiles, structure_dic)
         check2 = False
 
@@ -199,17 +201,19 @@ def predict_stability(args):
 
             # Parse sbatch relax parser
             path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(
-                folder, sys_name='relax_scores')
+                folder, sys_name=f'{name}_relax', sc_name='relax_scores')
 
             # Parse sbatch ddg file
             ddg_input_ddgfile = create_copy(
                 input_dict['DDG_FLAG_FILE'], folder.ddG_input, name='ddg_flagfile')
+            ddg_input_span_dir = create_copy(
+                prepare_output_span_dir, folder.ddG_input, name='spanfiles', directory=True)
 
             path_to_ddg_calc_sbatch = mp_ddG.rosetta_ddg_mp_pyrosetta(
                 folder, mut_dic, SLURM=True, sys_name=name)
             # Parse sbatch ddg parser
-            path_to_parse_ddg_sbatch = structure_instance.write_parse_cartesian_ddg_sbatch(
-                folder)
+            path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
+                folder, uniprot=args.UNIPROT_ID, sys_name=name, output_name='ddG.out', partition='sbinlab')
         else:
             # Parse sbatch relax file
             relax_input_relaxfile = create_copy(
@@ -229,7 +233,7 @@ def predict_stability(args):
                 folder, ddg_input_mutfile_dir, ddgfile=ddg_input_ddgfile, sys_name=name)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = structure_instance.write_parse_cartesian_ddg_sbatch(
-                folder)
+                folder, structure_instance.fasta_seq, structure_instance.chain_id, sys_name=name, partition='sbinlab')
 
     # Execution
     # Single SLURM execution
@@ -240,6 +244,9 @@ def predict_stability(args):
 
     if mode == 'ddg_calculation':
         run_modes.ddg_calculation(folder)
+
+    if mode == 'analysis':
+        plot_all(folder, sys_name=name)
 
     # Full SLURM execution
     if mode == 'proceed' or mode == 'fullrun':

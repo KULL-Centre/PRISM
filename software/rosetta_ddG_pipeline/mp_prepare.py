@@ -24,7 +24,7 @@ import rosetta_paths
 from mp_helper import extract_from_opm
 
 
-def mp_superpose_opm(reference, target, filename,
+def mp_superpose_opm(reference_chain, target, filename, target_chain='A',
                      ref_model_id=0, target_model_id=0,
                      ref_align_atoms=[], target_align_atoms=[], write_opm=False):
     # Adapted from https://gist.github.com/andersx/6354971
@@ -40,6 +40,8 @@ def mp_superpose_opm(reference, target, filename,
         else:
             logger.info("Obtain structure from OPM: successful")
         return ref_struc
+    reference = reference_chain.split('_')[0]
+    ref_chain = reference_chain.split('_')[1]
     ref_struc = get_ref_struc(reference)
     # Parse reference (from string) and target structure (from file)
     parser = PDB.PDBParser(QUIET=True)
@@ -49,19 +51,24 @@ def mp_superpose_opm(reference, target, filename,
     # Select the model number - normally always the first
     bio_ref_struc = bio_ref_struc_raw[ref_model_id]
     bio_target_struc = bio_target_struc_raw[target_model_id]
+
     # List of residues to align
     align_ref_atoms = []
-    for res in bio_ref_struc.get_residues():
-        if ref_align_atoms == [] or res.get_id()[1] in ref_align_atoms:
-            for atom in res:
-                if atom.get_name() == 'CA':
-                    align_ref_atoms.append(atom)
+    for ind, chain in enumerate(bio_ref_struc_raw.get_chains()):
+        if chain.id == ref_chain:
+            for res in chain.get_residues():  # bio_ref_struc.get_residues():
+                if ref_align_atoms == [] or res.get_id()[1] in ref_align_atoms:
+                    for atom in res:
+                        if atom.get_name() == 'CA':
+                            align_ref_atoms.append(atom)
     align_target_atoms = []
-    for res in bio_target_struc.get_residues():
-        if target_align_atoms == [] or res.get_id()[1] in target_align_atoms:
-            for atom in res:
-                if atom.get_name() == 'CA':
-                    align_target_atoms.append(atom)
+    for ind, chain in enumerate(bio_target_struc.get_chains()):
+        if chain.id == target_chain:
+            for res in chain.get_residues():  # bio_target_struc.get_residues():
+                if target_align_atoms == [] or res.get_id()[1] in target_align_atoms:
+                    for atom in res:
+                        if atom.get_name() == 'CA':
+                            align_target_atoms.append(atom)
     # Superposer
     super_imposer = PDB.Superimposer()
     super_imposer.set_atoms(align_ref_atoms, align_target_atoms)
@@ -80,14 +87,14 @@ def mp_superpose_opm(reference, target, filename,
         logger.info(f"write_opm set to true - OPM structure saved")
 
 
-def mp_span_from_pdb_octopus(pdbinput, outdir_path, SLRUM=False):
+def mp_span_from_pdb_octopus(pdbinput, outdir_path, SLURM=False):
 
     Rosetta_span_exec = os.path.join(
         rosetta_paths.path_to_rosetta, 'bin/spanfile_from_pdb.{rosetta_paths.Rosetta_extension}')
     span_command = f'{Rosetta_span_exec} -in:file:s {pdbinput}'
     logger.info(f"Span call function: {span_command}")
 
-    if SLRUM:
+    if SLURM:
         logger.warn("need to write the slurm script!")
         span_call = subprocess.Popen('sbatch rosetta_span.sbatch', stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT, shell=True, cwd=outdir_path)
@@ -116,7 +123,7 @@ def mp_span_from_pdb_octopus(pdbinput, outdir_path, SLRUM=False):
         return spanfiles
 
 
-def mp_span_from_pdb_dssp(pdbinput, outdir_path, thickness=15, SLRUM=False):
+def mp_span_from_pdb_dssp(pdbinput, outdir_path, thickness=15, SLURM=False):
     """
     Calculates the membrane spanning Rosetta input file for membrane proteins using the pdb orientation and dssp. 
     Rosetta scripts used: mp_span_from_pdb
@@ -126,7 +133,7 @@ def mp_span_from_pdb_dssp(pdbinput, outdir_path, thickness=15, SLRUM=False):
     """
 
     Rosetta_span_exec = os.path.join(
-        rosetta_paths.path_to_rosetta, 'bin/mp_span_from_pdb.{rosetta_paths.Rosetta_extension}')
+        rosetta_paths.path_to_rosetta, f'bin/mp_span_from_pdb.{rosetta_paths.Rosetta_extension}')
     span_command = (f'{Rosetta_span_exec} '
                     f'-in:file:s {pdbinput} '
                     f'-mp::thickness {thickness} '
@@ -136,7 +143,7 @@ def mp_span_from_pdb_dssp(pdbinput, outdir_path, thickness=15, SLRUM=False):
                     '')
     logger.info(f"Span call function: {span_command}")
 
-    if SLRUM:
+    if SLURM:
         logger.warn("need to write the slurm script!")
         sys.exit()
         span_call = subprocess.Popen('sbatch rosetta_span.sbatch', stdout=subprocess.PIPE,
@@ -169,18 +176,22 @@ def mp_span_from_pdb_dssp(pdbinput, outdir_path, thickness=15, SLRUM=False):
 def rosetta_relax_mp(folder, SLURM=False, num_struc=3, sys_name='mp', partition='sbinlab', repeats=2, lipid_type='DLPC'):
     Rosetta_script_exec = os.path.join(
         rosetta_paths.path_to_rosetta, f'bin/rosetta_scripts.{rosetta_paths.Rosetta_extension}')
+    for root, dirs, files in os.walk(folder.relax_input):
+        for file in files:
+            if file.endswith('.span'):
+                spanfile = os.path.join(root, file)
     relax_command = (f'{Rosetta_script_exec} '
                       # Use the membrane relax protocol Rosetta script
                       f'-parser:protocol {os.path.join(folder.relax_input, "relax.xml")} '
                       # Repeatition of FastRelax
-                      f'-parser:script_vars repeats={repeats}'
+                      f'-parser:script_vars repeats={repeats} '
                       # Input PDB Structure: PDB file for protein structure
                       f'-in:file:s {os.path.join(folder.relax_input, "input.pdb")} '
                       # Spanfile describing trans-membrane spans of the
                       # starting structure
-                      f'-mp:setup:spanfiles {os.path.join(folder.relax_input, "spanfiles/input.span")} '
+                      f'-mp:setup:spanfiles {spanfile} '
                       '-mp:scoring:hbond '  # Turn on membrane depth-dependent hydrogen bonding weight
-                      f'-mp:lipids:composition {lipid_type}'
+                      f'-mp:lipids:composition {lipid_type} '
                       # Use the FastRelax mode of Rosetta Relax (uses 5-8
                       # repeat cycles)
                       '-relax:fast '

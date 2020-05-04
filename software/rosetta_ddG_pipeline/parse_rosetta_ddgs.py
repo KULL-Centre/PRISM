@@ -59,4 +59,4 @@ def parse_rosetta_ddgs(sys_name, chain_id, fasta_seq, ddG_input, ddG_output):
 
 if __name__ == '__main__':
     parse_rosetta_ddgs(sys_name=sys.argv[1], chain_id=sys.argv[
-                       2], fasta_seq=sys.argv[3], out_path=sys.argv[4])
+                       2], fasta_seq=sys.argv[3], ddG_input=sys.argv[4], ddG_output=sys.argv[5])

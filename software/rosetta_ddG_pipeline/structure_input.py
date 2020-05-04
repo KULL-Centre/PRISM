@@ -241,7 +241,7 @@ class structure:
 #                                     Creating sbatch parse relax
 ##########################################################################
 
-    def parse_relax_sbatch(self, folder, sys_name='', partition='sbinlab'):
+    def parse_relax_sbatch(self, folder, sys_name='', sc_name='score_bn15_calibrated', partition='sbinlab'):
         path_to_parse_relax_script = os.path.join(
             rosetta_paths.path_to_stability_pipeline, 'relax_parse_results.py')
 
@@ -255,7 +255,7 @@ class structure:
 
 # launching parsing script 
 ''')
-            fp.write(f'python {path_to_parse_relax_script} {folder.relax_run} {folder.relax_output} {folder.ddG_input}')
+            fp.write(f'python {path_to_parse_relax_script} {folder.relax_run} {folder.relax_output} {folder.ddG_input} {sc_name}')
         logger.info(path_to_sbatch)
         return path_to_sbatch
 
@@ -303,7 +303,7 @@ echo $INDEX
 #                                     Creating sbatch parse ddg
 ##########################################################################
 
-    def write_parse_cartesian_ddg_sbatch(self, folder, partition='sbinlab'):
+    def write_parse_cartesian_ddg_sbatch(self, folder, fasta_seq, chain_id, sys_name='input', partition='sbinlab'):
         score_sbatch_path = os.path.join(folder.ddG_input, 'parse_ddgs.sbatch')
         with open(score_sbatch_path, 'w') as fp:
             fp.write(f'''#!/bin/sh 
@@ -316,5 +316,5 @@ echo $INDEX
 #This sbatch script launches the parse parse_rosetta_ddgs function, from the parse_cartesian_ddgs 
 ''')
             fp.write((f'python3 {rosetta_paths.path_to_stability_pipeline}/parse_rosetta_ddgs.py '
-                      f'{self.sys_name} {self.chain_id} {self.fasta_seq} {folder.ddG_run} {folder.ddG_output}'))
+                      f'{sys_name} {chain_id} {fasta_seq} {folder.ddG_run} {folder.ddG_output}'))
         return score_sbatch_path
