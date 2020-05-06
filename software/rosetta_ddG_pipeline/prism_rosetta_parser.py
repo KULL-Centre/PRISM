@@ -60,10 +60,10 @@ def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=
     ddG_value = []
     with open(ddg_file, 'r') as fp:
         for line in fp:
-            split_line = line.split()
+            split_line = line.split(',')
             variant.append(split_line[0])
-            norm_ddG_value.append(split_line[3])
-            ddG_value.append(split_line[1])
+            norm_ddG_value.append(split_line[1])
+     #       ddG_value.append(split_line[1])
 
     data = {
         'variant': pd.Series(variant),
@@ -110,8 +110,8 @@ def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=
         # columns is dependent on the data. different conditions go into
         # different PRISM_files
         "columns": {
-            "norm_ddG": "Rosetta ddG values normalized to WT",
-            "ddG": "Rosetta ddG values",
+            "norm_ddG": "mean Rosetta ddG values normalized to WT",
+#            "ddG": "Rosetta ddG values",
         },
     }
 

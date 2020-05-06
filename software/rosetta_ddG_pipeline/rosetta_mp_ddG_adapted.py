@@ -161,8 +161,8 @@ def main(args):
         with open(Options.out, 'a') as f:
             ddGs = compute_ddG(repacked_native, sfxn, int(
                 Options.res), aa, Options.repack_radius, Options.output_breakdown)
-            f.write(str(native_res) +  str(Options.res) + str(ddGs[0]) + " " + str(ddGs[1]) + " " +
-                    str(ddGs[2]) + " " + str(ddGs[3]) + "\n")
+            f.write(str(native_res) +  str(Options.res) + str(ddGs[0]) + "," + str(ddGs[3]) + "," +
+                    str(ddGs[1]) + "," + str(ddGs[2]) + "\n")
         f.close
 
 ###############################################################################
