@@ -8,6 +8,7 @@ default_path = {
     'Rosetta_tools_path': '/sbinlab/software/Rosetta_tools/tools/',
     'Rosetta_database_path': '/sbinlab/software/Rosetta_2018_Oct_d557f8/database/',
     'Rosetta_extension': 'linuxgccrelease',
+    'prims_parser': '/sbinlab/tiemann/repos/PRISM/prism/scripts',
 }
 
 
@@ -26,16 +27,17 @@ Rosetta_main_path = load_env('Rosetta_main_path')
 Rosetta_tools_path = load_env('Rosetta_tools_path')
 Rosetta_database_path = load_env('Rosetta_database_path')
 Rosetta_extension = load_env('Rosetta_extension')
+prims_parser = load_env('prims_parser')
 
-print('current env paths & exec:', muscle_exec, ddG_pipeline,
-      Rosetta_main_path, Rosetta_tools_path, Rosetta_database_path, Rosetta_extension)
+print('current env paths & exec:', muscle_exec, ddG_pipeline, Rosetta_main_path,
+      Rosetta_tools_path, Rosetta_database_path, Rosetta_extension, prims_parser)
 
 # Rosetta paths
 path_to_rosetta = Rosetta_main_path
 path_to_clean_pdb = os.path.join(
-    Rosetta_tools_path, 'protein_tools/scripts/clean_pdb.py')
+    Rosetta_tools_path, 'protein_tools', 'scripts', 'clean_pdb.py')
 path_to_clean_keep_ligand = os.path.join(
-    path_to_rosetta, 'src/apps/public/relax_w_allatom_cst/clean_pdb_keep_ligand.py')
+    path_to_rosetta, 'src', 'apps', 'public', 'relax_w_allatom_cst', 'clean_pdb_keep_ligand.py')
 # Personal paths
 path_to_stability_pipeline = ddG_pipeline
 default_output_path = os.path.join(path_to_stability_pipeline, 'output')

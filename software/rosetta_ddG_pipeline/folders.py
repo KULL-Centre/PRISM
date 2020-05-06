@@ -32,7 +32,7 @@ def check_paths(dir_path, overwrite_path=True):
 
 class folder2:
 
-    def __init__(self, output_path, overwrite_path):
+    def __init__(self, output_path, overwrite_path, is_mp=False):
         # Create
         # Global folder
         self.output_path = check_paths(
@@ -53,12 +53,14 @@ class folder2:
         self.prepare_cleaning = check_paths(join(self.prepare, 'cleaning'))
         self.prepare_checking = check_paths(join(self.prepare, 'checking'))
         self.prepare_output = check_paths(join(self.prepare, 'output'))
-        # Membrane Protein sub-subfolders
-        self.prepare_mp_files = check_paths(join(self.prepare, 'mp_files'))
-        self.prepare_mp_superpose = check_paths(
-            join(self.prepare_mp_files, 'superpose'))
-        self.prepare_mp_memframe = check_paths(
-            join(self.prepare_mp_files, 'membrane_framework'))
+
+        if is_mp:
+            # Membrane Protein sub-subfolders
+            self.prepare_mp_files = check_paths(join(self.prepare, 'mp_files'))
+            self.prepare_mp_superpose = check_paths(
+                join(self.prepare_mp_files, 'superpose'))
+            self.prepare_mp_span = check_paths(
+                join(self.prepare_mp_files, 'membrane_span'))
 
         self.relax_input = check_paths(join(self.relax, 'input'))
         self.relax_run = check_paths(join(self.relax, 'run'))

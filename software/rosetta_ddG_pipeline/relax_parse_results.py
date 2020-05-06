@@ -1,17 +1,28 @@
-import sys
+"""relax_parse_results.py 
+This function will parse the results of a rosetta pre_relax run. it will be callable from an 
+sbatch script, that can wait for the relaxation to finish, and then select the best one. The 
+point is to implement the 20x pre relaxation for the stability pipeline, that Amelie requested.
+
+Author: Anders Frederiksen
+
+Date of last major changes: 2020-04
+
+"""
+
+# Standard library imports
+import logging as logger
 import os
-from helper import create_symlinks, create_copy, find_copy
-# this function will parse the results of a rosetta pre_relax run.
-# it will be callable from an sbatch script, that can wait for the relaxation to finish,
-# and then select the best one.
-# the point is to implement the 20x pre relaxation for the stability pipeline, that Amelie requested
+import sys
+
+# Local application imports
+from helper import AttrDict, create_symlinks, create_copy, find_copy
 
 
-def parse_relax_results(relax_run, path_to_run_folder, ddG_input):
+def parse_relax_results(folder, sc_name='score_bn15_calibrated', logger_mode='info'):
     '''This function parses the scorefile from a rosetta
     pre-relaxation, and selects the lowest scoring one'''
     path_to_scorefile = os.path.join(
-            relax_run, 'score_bn15_calibrated.sc')
+        folder.relax_run, f'{sc_name}.sc')
     with open(path_to_scorefile) as scorefile:
         scorelines = scorefile.readlines()
 
@@ -34,23 +45,29 @@ def parse_relax_results(relax_run, path_to_run_folder, ddG_input):
         if relax_scores[key] < relax_scores[most_relaxed]:
             most_relaxed = key
 
-    print('most relaxed structure is ', most_relaxed)
-    print('deleting the rest')
+    logger.info(f'most relaxed structure is {most_relaxed}.')
+    logger.info('deleting the rest')
     # and now delete all the structures that are not the best scoring one.
     # it seems a little crude, but whatever.
     for key in relax_scores:
         if key != most_relaxed:
-            path_to_tense = os.path.join(relax_run, f'{key}.pdb')
+            path_to_tense = os.path.join(folder.relax_run, f'{key}.pdb')
             print('deleting', path_to_tense)
             os.remove(path_to_tense)
     relax_output_strucfile = find_copy(
-            relax_run, '.pdb', path_to_run_folder, 'output.pdb')
-    
+        folder.relax_run, '.pdb', folder.relax_output, 'output.pdb')
+
     create_copy(
-            os.path.join(path_to_run_folder, 'output.pdb'), ddG_input, name='input.pdb')
-    
-    return os.path.join(path_to_run_folder, f'{most_relaxed}.pdb')
+        os.path.join(folder.relax_output, 'output.pdb'), folder.ddG_input, name='input.pdb')
+
+    return os.path.join(folder.relax_output, f'{most_relaxed}.pdb')
 
 
 if __name__ == '__main__':
-    parse_relax_results(relax_run=sys.argv[1], path_to_run_folder=sys.argv[2] ,ddG_input=sys.argv[3])
+    folder = AttrDict()
+    folder.update({'relax_run': sys.argv[1], 'relax_output': sys.argv[
+                  2], 'ddG_input': sys.argv[3]})
+    if len(sys.argv) > 4:
+        parse_relax_results(folder, sc_name=sys.argv[4])
+    else:
+        parse_relax_results(folder)
