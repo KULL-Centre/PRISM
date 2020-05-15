@@ -8,7 +8,7 @@ Date of last major changes: 2020-04-29
 """
 
 # Standard library imports
-import logging as logger
+import logging 
 import os
 import re
 import shutil
@@ -22,7 +22,7 @@ from AnalyseStruc import get_structure_parameters
 from args_pipeline import parse_args2
 from checks import compare_mutfile, pdbxmut
 from folders import folder2
-from helper import create_symlinks, create_copy, find_copy, get_mut_dict
+from helper import create_symlinks, create_copy, find_copy, get_mut_dict, read_fasta
 import mp_prepare
 import mp_ddG
 from pdb_to_fasta_seq import pdb_to_fasta_seq
@@ -32,12 +32,13 @@ import rosetta_paths
 import run_modes
 import storeinputs
 from structure_input import structure
+from make_logs import make_log
 
 
 def predict_stability(args):
-    logger.info("Starting pipeline")
+    logging.info("Starting pipeline")
     os.chdir(os.getcwd())
-    logger.info(f'Current working directory: {os.getcwd()}')
+    logging.info(f'Current working directory: {os.getcwd()}')
 
     # Obtain, redirect and adapt user arguments
     chain_id = args.CHAIN
@@ -48,10 +49,11 @@ def predict_stability(args):
     overwrite_path = args.OVERWRITE_PATH
     relaxfile = args.RELAX_FLAG_FILE
     structure_list = args.STRUC_FILE
-    uniprot_accesion = ''  # args.UNIPROT_ID
+    uniprot_accesion = args.UNIPROT_ID
     run_struc = args.RUN_STRUC
     ligand = args.LIGAND
     mp_span = args.MP_SPAN_INPUT
+    verbose = args.VERBOSE
 
     if run_struc == None:
         run_struc = chain_id
@@ -60,6 +62,7 @@ def predict_stability(args):
 
     # Initiate folder structure
     folder = folder2(outpath, overwrite_path, is_mp=args.IS_MP)
+    logger = make_log(folder,verbose)
 
     # Store input files
     input_dict = storeinputs.storeinputfuc(name, args, folder)
@@ -79,10 +82,7 @@ def predict_stability(args):
 
         # Create structure instance
         logger.info(f'Creating structure instance')
-        structure_instance = structure()
-        structure_instance.sys_name = name
-        structure_instance.chain_id = chain_id
-        structure_instance.path = prep_struc
+        structure_instance = structure(chain_id,name,folder,prep_struc,run_struc,uniprot_accesion=uniprot_accesion)
         run_name = 'input'
 
         # adjust mp structure if MP_ALIGN_MODE is selected
@@ -108,22 +108,19 @@ def predict_stability(args):
                 sys.exit()
 
         structure_dic = get_structure_parameters(
-            folder.prepare_checking, structure_instance.path, structure_instance.chain_id)
+            folder.prepare_checking, prep_struc, structure_instance.chain_id)
 
         # Cleaning pdb and making fasta based on pdb or uniprot-id if provided
         logger.info(f'Prepare the pdb and extract fasta file')
-        structure_instance.path_to_cleaned_pdb = structure_instance.clean_up_and_isolate(
-            folder.prepare_cleaning, structure_instance.path, structure_instance.chain_id, run_struc, name=run_name, ligand=ligand)
+        structure_instance.path_to_cleaned_pdb = structure_instance.clean_up_and_isolate()
         structure_instance.fasta_seq = pdb_to_fasta_seq(
             structure_instance.path_to_cleaned_pdb)
         if uniprot_accesion != "":
-            structure_instance.uniprot_seq = structure_instance.read_fasta(
+            structure_instance.uniprot_seq = read_fasta(
                 uniprot_accesion)
-            structure_instance.muscle_align_to_uniprot(
-                folder.prepare_checking, structure_instance.uniprot_seq)
+            structure_instance.muscle_align_to_uniprot(structure_instance.uniprot_seq)
         else:
-            structure_instance.muscle_align_to_uniprot(
-                folder.prepare_checking, structure_instance.fasta_seq)
+            structure_instance.muscle_align_to_uniprot(structure_instance.fasta_seq)
 
         # Get span file for mp from cleaned file if not provided
         if args.IS_MP == True:
@@ -150,7 +147,7 @@ def predict_stability(args):
         print(f'Convert prism file if present: {input_dict["PRISM_INPUT"]}')
         if input_dict['PRISM_INPUT'] == None:
             new_mut_input = input_dict['MUTATION_INPUT']
-            mut_dic = get_mut_dict(input_dict['MUTATION_INPUT'])
+        #    mut_dic = get_mut_dict(input_dict['MUTATION_INPUT'])
         else:
             new_mut_input = os.path.join(folder.prepare_input, 'input_mutfile')
             mut_dic = prism_to_mut(input_dict['PRISM_INPUT'], new_mut_input)
@@ -158,7 +155,7 @@ def predict_stability(args):
         logger.info(f'Generate mutfiles.')
         print(input_dict['MUTATION_INPUT'])
         check2 = structure_instance.make_mutfiles(
-            new_mut_input, folder.prepare_mutfiles, structure_dic, structure_instance.chain_id)
+            new_mut_input)
         check1 = compare_mutfile(structure_instance.fasta_seq,
                                  folder.prepare_mutfiles, folder.prepare_checking, new_mut_input)
         check3, errors = pdbxmut(folder.prepare_mutfiles, structure_dic)
@@ -233,7 +230,7 @@ def predict_stability(args):
                 folder, ddg_input_mutfile_dir, ddgfile=ddg_input_ddgfile, sys_name=name)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = structure_instance.write_parse_cartesian_ddg_sbatch(
-                folder, structure_instance.fasta_seq, structure_instance.chain_id, sys_name=name, partition='sbinlab')
+                folder,  partition='sbinlab')
 
     # Execution
     # Single SLURM execution
@@ -252,12 +249,6 @@ def predict_stability(args):
     if mode == 'proceed' or mode == 'fullrun':
         # Start relax calculation
         parse_relax_process_id = run_modes.relaxation(folder)
-        # relax_output_strucfile = find_copy(
-        # folder.relax_run, '.pdb', folder.relax_output, 'output.pdb')
-        # Start ddG calculation
-        # ddg_input_struc = create_copy(
-        # os.path.join(folder.relax_output, 'output.pdb'), folder.ddG_input,
-        # name='input.pdb')
         run_modes.ddg_calculation(folder, parse_relax_process_id)
         ddg_output_score = find_copy(
             folder.ddG_run, '.sc', folder.ddG_output, 'output.sc')

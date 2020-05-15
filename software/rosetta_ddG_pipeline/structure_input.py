@@ -19,69 +19,65 @@ import numpy as np
 # Local application imports
 import pdb_to_fasta_seq
 import rosetta_paths
-
-
+from AnalyseStruc import get_structure_parameters
+from helper import read_fasta
 
 
 class structure:
-
-    ##########################################################################
-    #                                   Cleaning and isolating pdb
-    ##########################################################################
-
-    def clean_up_and_isolate(self, input_cleaning, path_to_pdb, chains, run_struc, name='input',ligand=None):
+    
+    def __init__(self,chain_id,name,folder,prep_struc,run_struc,uniprot_accesion=''):
+        self.chain_id=chain_id
+        self.sys_name=name
+        self.prep_struc=prep_struc
+        self.struc_dic= get_structure_parameters(
+            folder.prepare_checking, self.prep_struc,self.chain_id)
+        self.run_struc=run_struc
+        self.folder=folder
+        
+        if uniprot_accesion != '':
+            print(uniprot_accesion)
+            self.uniprot_seq = read_fasta(uniprot_accesion)
+        self.name='input'
+        
+    def clean_up_and_isolate(self, name='input',ligand=None):
+        
         if  ligand == None:
             
-            path_to_clean_pdb = rosetta_paths.path_to_clean_pdb
+            self.path_to_clean_pdb = rosetta_paths.path_to_clean_pdb
     
-            shell_command = f'python2 {path_to_clean_pdb} {path_to_pdb} {run_struc}'
+            shell_command = f'python2 {self.path_to_clean_pdb} {self.prep_struc} {self.run_struc}'
             print('here is some output from the clean_pdb.py script')
-            subprocess.call(shell_command, cwd=input_cleaning, shell=True)
+            subprocess.call(shell_command, cwd=self.folder.prepare_cleaning, shell=True)
             print('end of output from clean_pdb.py')
     
-            self.path_to_cleaned_pdb = os.path.join(input_cleaning, f'{name}_{run_struc}.pdb')
-            print(str(run_struc))
-            if type(run_struc) != list:
-                run_struc = [run_struc]
-            for chain in run_struc:
-                self.path_to_cleaned_fasta = os.path.join(input_cleaning, f'{name}_{chain}.fasta')
+            self.path_to_cleaned_pdb = os.path.join(self.folder.prepare_cleaning, f'{name}_{self.run_struc}.pdb')
+            path_to_cleaned_pdb=self.path_to_cleaned_pdb
+            for chain in list(str(self.run_struc)):
+                self.path_to_cleaned_fasta = os.path.join(self.folder.prepare_cleaning, f'{name}_{chain}.fasta')
                 fasta_lines = open(self.path_to_cleaned_fasta, 'r').readlines()
                 self.fasta_seq = ''
         
                 for line in fasta_lines[1:]:
                     self.fasta_seq = self.fasta_seq + line.strip()
-                    
+        #path_to_clean_pdb=self.path_to_clean_pdb            
         if ligand == True:
-            path_to_clean_pdb = rosetta_paths.path_to_clean_keep_ligand
+            self.path_to_clean_pdb = rosetta_paths.path_to_clean_keep_ligand
             
-            shell_command = f'python2 {path_to_clean_pdb} {path_to_pdb} {chains}'
+            shell_command = f'python2 {self.path_to_clean_pdb} {self.prep_struc} {self.chain_id}'
             print('here is some output from the clean_pdb_keep_ligand.py script')
-            subprocess.call(shell_command, cwd=input_cleaning, shell=True)
+            subprocess.call(shell_command, cwd=self.folder.prepare_cleaning, shell=True)
             print('end of output from clean_pdb_keep_ligand.py')
-            self.path_to_cleaned_pdb = os.path.join(input_cleaning, f'{name}_{run_struc}.pdb{chains}.pdb')
-        return(self.path_to_cleaned_pdb)
+            path_to_cleaned_pdb = os.path.join(self.folder.prepare_cleaning, f'{name}.pdb{self.chain_id}.pdb')
+            #path_to_clean_pdb=self.path_to_clean_pdb
+        return(path_to_cleaned_pdb)
 
-    def read_fasta(self, uniprot_accesion):
 
-        fastau_file = open(uniprot_accesion, 'r')
-        fastau_lines = fastau_file.readlines()
-        fastau_file.close()
-        self.uniprot_seq = ''
 
-        for line in fastau_lines[1:]:
-            self.uniprot_seq = self.uniprot_seq + line.strip()
-
-        return(self.uniprot_seq)
-
-##########################################################################
-#                                   Alignment to uniprot
-##########################################################################
-
-    def muscle_align_to_uniprot(self, input_checking, uniprot_sequence):
+    def muscle_align_to_uniprot(self, uniprot_sequence,name='input'):
 
         path_to_muscle = rosetta_paths.path_to_muscle
-        self.path_to_fasta = os.path.join(input_checking, 'fasta_file.fasta')
-        self.path_to_alignment = os.path.join(input_checking, 'alignment.txt')
+        self.path_to_fasta = os.path.join(self.folder.prepare_checking, 'fasta_file.fasta')
+        self.path_to_alignment = os.path.join(self.folder.prepare_checking, 'alignment.txt')
         with open(self.path_to_fasta, 'w') as fasta_file:
             fasta_file.write('>{}_structure_sequence\n'.format(self.sys_name))
             fasta_file.write('{}\n'.format(self.fasta_seq))
@@ -129,7 +125,7 @@ class structure:
 
         self.structure_index_numbers = structure_index_numbers
 
-        self.path_to_index_string = os.path.join(input_checking, 'uniprot_index_list.txt')
+        self.path_to_index_string = os.path.join(self.folder.prepare_checking, 'uniprot_index_list.txt')
         with open(self.path_to_index_string, 'w') as index_file:
             index_list_as_string = '\n'.join(structure_index_numbers)
             index_file.write(str(index_list_as_string))
@@ -137,14 +133,12 @@ class structure:
         path_to_index_string = self.path_to_index_string
         return(path_to_index_string)
 
-##########################################################################
-#                                     Making mutfiles
-##########################################################################
 
-    def make_mutfiles(self, mutation_input, path_to_mutfiles,structure_dic,chain_id):
+    def make_mutfiles(self, mutation_input):
         check2 = False
-        resdata = structure_dic["resdata"]
-        strucdata = structure_dic["strucdata"]
+        
+        resdata = self.struc_dic["resdata"]
+        strucdata = self.struc_dic["strucdata"]
         
         path_to_alignment = self.path_to_index_string
         alignment = np.loadtxt(path_to_alignment)
@@ -184,7 +178,7 @@ class structure:
                 print(mutate[residue_number][0],
                       residue_number, ''.join(final_list))
 
-                mutfile = open(os.path.join(path_to_mutfiles, f'mutfile{str(residue_number_ros):0>5}'), 'w')
+                mutfile = open(os.path.join(self.folder.prepare_mutfiles, f'mutfile{str(residue_number_ros):0>5}'), 'w')
                 
                 mutfile.write('total ' + str(len(final_list)))
                 for AAtype in final_list:
@@ -192,30 +186,30 @@ class structure:
                     mutfile.write(self.fasta_seq[
                                   residue_number_ros - 1] + ' ' + str(residue_number_ros) + ' ' + AAtype)
                 mutfile.close()
-
+        
         if mutation_input == None:
+            print(resdata)
+            
+            
             print("Printing mutfiles!")
             for residue_number_ros in resdata:
-                if resdata[residue_number_ros][2] == chain_id:
-                    mutfile = open(os.path.join(path_to_mutfiles, f'mutfile{str(residue_number_ros):0>5}'), 'w')
+                if resdata[residue_number_ros][2] == self.chain_id:
+                    mutfile = open(os.path.join(self.folder.prepare_mutfiles, f'mutfile{str(residue_number_ros):0>5}'), 'w')
                     mutfile.write('total 20')
     
                     # and then a line for each type of AA
                     for AAtype in 'ACDEFGHIKLMNPQRSTVWY':
                         mutfile.write('\n1\n')
-                        mutfile.write(strucdata[chain_id][residue_number_ros-1] + ' ' + str(residue_number_ros) + ' ' + AAtype )
+                        mutfile.write(strucdata[self.chain_id][residue_number_ros-1] + ' ' + str(residue_number_ros) + ' ' + AAtype )
                     mutfile.close()
         return(check2)
 
-##########################################################################
-#                                     Creating sbatch relax
-##########################################################################
 
     def rosetta_sbatch_relax(self, folder, relaxfile='', sys_name='', partition='sbinlab'):
-        structure_path = os.path.join(folder.relax_input, 'input.pdb')
+        structure_path = os.path.join(self.folder.relax_input, 'input.pdb')
 
         path_to_sbatch = os.path.join(
-            folder.relax_input, 'rosetta_relax.sbatch')
+            self.folder.relax_input, 'rosetta_relax.sbatch')
         if relaxfile == '':
             path_to_relaxflags = os.path.join(
                 folder.relax_input, 'relax_flagfile')
@@ -237,15 +231,12 @@ class structure:
         logger.info(path_to_sbatch)
         return(path_to_sbatch)
 
-##########################################################################
-#                                     Creating sbatch parse relax
-##########################################################################
 
-    def parse_relax_sbatch(self, folder, sys_name='', sc_name='score_bn15_calibrated', partition='sbinlab'):
+    def parse_relax_sbatch(self, folder, sys_name='', partition='sbinlab'):
         path_to_parse_relax_script = os.path.join(
             rosetta_paths.path_to_stability_pipeline, 'relax_parse_results.py')
 
-        path_to_sbatch = os.path.join(folder.relax_input, 'parse_relax.sbatch')
+        path_to_sbatch = os.path.join(self.folder.relax_input, 'parse_relax.sbatch')
         with open(path_to_sbatch, 'w') as fp:
             fp.write(f'''#!/bin/sh
 #SBATCH --job-name=parse_relax_rosetta_{sys_name}
@@ -255,24 +246,21 @@ class structure:
 
 # launching parsing script 
 ''')
-            fp.write(f'python {path_to_parse_relax_script} {folder.relax_run} {folder.relax_output} {folder.ddG_input} {sc_name}')
+            fp.write(f'python {path_to_parse_relax_script} {folder.relax_run} {folder.relax_output} {folder.ddG_input}')
         logger.info(path_to_sbatch)
         return path_to_sbatch
 
-##########################################################################
-#                                     Creating sbatch Rosetta cartesian
-##########################################################################
 
     def write_rosetta_cartesian_ddg_sbatch(self, folder, input_mutfiles='', ddgfile='', sys_name='', partition='sbinlab'):
-        path_to_sbatch = os.path.join(folder.ddG_input, 'rosetta_ddg.sbatch')
-        structure_path = os.path.join(folder.ddG_input, 'input.pdb')
-        relax_input = os.path.join(folder.ddG_input, 'input.pdb')
+        path_to_sbatch = os.path.join(self.folder.ddG_input, 'rosetta_ddg.sbatch')
+        structure_path = os.path.join(self.folder.ddG_input, 'input.pdb')
+        relax_input = os.path.join(self.folder.ddG_input, 'input.pdb')
         if input_mutfiles == '':
-            input_mutfiles = os.path.join(folder.ddG_input, 'mutfiles')
+            input_mutfiles = os.path.join(self.folder.ddG_input, 'mutfiles')
         if ddgfile == '':
             # path_to_ddgflags = os.path.join(
             # rosetta_paths.path_to_parameters, 'cartesian_ddg_flagfile')
-            path_to_ddgflags = os.path.join(folder.ddG_input, 'ddg_flagfile')
+            path_to_ddgflags = os.path.join(self.folder.ddG_input, 'ddg_flagfile')
         else:
             path_to_ddgflags = ddgfile
 
@@ -299,12 +287,9 @@ echo $INDEX
         logger.info(path_to_sbatch)
         return path_to_sbatch
 
-##########################################################################
-#                                     Creating sbatch parse ddg
-##########################################################################
 
-    def write_parse_cartesian_ddg_sbatch(self, folder, fasta_seq, chain_id, sys_name='input', partition='sbinlab'):
-        score_sbatch_path = os.path.join(folder.ddG_input, 'parse_ddgs.sbatch')
+    def write_parse_cartesian_ddg_sbatch(self, folder, partition='sbinlab'):
+        score_sbatch_path = os.path.join(self.folder.ddG_input, 'parse_ddgs.sbatch')
         with open(score_sbatch_path, 'w') as fp:
             fp.write(f'''#!/bin/sh 
 #SBATCH --job-name=collect_rosetta_ddgs_{self.sys_name} 
@@ -316,5 +301,5 @@ echo $INDEX
 #This sbatch script launches the parse parse_rosetta_ddgs function, from the parse_cartesian_ddgs 
 ''')
             fp.write((f'python3 {rosetta_paths.path_to_stability_pipeline}/parse_rosetta_ddgs.py '
-                      f'{sys_name} {chain_id} {fasta_seq} {folder.ddG_run} {folder.ddG_output}'))
+                      f'{self.sys_name} {self.chain_id} {self.fasta_seq} {folder.ddG_run} {folder.ddG_output}'))
         return score_sbatch_path

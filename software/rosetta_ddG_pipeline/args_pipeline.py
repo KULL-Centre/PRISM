@@ -162,7 +162,8 @@ def parse_args2():
                               )
                         )
     parser.add_argument('--mp_relax_xml',
-                        default=os.path.join(rosetta_paths.path_to_parameters, 'mp_relax.xml'),
+                        #default=os.path.join(rosetta_paths.path_to_parameters, 'mp_relax.xml'),
+                        default=None,
                         dest='RELAX_XML_INPUT',
                         help='Relaxation xml file for membrane pipeline'
                         )
@@ -176,6 +177,11 @@ def parse_args2():
                         default='sbinlab',
                         dest='SLURM_PARTITION',
                         help='Partition to run the SLURM jobs'
+                        )
+    parser.add_argument('--verbose',
+                        default=False,
+                        dest='VERBOSE',
+                        help='Make pipeline more verbose'
                         )
     args = parser.parse_args()
 

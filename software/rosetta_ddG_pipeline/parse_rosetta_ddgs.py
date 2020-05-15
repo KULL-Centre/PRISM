@@ -47,7 +47,7 @@ def parse_rosetta_ddgs(sys_name, chain_id, fasta_seq, ddG_input, ddG_output):
             if a in str(list_keys):
 
                 line.append(rosetta_cartesian_ddgs_dict[str(a)])
-                print(rosetta_cartesian_ddgs_dict[str(a)])
+                
             else:
                 line.append('-')
         scorefile.write(scorefile_line.format(i, line[0 + (i - 1) * 20], line[1 + (i - 1) * 20], line[2 + (i - 1) * 20], line[3 + (i - 1) * 20], line[4 + (i - 1) * 20], line[5 + (i - 1) * 20], line[6 + (i - 1) * 20], line[7 + (i - 1) * 20], line[8 + (i - 1) * 20], line[9 + (
