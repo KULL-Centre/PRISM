@@ -67,5 +67,5 @@ def get_mut_dict(mutfile):
     with open(mutfile, 'r') as fp:
         for line in fp:
             muts = line.split()
-            mut_dict[muts[1]] = muts[0] + muts[2]
+            mut_dic[muts[1]] = muts[0] + muts[2]
     return mut_dic

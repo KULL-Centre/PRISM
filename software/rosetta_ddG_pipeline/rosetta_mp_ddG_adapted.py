@@ -8,7 +8,7 @@
 
 ## @file: compute_ddG.py
 ##
-## @brief: 	 Compute ddGs of mutation
+## @brief:   Compute ddGs of mutation
 ## @details: Use the Rosetta membrane framework to compute the ddG of unfolding of
 ## a membrane protein in Rosetta (uses packer, mutate.py from Evan Baugh)
 ##
@@ -21,21 +21,24 @@
 
 # Tools
 import sys, os
-import commands
-import random
+##import commands
+##import random
 from optparse import OptionParser, IndentedHelpFormatter
 _script_path_ = os.path.dirname( os.path.realpath(__file__) )
 
 # Rosetta-specific imports
-import rosetta.protocols.membrane
-from rosetta import Pose
-from rosetta import create_score_function
-from rosetta import TaskFactory
+from rosetta import *
+#pyrosetta.init()
+
+import pyrosetta.rosetta.protocols.membrane
+from pyrosetta.rosetta.core.pose import Pose
+from pyrosetta import create_score_function
+from pyrosetta.rosetta.core.pack.task  import TaskFactory
 from rosetta.utility import vector1_bool
-from rosetta import aa_from_oneletter_code
-from rosetta import PackRotamersMover
-from rosetta.core.pose import PDBInfo
-from rosetta.core.chemical import VariantType
+from pyrosetta.rosetta.core.chemical import aa_from_oneletter_code
+from pyrosetta.rosetta.protocols.minimization_packing  import PackRotamersMover
+from pyrosetta.rosetta.core.pose import PDBInfo
+from pyrosetta.rosetta.core.chemical import VariantType
 
 ###############################################################################
 
@@ -89,13 +92,13 @@ def main( args ):
 
     # Check the required inputs (PDB file, spanfile) are present
     if ( not Options.in_pdb or not Options.in_span or not Options.res ):
-	    sys.exit( "Must provide flags '-in_pdb', '-in_span', and '-res'! Exiting..." )
+        sys.exit( "Must provide flags '-in_pdb', '-in_span', and '-res'! Exiting..." )
 
     # Initialize Rosetta options from user options. Enable pH mode if applicable
     rosetta_options = ""
-    standard_options = "-membrane_new:setup:spanfiles " + Options.in_span +  " -run:constant_seed -in:ignore_unrecognized_res"
+    standard_options = "-mp:setup:spanfiles " + Options.in_span +  " -run:constant_seed -in:ignore_unrecognized_res"
     if ( Options.include_pH ):
-        print Options.pH_value
+        print(Options.pH_value)
         if ( float( Options.pH_value ) < 0 or float(Options.pH_value) > 14 ):
             sys.exit( "Specified pH value must be between 0-14: Exiting..." )
         else:
@@ -105,21 +108,21 @@ def main( args ):
         rosetta_options = standard_options
 
     # Initialize Rosetta based on user inputs
-    rosetta.init( extra_options=rosetta_options )
+    pyrosetta.init( extra_options=rosetta_options )
 
     # Load Pose, & turn on the membrane
-    pose = pose_from_file( Options.in_pdb )
+    pose = pyrosetta.rosetta.core.import_pose.pose_from_file( Options.in_pdb )
 
     # Add Membrane to Pose
-    add_memb = rosetta.protocols.membrane.AddMembraneMover()
+    add_memb = pyrosetta.rosetta.protocols.membrane.AddMembraneMover()
     add_memb.apply( pose )
 
     # Setup in a topology based membrane
-    init_mem_pos = rosetta.protocols.membrane.MembranePositionFromTopologyMover()
+    init_mem_pos = pyrosetta.rosetta.protocols.membrane.MembranePositionFromTopologyMover()
     init_mem_pos.apply( pose )
 
     # check the user has specified a reasonable value for the pH
-    sfxn = rosetta.core.scoring.ScoreFunction()
+    sfxn = pyrosetta.rosetta.core.scoring.ScoreFunction()
     if ( Options.include_pH ):
 
         # Create a membrane energy function enabled by pH mode
@@ -130,7 +133,7 @@ def main( args ):
     else:
 
         # Create a smoothed membrane full atom energy function (pH 7 calculations)
-        sfxn = create_score_function( "mpframework_smooth_fa_2014")
+        sfxn = create_score_function( "franklin2019")
 
     # Repack the native rotamer and residues within the repack radius
     native_res = pose.residue( int( Options.res ) ).name1()
@@ -146,7 +149,7 @@ def main( args ):
     else:
         AAs = ['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y']
     for aa in AAs:
-        with file( Options.out, 'a' ) as f:
+        with open( Options.out, 'a' ) as f:
             ddGs = compute_ddG( repacked_native, sfxn, int( Options.res ), aa, Options.repack_radius, Options.output_breakdown )
             f.write( str(ddGs[0]) + " " + str(ddGs[1]) + " " + str(ddGs[2]) + " " + str(ddGs[3]) + "\n" )
         f.close
@@ -168,7 +171,7 @@ def compute_ddG( pose, sfxn, resnum, aa, repack_radius, sc_file ):
     # If specified the user, print the breakdown of ddG values into a file
     print_ddG_breakdown( pose, mutated_pose, sfxn, resnum, aa, sc_file )
 
-	# return scores
+    # return scores
     return aa, round( mutant_score, 3 ), round( native_score, 3 ), round ( mutant_score - native_score, 3 )
 
 ###############################################################################
@@ -239,8 +242,8 @@ def print_ddG_breakdown( native_pose, mutated_pose, sfxn, resnum, aa, fn ):
     tmp_mutant = mutated_pose.energies().total_energies().weighted_string_of( sfxn.weights() )
 
     # Parse out scores
-    array_native = filter( None, tmp_native.split(' ') )
-    array_mutant = filter( None, tmp_mutant.split(' ') )
+    array_native = list(filter( None, tmp_native.split(' ') ))
+    array_mutant = list(filter( None, tmp_mutant.split(' ') ))
 
     # Pull out only the scores from these arrays
     native_scores = []
@@ -265,7 +268,7 @@ def print_ddG_breakdown( native_pose, mutated_pose, sfxn, resnum, aa, fn ):
         ddGs.append( round( ddG_component, 3 ) )
 
     ddGs_str = convert_array_to_str( ddGs )
-    with file( fn, 'a' ) as f:
+    with open( fn, 'a' ) as f:
         f.write( ddGs_str + "\n" )
     f.close()
 
@@ -275,15 +278,16 @@ def print_ddG_breakdown( native_pose, mutated_pose, sfxn, resnum, aa, fn ):
 def print_score_labels_to_file( native_pose, sfxn, fn ):
 
     tmp_native = native_pose.energies().total_energies().weighted_string_of( sfxn.weights() )
-    array_native = filter( None, tmp_native.split(' ') )
+    array_native = list(filter( None, tmp_native.split(' ') ))
+    print(array_native)
     labels = []
     labels.append( 'mutation ' ) # Append field for mutation label
     for i in range( len(array_native) ):
         if ( i % 2 == 0 ):
-            labels.append( array_native[i].translate(None, ':') )
+            labels.append( array_native[i].translate( ':') )
 
     labels_str = convert_array_to_str( labels )
-    with file( fn, 'a' ) as f:
+    with open( fn, 'a' ) as f:
         f.write( labels_str + "\n" )
     f.close()
 
