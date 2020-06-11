@@ -199,7 +199,7 @@ def predict_stability(args):
 
             # Parse sbatch relax parser
             path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(
-                folder, sys_name=f'{name}_relax', sc_name='relax_scores')
+                folder, sys_name=f'{name}_relax', sc_name='relax_scores', partition=args.SLURM_PARTITION)
 
             # Parse sbatch ddg file
             ddg_input_ddgfile = create_copy(
@@ -211,16 +211,16 @@ def predict_stability(args):
                 folder, mut_dic, SLURM=True, sys_name=name)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
-                folder, uniprot=args.UNIPROT_ID, sys_name=name, output_name='ddG.out', partition='sbinlab')
+                folder, uniprot=args.UNIPROT_ID, sys_name=name, output_name='ddG.out', partition=args.SLURM_PARTITION)
         else:
             # Parse sbatch relax file
             relax_input_relaxfile = create_copy(
                 input_dict['RELAX_FLAG_FILE'], folder.relax_input, name='relax_flagfile')
             path_to_relax_sbatch = structure_instance.rosetta_sbatch_relax(
-                folder, relaxfile=relax_input_relaxfile, sys_name=name)
+                folder, relaxfile=relax_input_relaxfile, sys_name=name, partition=args.SLURM_PARTITION)
             # Parse sbatch relax parser
             path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(
-                folder)
+                folder, partition=args.SLURM_PARTITION)
 
             # Parse sbatch ddg file
             ddg_input_ddgfile = create_copy(
@@ -228,10 +228,10 @@ def predict_stability(args):
             ddg_input_mutfile_dir = create_copy(
                 prepare_output_ddg_mutfile_dir, folder.ddG_input, name='mutfiles', directory=True)
             path_to_ddg_calc_sbatch = structure_instance.write_rosetta_cartesian_ddg_sbatch(
-                folder, ddg_input_mutfile_dir, ddgfile=ddg_input_ddgfile, sys_name=name)
+                folder, ddg_input_mutfile_dir, ddgfile=ddg_input_ddgfile, sys_name=name, partition=args.SLURM_PARTITION)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = structure_instance.write_parse_cartesian_ddg_sbatch(
-                folder,  partition='sbinlab')
+                folder, structure_instance.fasta_seq, structure_instance.chain_id, sys_name=name, partition=args.SLURM_PARTITION)
 
     # Execution
     # Single SLURM execution
@@ -239,6 +239,15 @@ def predict_stability(args):
         parse_relax_process_id = run_modes.relaxation(folder)
         relax_output_strucfile = find_copy(
             folder.relax_run, '.pdb', folder.relax_output, 'output.pdb')
+
+
+# if SLURM == False:
+#    path_to_scorefile = os.path.join(structure_instance.path_to_run_folder + '/relax_scores.sc')
+#    relax_pdb_out = relax_parse_results.parse_relax_results(path_to_scorefile, path_to_run_folder)
+# else:
+#    path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(os.path.join(structure_instance.path_to_run_folder + '/relax_scores.sc'), structure_instance.path_to_run_folder)
+#    relax_pdb_out = parse_relax_process_id = run_modes.relaxation(structure_instance.path_to_run_folder)
+# logger.info(f"Relaxed structure for ddG calculations: {relax_pdb_out}")
 
     if mode == 'ddg_calculation':
         run_modes.ddg_calculation(folder)
@@ -250,6 +259,12 @@ def predict_stability(args):
     if mode == 'proceed' or mode == 'fullrun':
         # Start relax calculation
         parse_relax_process_id = run_modes.relaxation(folder)
+        # relax_output_strucfile = find_copy(
+        # folder.relax_run, '.pdb', folder.relax_output, 'output.pdb')
+        # Start ddG calculation
+        # ddg_input_struc = create_copy(
+        # os.path.join(folder.relax_output, 'output.pdb'), folder.ddG_input,
+        # name='input.pdb')
         run_modes.ddg_calculation(folder, parse_relax_process_id)
         ddg_output_score = find_copy(
             folder.ddG_run, '.sc', folder.ddG_output, 'output.sc')
