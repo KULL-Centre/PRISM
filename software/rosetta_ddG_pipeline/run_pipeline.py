@@ -22,7 +22,7 @@ from AnalyseStruc import get_structure_parameters
 from args_pipeline import parse_args2
 from checks import compare_mutfile, pdbxmut
 from folders import folder2
-from helper import create_symlinks, create_copy, find_copy, get_mut_dict, read_fasta
+from helper import create_symlinks, create_copy, find_copy, get_mut_dict, read_fasta, check_path
 import mp_prepare
 import mp_ddG
 from pdb_to_fasta_seq import pdb_to_fasta_seq
@@ -42,14 +42,14 @@ def predict_stability(args):
 
     # Obtain, redirect and adapt user arguments
     chain_id = args.CHAIN
-    ddgfile = args.DDG_FLAG_FILE
+    ddgfile = check_path(args.DDG_FLAG_FILE)
     mode = args.MODE
-    mutation_input = args.MUTATION_INPUT
-    outpath = args.OUTPUT_FILE
+    mutation_input = check_path(args.MUTATION_INPUT)
+    outpath = check_path(args.OUTPUT_FILE)
     overwrite_path = args.OVERWRITE_PATH
-    relaxfile = args.RELAX_FLAG_FILE
-    structure_list = args.STRUC_FILE
-    uniprot_accesion = args.UNIPROT_ID
+    relaxfile = check_path(args.RELAX_FLAG_FILE)
+    structure_list = check_path(args.STRUC_FILE)
+    uniprot_accesion = check_path(args.UNIPROT_ID)
     run_struc = args.RUN_STRUC
     ligand = args.LIGAND
     mp_span = args.MP_SPAN_INPUT

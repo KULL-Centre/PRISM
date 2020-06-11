@@ -290,7 +290,7 @@ class structure:
             fp.write(f'''#!/bin/sh 
 #SBATCH --job-name=cartesian_{sys_name}
 #SBATCH --array=0-{len(muts)}
-#SBATCH --time=32:00:00
+#SBATCH --time=48:00:00
 #SBATCH --mem 5000
 #SBATCH --partition={partition}
 #SBATCH --nice 

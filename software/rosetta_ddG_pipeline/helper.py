@@ -164,3 +164,13 @@ def read_fasta(fasta_file):
     for line in fastau_lines[1:]:
         uniprot_seq = uniprot_seq + line.strip()
     return(uniprot_seq)
+
+def check_path(path):
+    os.chdir(os.getcwd())
+    if path != None and path != '':
+
+        if path[0] == "/" and path != None:
+            path=path
+        if path[0]!= "/" and path != None:
+            path=os.path.join(os.getcwd(),path)
+    return(path)

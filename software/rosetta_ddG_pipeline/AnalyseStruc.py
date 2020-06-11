@@ -62,11 +62,12 @@ def get_structure_parameters(outpath,structure_id,printing=True):
                 sequence.append(resdata[res][0])
         sequence_chain = ''.join([str(elem) for elem in sequence]) 
         strucdata[str(chain)[-2:-1]]= sequence_chain
+        #print(sequence_chain)
     
     for record in SeqIO.parse(structure_id, "pdb-seqres"):
         seq=str(record.seq)
         strucdata[str(record.annotations["chain"])]=strucdata[str(record.annotations["chain"])],seq
-    
+        #print(str(record.annotations["chain"]),seq)
     
     with open(structure_id, 'r') as pdb_file:
         pdblines = pdb_file.readlines()
@@ -87,7 +88,7 @@ def get_structure_parameters(outpath,structure_id,printing=True):
         seq2=strucdata[str(chain)][1]
         alignments = pairwise2.align.globalxx(seq1, seq2)
         align[str(chain)] = alignments
-    
+        #print(alignments)
     
     structure_dic = {"resdata": resdata, "strucdata": strucdata, "DBREF":dbref, "alignment":align}
     
