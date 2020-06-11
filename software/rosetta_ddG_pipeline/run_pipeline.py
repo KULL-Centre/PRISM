@@ -82,7 +82,7 @@ def predict_stability(args):
 
         # Create structure instance
         logger.info(f'Creating structure instance')
-        structure_instance = structure(chain_id,name,folder,prep_struc,run_struc,uniprot_accesion=uniprot_accesion)
+        structure_instance = structure(chain_id,name,folder,prep_struc,run_struc,logger,uniprot_accesion=uniprot_accesion,)
         run_name = 'input'
 
         # adjust mp structure if MP_ALIGN_MODE is selected
@@ -108,11 +108,11 @@ def predict_stability(args):
                 sys.exit()
 
         structure_dic = get_structure_parameters(
-            folder.prepare_checking, prep_struc, structure_instance.chain_id)
+            folder.prepare_checking, prep_struc)
 
         # Cleaning pdb and making fasta based on pdb or uniprot-id if provided
         logger.info(f'Prepare the pdb and extract fasta file')
-        structure_instance.path_to_cleaned_pdb = structure_instance.clean_up_and_isolate()
+        structure_instance.path_to_cleaned_pdb, struc_dic_cleaned = structure_instance.clean_up_and_isolate()
         structure_instance.fasta_seq = pdb_to_fasta_seq(
             structure_instance.path_to_cleaned_pdb)
         if uniprot_accesion != "":
@@ -154,11 +154,12 @@ def predict_stability(args):
 
         logger.info(f'Generate mutfiles.')
         print(input_dict['MUTATION_INPUT'])
+        
         check2 = structure_instance.make_mutfiles(
             new_mut_input)
         check1 = compare_mutfile(structure_instance.fasta_seq,
                                  folder.prepare_mutfiles, folder.prepare_checking, new_mut_input)
-        check3, errors = pdbxmut(folder.prepare_mutfiles, structure_dic)
+        check3, errors = pdbxmut(folder.prepare_mutfiles, struc_dic_cleaned)
         check2 = False
 
         if check1 == True or check2 == True or check3 == True:

@@ -8,7 +8,8 @@ Date of last major changes: 2020-04-15
 """
 
 # Standard library imports
-import logging as logger
+
+import logging 
 import os
 import subprocess
 import sys
@@ -25,15 +26,16 @@ from helper import read_fasta
 
 class structure:
     
-    def __init__(self,chain_id,name,folder,prep_struc,run_struc,uniprot_accesion=''):
+    def __init__(self,chain_id,name,folder,prep_struc,run_struc,logger,uniprot_accesion='',):
+        #logger.info('Initiating structures')
         self.chain_id=chain_id
         self.sys_name=name
         self.prep_struc=prep_struc
         self.struc_dic= get_structure_parameters(
-            folder.prepare_checking, self.prep_struc,self.chain_id)
+            folder.prepare_checking, self.prep_struc)
         self.run_struc=run_struc
         self.folder=folder
-        
+        self.logger=logger
         if uniprot_accesion != '':
             print(uniprot_accesion)
             self.uniprot_seq = read_fasta(uniprot_accesion)
@@ -46,9 +48,9 @@ class structure:
             self.path_to_clean_pdb = rosetta_paths.path_to_clean_pdb
     
             shell_command = f'python2 {self.path_to_clean_pdb} {self.prep_struc} {self.run_struc}'
-            print('here is some output from the clean_pdb.py script')
+            self.logger.info('Running clean_pdb.py script')
             subprocess.call(shell_command, cwd=self.folder.prepare_cleaning, shell=True)
-            print('end of output from clean_pdb.py')
+            self.logger.info('end of output from clean_pdb.py')
     
             self.path_to_cleaned_pdb = os.path.join(self.folder.prepare_cleaning, f'{name}_{self.run_struc}.pdb')
             path_to_cleaned_pdb=self.path_to_cleaned_pdb
@@ -59,17 +61,21 @@ class structure:
         
                 for line in fasta_lines[1:]:
                     self.fasta_seq = self.fasta_seq + line.strip()
-        #path_to_clean_pdb=self.path_to_clean_pdb            
+                  
         if ligand == True:
             self.path_to_clean_pdb = rosetta_paths.path_to_clean_keep_ligand
             
             shell_command = f'python2 {self.path_to_clean_pdb} {self.prep_struc} {self.chain_id}'
-            print('here is some output from the clean_pdb_keep_ligand.py script')
+            self.logger.info('Running clean_pdb_keep_ligand.py script')
             subprocess.call(shell_command, cwd=self.folder.prepare_cleaning, shell=True)
-            print('end of output from clean_pdb_keep_ligand.py')
+            self.logger.info('end of output from clean_pdb_keep_ligand.py')
             path_to_cleaned_pdb = os.path.join(self.folder.prepare_cleaning, f'{name}.pdb{self.chain_id}.pdb')
-            #path_to_clean_pdb=self.path_to_clean_pdb
-        return(path_to_cleaned_pdb)
+            
+        
+        struc_dic_cleaned= get_structure_parameters(
+            self.folder.prepare_cleaning, path_to_cleaned_pdb,printing=False)
+        self.struc_dic_cleaned= struc_dic_cleaned
+        return(path_to_cleaned_pdb,struc_dic_cleaned)
 
 
 
@@ -133,12 +139,30 @@ class structure:
         path_to_index_string = self.path_to_index_string
         return(path_to_index_string)
 
-
+    def make_mut_input(self, mutation_input=None, struc_dic=None, alignment=None, fasta=None, chain_id=None, AA='ACDEFGHIKLMNPQRSTVWY'):
+        chain_id = self.chain_id
+        if mutation_input == None:
+            path_to_mutation_input = self.folder.prepare_input
+    
+            if struc_dic == None:
+                resdata = self.struc_dic_cleaned["resdata"]
+                strucdata = self.struc_dic_cleaned["strucdata"]
+            else:
+                resdata = struc_dic["resdata"]
+                strucdata = struc_dic["strucdata"]
+            with open(path_to_mutation_input + "/mutation_input.txt", 'w') as mutation_input:
+                for n in range(1, len(resdata)+1):
+                    
+                    if resdata[n][2] == str(chain_id):
+                        wt = resdata[n][0]
+                        pos = resdata[n][1]
+                        mutation_input.write(f'{wt} {pos}  {AA} \n')
+    
     def make_mutfiles(self, mutation_input):
         check2 = False
         
-        resdata = self.struc_dic["resdata"]
-        strucdata = self.struc_dic["strucdata"]
+        resdata = self.struc_dic_cleaned["resdata"]
+        strucdata = self.struc_dic_cleaned["strucdata"]
         
         path_to_alignment = self.path_to_index_string
         alignment = np.loadtxt(path_to_alignment)
@@ -146,10 +170,18 @@ class structure:
         alignment_dic = {}
         for n in enumerate(alignment):
             alignment_dic[int(n[1])] = int(n[0] + 1)
+            
+            
+        if mutation_input == None:
+            self.make_mut_input()
+            path_to_mutation_input = self.folder.prepare_input
+    
+            mutation_input=os.path.join(path_to_mutation_input,'mutation_input.txt') 
 
         if mutation_input != None and mutation_input != "proceed":
             mutate = {}
-            print("Printing point mutations [WT, ResID, Mutations]")
+            self.logger.debug("Printing point mutations [WT, ResID, Mutations]")
+
             with open(mutation_input) as f:
                 for line in f:
                     (wt, key, val) = line.split()
@@ -160,12 +192,14 @@ class structure:
                     else:
                         val = wt + val
                         mutate[int(key)] = wt, val
-
+         
             for residue_number in mutate:
+                
                 residue_number_ros = alignment_dic[residue_number]
-                print(residue_number_ros, residue_number)
-
-                check = self.fasta_seq[residue_number_ros] in list(
+                
+                self.logger.debug(f"{residue_number_ros}  {residue_number}")
+     
+                check = self.fasta_seq[residue_number_ros-1] in list(
                     mutate[residue_number][0])
                 
 
@@ -173,10 +207,11 @@ class structure:
                     check2 = True
                 final_list = []
                 for num in mutate[residue_number][1]:
+                    
                     if num not in final_list:
                         final_list.append(num)
-                print(mutate[residue_number][0],
-                      residue_number, ''.join(final_list))
+                
+                self.logger.debug(f"{mutate[residue_number][0]} {residue_number}  {''.join(final_list)}")
 
                 mutfile = open(os.path.join(self.folder.prepare_mutfiles, f'mutfile{str(residue_number_ros):0>5}'), 'w')
                 
@@ -187,21 +222,6 @@ class structure:
                                   residue_number_ros - 1] + ' ' + str(residue_number_ros) + ' ' + AAtype)
                 mutfile.close()
         
-        if mutation_input == None:
-            print(resdata)
-            
-            
-            print("Printing mutfiles!")
-            for residue_number_ros in resdata:
-                if resdata[residue_number_ros][2] == self.chain_id:
-                    mutfile = open(os.path.join(self.folder.prepare_mutfiles, f'mutfile{str(residue_number_ros):0>5}'), 'w')
-                    mutfile.write('total 20')
-    
-                    # and then a line for each type of AA
-                    for AAtype in 'ACDEFGHIKLMNPQRSTVWY':
-                        mutfile.write('\n1\n')
-                        mutfile.write(strucdata[self.chain_id][residue_number_ros-1] + ' ' + str(residue_number_ros) + ' ' + AAtype )
-                    mutfile.close()
         return(check2)
 
 
@@ -228,7 +248,7 @@ class structure:
             fp.write((f'{os.path.join(rosetta_paths.path_to_rosetta, f"bin/relax.{rosetta_paths.Rosetta_extension}")} '
                       f'-s {structure_path} '
                       f'-relax:script {rosetta_paths.path_to_parameters}/cart2.script @{path_to_relaxflags}'))
-        logger.info(path_to_sbatch)
+        self.logger.info(path_to_sbatch)
         return(path_to_sbatch)
 
 
@@ -247,7 +267,7 @@ class structure:
 # launching parsing script 
 ''')
             fp.write(f'python {path_to_parse_relax_script} {folder.relax_run} {folder.relax_output} {folder.ddG_input}')
-        logger.info(path_to_sbatch)
+        self.logger.info(path_to_sbatch)
         return path_to_sbatch
 
 
@@ -284,7 +304,7 @@ echo $INDEX
             fp.write((f'{os.path.join(rosetta_paths.path_to_rosetta, f"bin/cartesian_ddg.{rosetta_paths.Rosetta_extension}")} '
                       f'-s {structure_path} -ddg:mut_file ${{LST[$INDEX]}} '
                       f'-out:prefix ddg-$SLURM_ARRAY_JOB_ID-$SLURM_ARRAY_TASK_ID @{path_to_ddgflags}'))
-        logger.info(path_to_sbatch)
+        self.logger.info(path_to_sbatch)
         return path_to_sbatch
 
 
@@ -300,6 +320,6 @@ echo $INDEX
 
 #This sbatch script launches the parse parse_rosetta_ddgs function, from the parse_cartesian_ddgs 
 ''')
-            fp.write((f'python3 {rosetta_paths.path_to_stability_pipeline}/parse_rosetta_ddgs.py '
+            fp.write((f'python3 {rosetta_paths.path_to_stability_pipeline}/parser_ddg_v2.py '
                       f'{self.sys_name} {self.chain_id} {self.fasta_seq} {folder.ddG_run} {folder.ddG_output}'))
         return score_sbatch_path
