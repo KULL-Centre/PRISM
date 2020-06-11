@@ -55,7 +55,7 @@ def parse_args2():
                         )
     parser.add_argument('--prism', '-p',
                         default=None,
-                        dest='PRIMS_INPUT',
+                        dest='PRISM_INPUT',
                         help='Prism input file to extract mutations'
                         )
     parser.add_argument('--outputpath', '-o',
@@ -75,7 +75,7 @@ def parse_args2():
                         )
     parser.add_argument('--mode', '-i',
                         choices=['print', 'create', 'proceed',
-                                 'fullrun', 'relax', 'ddg_calculation'],
+                                 'fullrun', 'relax', 'ddg_calculation', 'analysis'],
                         default='create',
                         dest='MODE',
                         help=('Mode to run:\n'
@@ -84,6 +84,7 @@ def parse_args2():
                               '\tproceed: Starts calculations with created run files (incl. relax and ddG calculation) \n'
                               '\trelax: Starts relax calculations with created run files\n'
                               '\tddg_calculation: Starts ddg_calculation calculations with created run files\n'
+                              '\tanalysis: Does standard analysis like heatmap plotting\n'
                               '\tfullrun: runs full pipeline\n'
                               'Default value: create'
                               )
