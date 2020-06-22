@@ -1,7 +1,7 @@
 -relax:constrain_relax_to_start_coords
 -ignore_unrecognized_res
 -missing_density_to_jump
--nstruct 5
+-nstruct 20
 -relax:coord_constrain_sidechains 
 -relax:cartesian
 -beta

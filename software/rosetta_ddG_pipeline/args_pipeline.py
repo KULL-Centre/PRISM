@@ -229,6 +229,11 @@ def parse_args2():
                         dest='SLURM_PARTITION',
                         help='Partition to run the SLURM jobs'
                         )
+    parser.add_argument('--verbose',
+                        default=False,
+                        dest='VERBOSE',
+                        help='Make pipeline more verbose'
+                        )
     args = parser.parse_args()
 
     return args

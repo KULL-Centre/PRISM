@@ -154,6 +154,18 @@ def drop_numerical_outliers(df, variant_col='variant', score_col='score', z_thre
     logger.info(df[variant_col][~constrains].tolist())
     logger.info(df[score_col][~constrains].tolist())
     df.drop(df.index[~constrains], inplace=True)
+
     df.sort_values('variant', inplace=True)
     df.reset_index(drop=True, inplace=True)
     return df
+
+
+def read_fasta(fasta_file):
+    fastau_file = open(fasta_file, 'r')
+    fastau_lines = fastau_file.readlines()
+    fastau_file.close()
+    uniprot_seq = ''
+    for line in fastau_lines[1:]:
+        uniprot_seq = uniprot_seq + line.strip()
+    return(uniprot_seq)
+
