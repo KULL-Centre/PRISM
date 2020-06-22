@@ -87,6 +87,37 @@ def mp_superpose_opm(reference_chain, target, filename, target_chain='A',
         logger.info(f"write_opm set to true - OPM structure saved")
 
 
+def mp_TMalign_opm(reference_chain, target, filename, target_chain='A',
+                   ref_model_id=0, target_model_id=0,
+                   ref_align_atoms=[], target_align_atoms=[], write_opm=False):
+    # Get reference structure e.g. from OPM
+    def get_ref_struc(keyword):
+        try:
+            ref_struc = extract_from_opm(keyword)
+        except:
+            logger.error("no OPM - id found - add a workaround, e.g. PDBTM")
+            return
+        else:
+            logger.info("Obtain structure from OPM: successful")
+        return ref_struc
+    reference = reference_chain.split('_')[0]
+    ref_chain = reference_chain.split('_')[1]
+    ref_struc = get_ref_struc(reference)
+
+    ref_struc_dest = os.path.join(os.path.dirname(filename), 'ref_opm.pdb')
+    with open(ref_struc_dest, 'w') as fp:
+        fp.write(ref_struc)
+    logger.info(f"OPM structure saved")
+
+
+    path_to_TMalign = rosetta_paths.path_to_TMalign
+    shell_call = f'{path_to_TMalign} {target} {ref_struc_dest} -o {filename.split(".pdb")[0]}'
+    subprocess.call(shell_call, shell=True)
+
+    logger.info(f"Aligned structure saved")
+
+
+
 def mp_span_from_pdb_octopus(pdbinput, outdir_path, SLURM=False):
 
     Rosetta_span_exec = os.path.join(

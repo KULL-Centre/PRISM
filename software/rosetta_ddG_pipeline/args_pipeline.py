@@ -64,12 +64,14 @@ def parse_args2():
                         help='Output path'
                         )
     parser.add_argument('--ddgflags', '-d',
-                        default=os.path.join(rosetta_paths.path_to_parameters, 'cartesian_ddg_flagfile'),
+                        default=os.path.join(
+                            rosetta_paths.path_to_parameters, 'cartesian_ddg_flagfile'),
                         dest='DDG_FLAG_FILE',
                         help='ddG flag file'
                         )
     parser.add_argument('--relaxflags', '-r',
-                        default=os.path.join(rosetta_paths.path_to_parameters, 'relax_flagfile'),
+                        default=os.path.join(
+                            rosetta_paths.path_to_parameters, 'relax_flagfile'),
                         dest='RELAX_FLAG_FILE',
                         help='Relaxation flag file'
                         )
@@ -162,9 +164,59 @@ def parse_args2():
                               )
                         )
     parser.add_argument('--mp_relax_xml',
-                        default=os.path.join(rosetta_paths.path_to_parameters, 'mp_relax.xml'),
+                        default=os.path.join(
+                            rosetta_paths.path_to_parameters, 'mp_relax.xml'),
                         dest='RELAX_XML_INPUT',
                         help='Relaxation xml file for membrane pipeline'
+                        )
+    parser.add_argument('--mp_lipids',
+                        choices=['DLPC', 'DMPC', 'DOPC', 'DPPC', 'POPC', 'DLPE', 
+                        'DMPE', 'DOPE', 'DPPE', 'POPE', 'DLPG', 'DMPG', 'DOPG', 'DPPG', 'POPG'],
+                        default='DLPC',
+                        dest='MP_LIPIDS',
+                        help=('Lipid composition choices:\n'
+                              '\tDLPC: 1,2-dilauroyl-sn-glycero-3-phosphocholine \n'
+                              '\tDMPC: 1,2-dimyristoyl-sn-glycero-3-phosphocholine \n'
+                              '\tDOPC: 1,2-dioleoyl-sn-glycero-3-phosphocholine \n'
+                              '\tDPPC: 1,2-dipalmitoyl-sn-glycero-3-phosphocholine \n'
+                              '\tPOPC: 1-palmitoyl-2-oleoyl-glycero-3-phosphocholine \n'
+                              '\tDLPE: 1,2-dilauroyl-sn-glycero-3-phosphoethanolamine \n'
+                              '\tDMPE: 1,2-dimyristoyl-sn-glycero-3-phosphoethanolamine \n'
+                              '\tDOPE: 1,2-dioleoyl-sn-glycero-3-phosphoethanolamine \n'
+                              '\tDPPE: 1,2-dipalmitoyl-sn-glycero-3-phosphoethanolamine \n'
+                              '\tPOPE: 1-palmitoyl-2-oleoyl-sn-glycero-3-phosphoethanolamine \n'
+                              '\tDLPG: 1,2-dilauroyl-sn-glycero-3-phospho-(1’-rac-glycerol) \n'
+                              '\tDMPG: 1,2-dimyristoyl-sn-glycero-3-phospho-(1’-rac-glycerol) \n'
+                              '\tDOPG: 1,2-dioleoyl-sn-glycero-3-phospho-(1’-rac-glycerol) \n'
+                              '\tDPPG: 1,2-dipalmitoyl-sn-glycero-3-phospho-(1’-rac-glycerol) \n'
+                              '\tPOPG: 1-palmitoyl-2-oleoyl-sn-glycero-3-phospho-(1’-rac-glycerol) \n'
+                              'Default value: DLPC'
+                              )
+                        )
+    parser.add_argument('--mp_temperature',
+                        default=37.0,
+                        type=float,
+                        dest='MP_TEMPERATURE',
+                        help='Experimental temperature. Default value: 37.0'
+                        )
+    parser.add_argument('--mp_pH',
+                        default=-1.0,
+                        type=float,
+                        dest='MP_PH',
+                        help=('Experimental pH value between 0-14. -1=off.\n'
+                              'Default value: -1')
+                        )
+    parser.add_argument('--benchmark_mp_repack',
+                        default=8.0,
+                        type=float,
+                        dest='BENCH_MP_REPACK',
+                        help='For benchmark purpose: repack value'
+                        )
+    parser.add_argument('--benchmark_mp_repeat',
+                        default=3,
+                        type=int,
+                        dest='BENCH_MP_REPEAT',
+                        help='For benchmark purpose: repeat value'
                         )
     parser.add_argument('--overwrite_path',
                         default=False,

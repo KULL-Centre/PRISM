@@ -3,6 +3,7 @@ import os
 # yes, I know global vars are bad...
 default_path = {
     'muscle_exec': '/groups/sbinlab/software/muscle/muscle3.8.31_i86linux64',
+    'TMalign_exec': '/groups/sbinlab/software/TMalign/TMalign',
     'ddG_pipeline': '/sbinlab/software/PRISM/software/rosetta_ddG_pipeline',
     'Rosetta_main_path': '/sbinlab/software/Rosetta_2018_Oct_d557f8/source/',
     'Rosetta_tools_path': '/sbinlab/software/Rosetta_tools/tools/',
@@ -22,6 +23,7 @@ def load_env(env):
 
 
 muscle_exec = load_env('muscle_exec')
+TMalign_exec = load_env('TMalign_exec')
 ddG_pipeline = load_env('ddG_pipeline')
 Rosetta_main_path = load_env('Rosetta_main_path')
 Rosetta_tools_path = load_env('Rosetta_tools_path')
@@ -29,7 +31,7 @@ Rosetta_database_path = load_env('Rosetta_database_path')
 Rosetta_extension = load_env('Rosetta_extension')
 prims_parser = load_env('prims_parser')
 
-print('current env paths & exec:', muscle_exec, ddG_pipeline, Rosetta_main_path,
+print('current env paths & exec:', TMalign_exec, muscle_exec, ddG_pipeline, Rosetta_main_path,
       Rosetta_tools_path, Rosetta_database_path, Rosetta_extension, prims_parser)
 
 # Rosetta paths
@@ -46,3 +48,6 @@ path_to_parameters = os.path.join(
 
 # Muscle exec
 path_to_muscle = muscle_exec
+
+# TMalign exec
+path_to_TMalign = TMalign_exec

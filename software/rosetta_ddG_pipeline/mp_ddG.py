@@ -19,7 +19,9 @@ import rosetta_paths
 
 
 def rosetta_ddg_mp_pyrosetta(folder, mut_dict, SLURM=True, sys_name='',
-                             partition='sbinlab', output_name='ddG.out', repack_radius=0,
+                             partition='sbinlab', output_name='ddG.out', 
+                             add_output_name='ddG_additional.out', repack_radius=0,
+                             lipids='DLPC', temperature=37.0, repeats=3,
                              score_file_name='scores', is_pH=0, pH_value=7):
     ddg_script_exec = os.path.join(
         rosetta_paths.path_to_stability_pipeline, 'rosetta_mp_ddG_adapted.py')
@@ -31,14 +33,18 @@ def rosetta_ddg_mp_pyrosetta(folder, mut_dict, SLURM=True, sys_name='',
             if file.endswith('.span'):
                 input_span = os.path.join(root, file)
 
-    ddG_command = (f'python3 {ddg_script_exec} '
-                   f'--in_pdb {input_struc} '
-                   f'--in_span {input_span} '
-                   f'--repack_radius {repack_radius} '
-                   f'--out {output_file} '
-                   f'--output_breakdown {score_file} '
-                   f'--include_pH {is_pH} '
-                   f'--pH_value {pH_value} '
+    ddG_command = (f'python3 {ddg_script_exec}'
+                   f' --in_pdb {input_struc}'
+                   f' --in_span {input_span}'
+                   f' --out {output_file}'
+                   f' --out_add {add_output_name}'
+                   f' --repack_radius {repack_radius}'
+                   f' --output_breakdown {score_file}'
+                   f' --include_pH {is_pH}'
+                   f' --pH_value {pH_value}'
+                   f' --repeats {repeats}'
+                   f' --lipids {lipids}'
+                   f' --temperature {temperature}'
                    '')
 
     if SLURM:
@@ -60,7 +66,7 @@ echo $INDEX
 # launching rosetta
 ''')
             new_ddG_command = ddG_command + \
-                '--res ${RESIS[$INDEX]} --mut ${MUTS[$INDEX]} '
+                ' --res ${RESIS[$INDEX]} --mut ${MUTS[$INDEX]} '
             fp.write(new_ddG_command)
         logger.info(path_to_sbatch)
 
@@ -73,11 +79,12 @@ echo $INDEX
         sys.exit()
 
 
-def postprocess_rosetta_ddg_prism_copy(folder, output_name='ddG.out', sys_name='', uniprot='', version=1, prims_nr='XXX'):
+def postprocess_rosetta_ddg_mp_pyrosetta(folder, output_name='ddG.out', sys_name='', uniprot='', version=1, prims_nr='XXX'):
     # The ddg_file should only contain the data, looking like this:
     # M1T,-0.52452 # first value=variant, second=mean([var1-WT1,var2-WT2, ...]) - comma separated
-    # M1Y,0.2352,0.2342,.... # it may contain more values like the var-mut of each run
-    ddg_file = os.path.join(folder.ddG_run, output_name) 
+    # M1Y,0.2352,0.2342,.... # it may contain more values like the var-mut of
+    # each run
+    ddg_file = os.path.join(folder.ddG_run, output_name)
     prims_file = os.path.join(folder.ddG_output, f'prims_rosetta_{prims_nr}_{sys_name}.txt')
     with open(os.path.join(folder.prepare_checking, 'fasta_file.fasta'), 'r') as fp:
         fp.readline()
