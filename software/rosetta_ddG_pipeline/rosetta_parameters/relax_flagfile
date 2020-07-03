@@ -12,3 +12,4 @@
 -out:suffix _bn15_calibrated
 -flip_HNQ
 -no_optH false
+-fa_max_dis 9.0
