@@ -19,6 +19,7 @@ import sys
 
 # Local application imports
 from AnalyseStruc import get_structure_parameters
+from analysis import calc_all
 from args_pipeline import parse_args2
 from checks import compare_mutfile, pdbxmut
 from folders import folder2
@@ -93,8 +94,12 @@ def predict_stability(args):
                     run_name = 'input_mp_aligned'
                     structure_instance.path = os.path.join(
                         folder.prepare_mp_superpose, f'{run_name}.pdb')
-                    mp_prepare.mp_superpose_opm(
-                        args.MP_ALIGN_REF, prep_struc, structure_instance.path, target_chain=structure_instance.chain_id, write_opm=True)
+                    try:
+                        mp_prepare.mp_superpose_opm(
+                            args.MP_ALIGN_REF, prep_struc, structure_instance.path, target_chain=structure_instance.chain_id, write_opm=True)
+                    except:
+                        mp_prepare.mp_TMalign_opm(
+                            args.MP_ALIGN_REF, prep_struc, structure_instance.path, target_chain=structure_instance.chain_id, write_opm=True)                        
                 elif args.UNIPROT_ID != '':
                     logger.error('Uniprot-ID to ref pdb not implemented yet')
                     sys.exit()
@@ -207,8 +212,17 @@ def predict_stability(args):
             ddg_input_span_dir = create_copy(
                 prepare_output_span_dir, folder.ddG_input, name='spanfiles', directory=True)
 
+            if args.MP_PH == -1:
+                is_pH = 0
+                pH_value = 7
+            else:
+                is_pH = 1
+                pH_value = args.MP_PH
             path_to_ddg_calc_sbatch = mp_ddG.rosetta_ddg_mp_pyrosetta(
-                folder, mut_dic, SLURM=True, sys_name=name)
+                folder, mut_dic, SLURM=True, sys_name=name, partition=args.SLURM_PARTITION,
+                repack_radius=args.BENCH_MP_REPACK, lipids=args.MP_LIPIDS,
+                temperature=args.MP_TEMPERATURE, repeats=args.BENCH_MP_REPEAT,
+                is_pH=is_pH, pH_value=pH_value)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
                 folder, uniprot=args.UNIPROT_ID, sys_name=name, output_name='ddG.out', partition=args.SLURM_PARTITION)
@@ -251,8 +265,11 @@ def predict_stability(args):
 
     if mode == 'ddg_calculation':
         run_modes.ddg_calculation(folder)
+#        ddg_output_score = find_copy(
+#            folder.ddG_run, '.sc', folder.ddG_output, 'output.sc')
 
     if mode == 'analysis':
+        calc_all(folder, sys_name=name)
         plot_all(folder, sys_name=name)
 
     # Full SLURM execution
@@ -266,8 +283,8 @@ def predict_stability(args):
         # os.path.join(folder.relax_output, 'output.pdb'), folder.ddG_input,
         # name='input.pdb')
         run_modes.ddg_calculation(folder, parse_relax_process_id)
-        ddg_output_score = find_copy(
-            folder.ddG_run, '.sc', folder.ddG_output, 'output.sc')
+#        ddg_output_score = find_copy(
+#            folder.ddG_run, '.sc', folder.ddG_output, 'output.sc')
 
 
 ##########################################################################

@@ -22,6 +22,7 @@
 # Tools
 import sys
 import os
+import numpy as np
 ##import commands
 ##import random
 from optparse import OptionParser, IndentedHelpFormatter
@@ -46,6 +47,14 @@ from pyrosetta.rosetta.core.chemical import VariantType
 # @brief Main - Add Membrane to Pose, Compute ddG
 
 
+"""
+ToDo:
+        # Create a membrane energy function enabled by pH mode
+        # Includes two terms not standard in the smoothed energy function: pH energy
+        # and fa_elec mpframework_pHmode_fa_2014
+"""
+
+
 def main(args):
 
     parser = OptionParser(usage="usage: %prog [OPTIONS] [TESTS]")
@@ -64,6 +73,10 @@ def main(args):
                       action="store", default='ddG.out',
                       help="Output filename with pose residue numbering. Default: 'ddG.out'", )
 
+    parser.add_option('--out_add',
+                      action="store", default='ddG_additional.out',
+                      help="Output filename of additional information with pose residue numbering. Default: 'ddG_additional.out'", )
+
     parser.add_option('--res', '-r',
                       action="store",
                       help="Pose residue number to mutate.", )
@@ -73,20 +86,37 @@ def main(args):
                       help="One-letter code of residue identity of the mutant. Example: A181F would be 'F'", )
 
     parser.add_option('--repack_radius', '-a',
-                      action="store", default=0,
+                      action="store", default=8.0,
+                      type=float,
                       help="Repack the residues within this radius",)
 
     parser.add_option('--output_breakdown', '-b',
                       action="store", default="scores.sc",
                       help="Output mutant and native score breakdown by weighted energy term into a scorefile", )
 
-    parser.add_option('--include_pH', '-t',
+    parser.add_option('--include_pH', '-z',
                       action="store", default=0,
                       help="Include pH energy terms: pH_energy and fa_elec. Default false.", )
 
     parser.add_option('--pH_value', '-q',
                       action="store", default=7,
+                      type=float,
                       help="Predict ddG and specified pH value. Default 7. Will not work if include pH is not passed", )
+
+    parser.add_option('--repeats',
+                      action="store", default=3,
+                      type=int,
+                      help="Number of ddG calculations. Default 3.", )
+
+    parser.add_option('--lipids', '-l',
+                      action="store", default='DLPC',
+                      choices=['DLPC', ],
+                      help="Specify lipids from options.", )
+
+    parser.add_option('--temperature', '-t',
+                      action="store", default=37.0,
+                      type=float,
+                      help="Experimental temperature.", )
 
     # parse options
     (options, args) = parser.parse_args(args=args[1:])
@@ -97,50 +127,43 @@ def main(args):
     if (not Options.in_pdb or not Options.in_span or not Options.res):
         sys.exit("Must provide flags '-in_pdb', '-in_span', and '-res'! Exiting...")
 
+    if (float(Options.pH_value) < 0 or float(Options.pH_value) > 14):
+        sys.exit("Specified pH value must be between 0-14: Exiting...")
+
     # Initialize Rosetta options from user options. Enable pH mode if
     # applicable
-    rosetta_options = ""
-    standard_options = "-mp:setup:spanfiles " + Options.in_span + \
-        " -run:constant_seed -in:ignore_unrecognized_res"
-    if (Options.include_pH):
-        print(Options.pH_value)
-        if (float(Options.pH_value) < 0 or float(Options.pH_value) > 14):
-            sys.exit("Specified pH value must be between 0-14: Exiting...")
-        else:
-            pH_options = " -pH_mode -value_pH " + str(Options.pH_value)
-            rosetta_options = standard_options + pH_options
-    else:
-        rosetta_options = standard_options
+    rosetta_options = (f'-mp:setup:spanfiles {Options.in_span}'
+                       f' -mp:lipids:temperature {Options.temperature}'
+                       f' -mp:lipids:composition {Options.lipids}'
+                       f' -mp:lipids:has_pore false'
+                       f' -run:constant_seed'
+                       f' -in:ignore_unrecognized_res'
+                       f' -pH_mode -value_pH {Options.pH_value}')
 
     # Initialize Rosetta based on user inputs
     pyrosetta.init(extra_options=rosetta_options)
+
+
+
+    # Create an energy function
+    sfxn = pyrosetta.rosetta.core.scoring.ScoreFunction()
+    # Create a smoothed membrane full atom energy function (pH 7 calculations)
+    sfxn = create_score_function("franklin2019")
+
 
     # Load Pose, & turn on the membrane
     pose = pyrosetta.rosetta.core.import_pose.pose_from_file(Options.in_pdb)
 
     # Add Membrane to Pose
-    add_memb = pyrosetta.rosetta.protocols.membrane.AddMembraneMover()
+    add_memb = pyrosetta.rosetta.protocols.membrane.AddMembraneMover( Options.in_span)
     add_memb.apply(pose)
 
     # Setup in a topology based membrane
     init_mem_pos = pyrosetta.rosetta.protocols.membrane.MembranePositionFromTopologyMover()
     init_mem_pos.apply(pose)
 
-    # check the user has specified a reasonable value for the pH
-    sfxn = pyrosetta.rosetta.core.scoring.ScoreFunction()
-    if (Options.include_pH):
 
-        # Create a membrane energy function enabled by pH mode
-        # Includes two terms not standard in the smoothed energy function: pH energy
-        # and fa_elec
-        # mpframework_pHmode_fa_2014
-        sfxn = create_score_function("franklin2019")
 
-    else:
-
-        # Create a smoothed membrane full atom energy function (pH 7
-        # calculations)
-        sfxn = create_score_function("franklin2019")
 
     # Repack the native rotamer and residues within the repack radius
     native_res = pose.residue(int(Options.res)).name1()
@@ -158,12 +181,17 @@ def main(args):
         AAs = ['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L',
                'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y']
     for aa in AAs:
-        with open(Options.out, 'a') as f:
-            ddGs = compute_ddG(repacked_native, sfxn, int(
-                Options.res), aa, Options.repack_radius, Options.output_breakdown)
-            f.write(str(native_res) +  str(Options.res) + str(ddGs[0]) + "," + str(ddGs[3]) + "," +
-                    str(ddGs[1]) + "," + str(ddGs[2]) + "\n")
-        f.close
+        with open(Options.out, 'a') as f, open(Options.out_add, 'a') as fp2:
+            result_ddG = []
+            for rep in range(Options.repeats):
+                ddGs = compute_ddG(repacked_native, sfxn, int(
+                    Options.res), aa, Options.repack_radius, Options.output_breakdown)
+                res_str = str(native_res) + str(Options.res) + str(ddGs[0])
+                result_ddG.append(ddGs[3])
+                fp2.write(res_str + "," + str(ddGs[3]) + "," +
+                          str(ddGs[1]) + "," + str(ddGs[2]) + "\n")
+            result_ddG = np.array(result_ddG)
+            f.write(f'{res_str},{round(np.mean(result_ddG),3)},{round(np.std(result_ddG),3)}\n')
 
 ###############################################################################
 
@@ -228,8 +256,8 @@ def mutate_residue(pose, mutant_position, mutant_aa, pack_radius, pack_scorefxn)
 
     # modify the mutating residue's assignment in the PackerTask using the
     #    Vector1 of booleans across the proteogenic amino acids
-    task.nonconst_residue_task(mutant_position
-                               ).restrict_absent_canonical_aas(aa_bool)
+    task.nonconst_residue_task(
+        mutant_position).restrict_absent_canonical_aas(aa_bool)
 
     # prevent residues from packing by setting the per-residue "options" of
     #    the PackerTask
@@ -237,6 +265,8 @@ def mutate_residue(pose, mutant_position, mutant_aa, pack_radius, pack_scorefxn)
     for i in range(1, pose.total_residue() + 1):
         dist = center.distance_squared(test_pose.residue(i).nbr_atom_xyz())
         # only pack the mutating residue and any within the pack_radius
+        print(i, pack_radius, dist,  pow(float(pack_radius), 2))
+        print('##################################################')
         if i != mutant_position and dist > pow(float(pack_radius), 2):
             task.nonconst_residue_task(i).prevent_repacking()
 
@@ -276,7 +306,7 @@ def print_ddG_breakdown(native_pose, mutated_pose, sfxn, resnum, aa, fn):
             mutant_scores.append(float(array_mutant[i]))
 
     # Make a label for the mutation
-    native_res = native_pose.residue(int(Options.res)).name1()
+    native_res = native_pose.residue(int(resnum)).name1()
     mut_label = native_res + str(resnum) + aa
 
     # Calculate ddG of individual components
@@ -289,7 +319,6 @@ def print_ddG_breakdown(native_pose, mutated_pose, sfxn, resnum, aa, fn):
     ddGs_str = convert_array_to_str(ddGs)
     with open(fn, 'a') as f:
         f.write(ddGs_str + "\n")
-    f.close()
 
 ###############################################################################
 #@brief Get header for ddG breakdown output
@@ -309,9 +338,9 @@ def print_score_labels_to_file(native_pose, sfxn, fn):
             labels.append(array_native[i].translate(':'))
 
     labels_str = convert_array_to_str(labels)
+    print(labels_str)
     with open(fn, 'a') as f:
         f.write(labels_str + "\n")
-    f.close()
 
 
 ###############################################################################
