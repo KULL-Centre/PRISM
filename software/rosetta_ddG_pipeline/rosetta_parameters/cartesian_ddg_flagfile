@@ -10,4 +10,4 @@
 -ex1
 -ex2
 -ddg::legacy false
--optimize_proline
+-optimize_proline false
