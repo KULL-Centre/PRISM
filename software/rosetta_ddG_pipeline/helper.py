@@ -12,7 +12,9 @@ import logging as logger
 import os
 import shutil
 import urllib.request
-
+import sys
+from os import listdir
+from os.path import isfile, join
 
 # Third party imports
 import numpy as np
@@ -174,3 +176,61 @@ def check_path(path):
         if path[0]!= "/" and path != None:
             path=os.path.join(os.getcwd(),path)
     return(path)
+
+def read_slurms(path, printing=False):
+    files = [f for f in listdir(path) if isfile(join(path, f))]
+    mypath=path
+    warn = []
+    warnings = 0
+    canc = []
+    cancels = 0
+    slurm_file_canc = []
+    slurm_file_warn = []
+    nums_warn = []
+    nums_canc = []
+    for file in files:
+        if str(file[0:5]) == "slurm":
+            path = join(mypath, file)
+            with open(path) as f:
+                for line in f:
+                    if "WARNING" in line:
+                        num_warn = file.split('_')
+                        num_warn = num_warn[1].split('.')
+                        num_warn = num_warn[0]
+
+                        nums_warn.append(num_warn)
+                        warn.append(line)
+                        warnings += 1
+                        slurm_file_warn.append(file)
+                    if "CANCELLED" in line:
+
+                        num_canc = file.split('_')
+                        num_canc = num_canc[1].split('.')
+                        num_canc = num_canc[0]
+
+                        nums_canc.append(num_canc)
+                        slurm_file_canc.append(file)
+                        canc.append(line)
+                        cancels += 1
+
+    nums_canc = list(dict.fromkeys(nums_canc))
+    nums_warn = list(dict.fromkeys(nums_warn))
+    print("Number of cancels = ", cancels)
+    print(nums_canc)
+    #print("Number of warnings = ",warnings)
+    # print(nums_warn)
+    if printing == True:
+        if warnings != 0:
+            with open(join(mypath, "warningfile"), 'w') as errorfile:
+                errorfile.write("Number of warnings = "+str(warnings)+'\n')
+                errorfile.write("Files= "+str(nums_warn)+'\n')
+                for n, m in zip(warn, slurm_file_warn):
+                    errorfile.write(m+'\n')
+                    errorfile.write(n+'\n')
+        if cancels != 0:
+            with open(join(mypath, "cancelfile"), 'w') as cancelfile:
+                cancelfile.write("Number of cancels = "+str(cancels)+'\n')
+                cancelfile.write("Files = "+str(nums_canc)+'\n')
+                for n, m in zip(canc, slurm_file_canc):
+                    cancelfile.write(m+'\n')
+                    cancelfile.write(n+'\n')

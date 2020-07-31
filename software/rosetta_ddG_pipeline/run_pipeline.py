@@ -54,6 +54,7 @@ def predict_stability(args):
     ligand = args.LIGAND
     mp_span = args.MP_SPAN_INPUT
     verbose = args.VERBOSE
+    partition=args.SLURM_PARTITION
 
     if run_struc == None:
         run_struc = chain_id
@@ -195,7 +196,7 @@ def predict_stability(args):
             # Parse sbatch relax file
             logger.info('Create MP relax sbatch files.')
             path_to_relax_sbatch = mp_prepare.rosetta_relax_mp(
-                folder, SLURM=True, num_struc=3, sys_name=name, partition=args.SLURM_PARTITION)
+                folder, SLURM=True, num_struc=3, sys_name=name, partition=partition)
 
             # Parse sbatch relax parser
             path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(
@@ -211,16 +212,16 @@ def predict_stability(args):
                 folder, mut_dic, SLURM=True, sys_name=name)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
-                folder, uniprot=args.UNIPROT_ID, sys_name=name, output_name='ddG.out', partition='sbinlab')
+                folder, uniprot=args.UNIPROT_ID, sys_name=name, output_name='ddG.out', partition=partition)
         else:
             # Parse sbatch relax file
             relax_input_relaxfile = create_copy(
                 input_dict['RELAX_FLAG_FILE'], folder.relax_input, name='relax_flagfile')
             path_to_relax_sbatch = structure_instance.rosetta_sbatch_relax(
-                folder, relaxfile=relax_input_relaxfile, sys_name=name)
+                folder, relaxfile=relax_input_relaxfile, sys_name=name,  partition=partition)
             # Parse sbatch relax parser
             path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(
-                folder)
+                folder,  partition=partition)
 
             # Parse sbatch ddg file
             ddg_input_ddgfile = create_copy(
@@ -228,10 +229,10 @@ def predict_stability(args):
             ddg_input_mutfile_dir = create_copy(
                 prepare_output_ddg_mutfile_dir, folder.ddG_input, name='mutfiles', directory=True)
             path_to_ddg_calc_sbatch = structure_instance.write_rosetta_cartesian_ddg_sbatch(
-                folder, ddg_input_mutfile_dir, ddgfile=ddg_input_ddgfile, sys_name=name)
+                folder, ddg_input_mutfile_dir, ddgfile=ddg_input_ddgfile, sys_name=name,  partition=partition)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = structure_instance.write_parse_cartesian_ddg_sbatch(
-                folder,  partition='sbinlab')
+                folder,  partition=partition)
 
     # Execution
     # Single SLURM execution

@@ -238,16 +238,18 @@ class structure:
 
         with open(path_to_sbatch, 'w') as fp:
             fp.write(f'''#!/bin/sh
-#SBATCH --job-name=relax_{sys_name}
-#SBATCH --time=10:00:00
+#SBATCH --job-name={sys_name}_relax
+#SBATCH --time=24:00:00
 #SBATCH --mem 5000
+#SBATCH --array=0-19
 #SBATCH --partition={partition}
 
 # launching rosetta relax 
 ''')
             fp.write((f'{os.path.join(rosetta_paths.path_to_rosetta, f"bin/relax.{rosetta_paths.Rosetta_extension}")} '
                       f'-s {structure_path} '
-                      f'-relax:script {rosetta_paths.path_to_parameters}/cart2.script @{path_to_relaxflags}'))
+                      f'-relax:script {rosetta_paths.path_to_parameters}/cart2.script @{path_to_relaxflags}'
+                     ' -out:prefix $SLURM_ARRAY_TASK_ID-'))
         self.logger.info(path_to_sbatch)
         return(path_to_sbatch)
 
@@ -259,7 +261,7 @@ class structure:
         path_to_sbatch = os.path.join(self.folder.relax_input, 'parse_relax.sbatch')
         with open(path_to_sbatch, 'w') as fp:
             fp.write(f'''#!/bin/sh
-#SBATCH --job-name=parse_relax_rosetta_{sys_name}
+#SBATCH --job-name={sys_name}_p-relax
 #SBATCH --time=00:20:00
 #SBATCH --mem 5000
 #SBATCH --partition={partition}
@@ -288,10 +290,10 @@ class structure:
 
         with open(path_to_sbatch, 'w') as fp:
             fp.write(f'''#!/bin/sh 
-#SBATCH --job-name=cartesian_{sys_name}
-#SBATCH --array=0-{len(muts)}
+#SBATCH --job-name={sys_name}_ddg
+#SBATCH --array=0-{len(muts)-1}
 #SBATCH --time=48:00:00
-#SBATCH --mem 5000
+#SBATCH --mem 2000
 #SBATCH --partition={partition}
 #SBATCH --nice 
 LST=(`ls {input_mutfiles}/mutfile*`)
@@ -303,16 +305,17 @@ echo $INDEX
 ''')
             fp.write((f'{os.path.join(rosetta_paths.path_to_rosetta, f"bin/cartesian_ddg.{rosetta_paths.Rosetta_extension}")} '
                       f'-s {structure_path} -ddg:mut_file ${{LST[$INDEX]}} '
-                      f'-out:prefix ddg-$SLURM_ARRAY_JOB_ID-$SLURM_ARRAY_TASK_ID @{path_to_ddgflags}'))
+                      f' -out:prefix ddg-$SLURM_ARRAY_JOB_ID-$SLURM_ARRAY_TASK_ID @{path_to_ddgflags}'))
         self.logger.info(path_to_sbatch)
         return path_to_sbatch
 
 
     def write_parse_cartesian_ddg_sbatch(self, folder, partition='sbinlab'):
         score_sbatch_path = os.path.join(self.folder.ddG_input, 'parse_ddgs.sbatch')
+        structure_input = os.path.join(self.folder.prepare_checking,'structure_input.json')
         with open(score_sbatch_path, 'w') as fp:
             fp.write(f'''#!/bin/sh 
-#SBATCH --job-name=collect_rosetta_ddgs_{self.sys_name} 
+#SBATCH --job-name={self.sys_name}_p-ddg
 #SBATCH --array=1 
 #SBATCH --nodes=1 
 #SBATCH --time=0:10:00 
@@ -321,5 +324,5 @@ echo $INDEX
 #This sbatch script launches the parse parse_rosetta_ddgs function, from the parse_cartesian_ddgs 
 ''')
             fp.write((f'python3 {rosetta_paths.path_to_stability_pipeline}/parser_ddg_v2.py '
-                      f'{self.sys_name} {self.chain_id} {self.fasta_seq} {folder.ddG_run} {folder.ddG_output}'))
+                      f'{self.sys_name} {self.chain_id} {self.fasta_seq} {folder.ddG_run} {folder.ddG_output} {structure_input}'))
         return score_sbatch_path

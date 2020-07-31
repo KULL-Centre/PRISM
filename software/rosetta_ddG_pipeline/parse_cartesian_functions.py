@@ -1,7 +1,7 @@
 import numpy as np
 import scipy
 import os
-
+import json
 
 def rosetta_cartesian_read(pathtofile, protein_seq='abcd'):
     score_file = open(pathtofile, "r")
@@ -32,7 +32,7 @@ def rosetta_cartesian_read(pathtofile, protein_seq='abcd'):
     }
 
     cartesian_scores = {}
-    print(len(protein_seq))
+    #print(len(protein_seq))
     for line in score_data:
         score_fields = line.split()
         description = score_fields[2]
@@ -40,24 +40,24 @@ def rosetta_cartesian_read(pathtofile, protein_seq='abcd'):
         one_letter = aminocodes[three_letter_code]
         res_number = description[4:-4]
         dg = float(score_fields[3])
-        #print(res_number)
-        #print(one_letter)
-        
-        #print(protein_seq[int(res_number) - 1-31 ])
+
         key = protein_seq[int(res_number) - 1] + res_number + one_letter
-        #print(key)
+
         if key in cartesian_scores:
             cartesian_scores[key].append(dg)
 
         else:
             cartesian_scores[protein_seq[int(res_number) - 1 ] + res_number
                              + one_letter] = [dg]
-    print(cartesian_scores)
+    #print(cartesian_scores)
     return cartesian_scores
 
 
 def ddgs_from_dg(dictionary_of_dGs):
     wt_dGs = {}
+    #with open(structure_input) as json_file:
+    #    strucdata = json.load(json_file)
+        
     for entry in dictionary_of_dGs:
 
         if entry[0] == entry[-1]:
@@ -78,12 +78,12 @@ def ddgs_from_dg(dictionary_of_dGs):
             dgs_as_floats[mutation].append(float(value))
 
     for mutation in dictionary_of_dGs:
-
+        #resdata=structure_input
+        #print(resdata)
+        #num=int(mutation[1:-1])
         residue_number = mutation[1:-1]
-        #print(mutation)
-        #print(residue_number)
-        ddgs[mutation] = np.divide(
-            (np.mean(dgs_as_floats[mutation]) - np.mean(wt_dGs[residue_number])), 2.9)
+        
+        ddgs[mutation] = np.divide((np.mean(dgs_as_floats[mutation]) - np.mean(wt_dGs[residue_number])), 2.9)
 
     return ddgs
 
