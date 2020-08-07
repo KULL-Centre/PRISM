@@ -17,7 +17,7 @@ import pandas as pd
 def csv_to_prism(data,structure_input,chain_id):
     with open(structure_input) as json_file:
         strucdata = json.load(json_file)
-    resdata=strucdata['resdata']
+    #resdata=strucdata['resdata']
     path_to_hm3=data
     data=pd.read_csv(path_to_hm3)
     path_to_output= str(path_to_hm3).split('/')

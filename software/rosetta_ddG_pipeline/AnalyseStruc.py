@@ -91,7 +91,8 @@ def get_structure_parameters(outpath,structure_id,printing=True):
         #print(alignments)
     
     structure_dic = {"resdata": resdata, "strucdata": strucdata, "DBREF":dbref, "alignment":align}
-    
+    #structure_dic = {"strucdata": strucdata, "DBREF":dbref, "alignment":align}
+    print(structure_dic)
     with open(outpath +"/structure_{}.txt".format(name),'w') as strucfile:
 
         strucfile.write('#Structure features \n')
