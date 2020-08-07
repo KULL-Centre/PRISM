@@ -226,27 +226,19 @@ def predict_stability(args):
                 is_pH=is_pH, pH_value=pH_value)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
-<<<<<<< HEAD
                 folder, uniprot=args.UNIPROT_ID, sys_name=name, output_name='ddG.out', partition=partition)
-=======
-                folder, uniprot=args.UNIPROT_ID, sys_name=name, output_name='ddG.out', partition=args.SLURM_PARTITION)
->>>>>>> c4e6c9960746d7dc66489d600cc70f8bf8ce0b55
         else:
             # Parse sbatch relax file
             relax_input_relaxfile = create_copy(
                 input_dict['RELAX_FLAG_FILE'], folder.relax_input, name='relax_flagfile')
             path_to_relax_sbatch = structure_instance.rosetta_sbatch_relax(
-<<<<<<< HEAD
                 folder, relaxfile=relax_input_relaxfile, sys_name=name,  partition=partition)
             # Parse sbatch relax parser
             path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(
                 folder,  partition=partition)
-=======
-                folder, relaxfile=relax_input_relaxfile, sys_name=name, partition=args.SLURM_PARTITION)
             # Parse sbatch relax parser
             path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(
                 folder, partition=args.SLURM_PARTITION)
->>>>>>> c4e6c9960746d7dc66489d600cc70f8bf8ce0b55
 
             # Parse sbatch ddg file
             ddg_input_ddgfile = create_copy(
@@ -254,17 +246,13 @@ def predict_stability(args):
             ddg_input_mutfile_dir = create_copy(
                 prepare_output_ddg_mutfile_dir, folder.ddG_input, name='mutfiles', directory=True)
             path_to_ddg_calc_sbatch = structure_instance.write_rosetta_cartesian_ddg_sbatch(
-<<<<<<< HEAD
                 folder, ddg_input_mutfile_dir, ddgfile=ddg_input_ddgfile, sys_name=name,  partition=partition)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = structure_instance.write_parse_cartesian_ddg_sbatch(
                 folder,  partition=partition)
-=======
-                folder, ddg_input_mutfile_dir, ddgfile=ddg_input_ddgfile, sys_name=name, partition=args.SLURM_PARTITION)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = structure_instance.write_parse_cartesian_ddg_sbatch(
                 folder, structure_instance.fasta_seq, structure_instance.chain_id, sys_name=name, partition=args.SLURM_PARTITION)
->>>>>>> c4e6c9960746d7dc66489d600cc70f8bf8ce0b55
 
     # Execution
     # Single SLURM execution

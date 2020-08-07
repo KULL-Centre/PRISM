@@ -171,7 +171,6 @@ def read_fasta(fasta_file):
         uniprot_seq = uniprot_seq + line.strip()
     return(uniprot_seq)
 
-<<<<<<< HEAD
 def check_path(path):
     os.chdir(os.getcwd())
     if path != None and path != '':
@@ -239,5 +238,3 @@ def read_slurms(path, printing=False):
                 for n, m in zip(canc, slurm_file_canc):
                     cancelfile.write(m+'\n')
                     cancelfile.write(n+'\n')
-=======
->>>>>>> c4e6c9960746d7dc66489d600cc70f8bf8ce0b55
