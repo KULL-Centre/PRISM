@@ -40,7 +40,9 @@ def prism_to_mut(primsfile, mutfile):
     data_frame1 = data.dataframe
     mut_dic = {}
     with open(mutfile, 'w') as fp:
-        for resid in data_frame1["resi"].explode().unique():
+        searchlist = data_frame1["resi"].explode().unique()
+        cleanedList = [x for x in searchlist if str(x) != 'nan']
+        for resid in cleanedList:
             data_frame2 = data.get_var_at_pos(resid)
             native = data_frame2['aa_ref'].explode().unique()[0]
             variants = ''.join([''.join(map(str, l))
@@ -57,18 +59,21 @@ def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=
     logger.info('Create prism file with rosetta ddG values')
     variant = []
     norm_ddG_value = []
+    std_ddG_value = []
     ddG_value = []
     with open(ddg_file, 'r') as fp:
         for line in fp:
             split_line = line.split(',')
             variant.append(split_line[0])
             norm_ddG_value.append(split_line[1])
+            std_ddG_value.append(split_line[2].strip())
      #       ddG_value.append(split_line[1])
 
     data = {
         'variant': pd.Series(variant),
         'norm_ddG': pd.Series(norm_ddG_value),
-        'ddG': pd.Series(ddG_value),
+        'std_ddG': pd.Series(std_ddG_value),
+        #      'ddG': pd.Series(ddG_value),
         'n_mut': 1,  # pd.Series([1 for x in range(len(variant))]),
         'aa_ref': [[seg[0]] for seg in variant],
         "resi": [[seg[1:-1]] for seg in variant],
@@ -111,7 +116,8 @@ def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=
         # different PRISM_files
         "columns": {
             "norm_ddG": "mean Rosetta ddG values normalized to WT",
-#            "ddG": "Rosetta ddG values",
+            "std_ddG": "std Rosetta ddG values normalized to WT",
+            #            "ddG": "Rosetta ddG values",
         },
     }
 

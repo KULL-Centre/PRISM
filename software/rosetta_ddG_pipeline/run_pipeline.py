@@ -19,6 +19,7 @@ import sys
 
 # Local application imports
 from AnalyseStruc import get_structure_parameters
+from analysis import calc_all
 from args_pipeline import parse_args2
 from checks import compare_mutfile, pdbxmut
 from folders import folder2
@@ -94,8 +95,12 @@ def predict_stability(args):
                     run_name = 'input_mp_aligned'
                     structure_instance.path = os.path.join(
                         folder.prepare_mp_superpose, f'{run_name}.pdb')
-                    mp_prepare.mp_superpose_opm(
-                        args.MP_ALIGN_REF, prep_struc, structure_instance.path, target_chain=structure_instance.chain_id, write_opm=True)
+                    try:
+                        mp_prepare.mp_superpose_opm(
+                            args.MP_ALIGN_REF, prep_struc, structure_instance.path, target_chain=structure_instance.chain_id, write_opm=True)
+                    except:
+                        mp_prepare.mp_TMalign_opm(
+                            args.MP_ALIGN_REF, prep_struc, structure_instance.path, target_chain=structure_instance.chain_id, write_opm=True)                        
                 elif args.UNIPROT_ID != '':
                     logger.error('Uniprot-ID to ref pdb not implemented yet')
                     sys.exit()
@@ -200,7 +205,7 @@ def predict_stability(args):
 
             # Parse sbatch relax parser
             path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(
-                folder, sys_name=f'{name}_relax', sc_name='relax_scores')
+                folder, sys_name=f'{name}_relax', sc_name='relax_scores', partition=args.SLURM_PARTITION)
 
             # Parse sbatch ddg file
             ddg_input_ddgfile = create_copy(
@@ -208,20 +213,40 @@ def predict_stability(args):
             ddg_input_span_dir = create_copy(
                 prepare_output_span_dir, folder.ddG_input, name='spanfiles', directory=True)
 
+            if args.MP_PH == -1:
+                is_pH = 0
+                pH_value = 7
+            else:
+                is_pH = 1
+                pH_value = args.MP_PH
             path_to_ddg_calc_sbatch = mp_ddG.rosetta_ddg_mp_pyrosetta(
-                folder, mut_dic, SLURM=True, sys_name=name)
+                folder, mut_dic, SLURM=True, sys_name=name, partition=args.SLURM_PARTITION,
+                repack_radius=args.BENCH_MP_REPACK, lipids=args.MP_LIPIDS,
+                temperature=args.MP_TEMPERATURE, repeats=args.BENCH_MP_REPEAT,
+                is_pH=is_pH, pH_value=pH_value)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
+<<<<<<< HEAD
                 folder, uniprot=args.UNIPROT_ID, sys_name=name, output_name='ddG.out', partition=partition)
+=======
+                folder, uniprot=args.UNIPROT_ID, sys_name=name, output_name='ddG.out', partition=args.SLURM_PARTITION)
+>>>>>>> c4e6c9960746d7dc66489d600cc70f8bf8ce0b55
         else:
             # Parse sbatch relax file
             relax_input_relaxfile = create_copy(
                 input_dict['RELAX_FLAG_FILE'], folder.relax_input, name='relax_flagfile')
             path_to_relax_sbatch = structure_instance.rosetta_sbatch_relax(
+<<<<<<< HEAD
                 folder, relaxfile=relax_input_relaxfile, sys_name=name,  partition=partition)
             # Parse sbatch relax parser
             path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(
                 folder,  partition=partition)
+=======
+                folder, relaxfile=relax_input_relaxfile, sys_name=name, partition=args.SLURM_PARTITION)
+            # Parse sbatch relax parser
+            path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(
+                folder, partition=args.SLURM_PARTITION)
+>>>>>>> c4e6c9960746d7dc66489d600cc70f8bf8ce0b55
 
             # Parse sbatch ddg file
             ddg_input_ddgfile = create_copy(
@@ -229,10 +254,17 @@ def predict_stability(args):
             ddg_input_mutfile_dir = create_copy(
                 prepare_output_ddg_mutfile_dir, folder.ddG_input, name='mutfiles', directory=True)
             path_to_ddg_calc_sbatch = structure_instance.write_rosetta_cartesian_ddg_sbatch(
+<<<<<<< HEAD
                 folder, ddg_input_mutfile_dir, ddgfile=ddg_input_ddgfile, sys_name=name,  partition=partition)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = structure_instance.write_parse_cartesian_ddg_sbatch(
                 folder,  partition=partition)
+=======
+                folder, ddg_input_mutfile_dir, ddgfile=ddg_input_ddgfile, sys_name=name, partition=args.SLURM_PARTITION)
+            # Parse sbatch ddg parser
+            path_to_parse_ddg_sbatch = structure_instance.write_parse_cartesian_ddg_sbatch(
+                folder, structure_instance.fasta_seq, structure_instance.chain_id, sys_name=name, partition=args.SLURM_PARTITION)
+>>>>>>> c4e6c9960746d7dc66489d600cc70f8bf8ce0b55
 
     # Execution
     # Single SLURM execution
@@ -241,19 +273,37 @@ def predict_stability(args):
         relax_output_strucfile = find_copy(
             folder.relax_run, '.pdb', folder.relax_output, 'output.pdb')
 
+
+# if SLURM == False:
+#    path_to_scorefile = os.path.join(structure_instance.path_to_run_folder + '/relax_scores.sc')
+#    relax_pdb_out = relax_parse_results.parse_relax_results(path_to_scorefile, path_to_run_folder)
+# else:
+#    path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(os.path.join(structure_instance.path_to_run_folder + '/relax_scores.sc'), structure_instance.path_to_run_folder)
+#    relax_pdb_out = parse_relax_process_id = run_modes.relaxation(structure_instance.path_to_run_folder)
+# logger.info(f"Relaxed structure for ddG calculations: {relax_pdb_out}")
+
     if mode == 'ddg_calculation':
         run_modes.ddg_calculation(folder)
+#        ddg_output_score = find_copy(
+#            folder.ddG_run, '.sc', folder.ddG_output, 'output.sc')
 
     if mode == 'analysis':
+        calc_all(folder, sys_name=name)
         plot_all(folder, sys_name=name)
 
     # Full SLURM execution
     if mode == 'proceed' or mode == 'fullrun':
         # Start relax calculation
         parse_relax_process_id = run_modes.relaxation(folder)
+        # relax_output_strucfile = find_copy(
+        # folder.relax_run, '.pdb', folder.relax_output, 'output.pdb')
+        # Start ddG calculation
+        # ddg_input_struc = create_copy(
+        # os.path.join(folder.relax_output, 'output.pdb'), folder.ddG_input,
+        # name='input.pdb')
         run_modes.ddg_calculation(folder, parse_relax_process_id)
-        ddg_output_score = find_copy(
-            folder.ddG_run, '.sc', folder.ddG_output, 'output.sc')
+#        ddg_output_score = find_copy(
+#            folder.ddG_run, '.sc', folder.ddG_output, 'output.sc')
 
 
 ##########################################################################

@@ -156,9 +156,13 @@ def drop_numerical_outliers(df, variant_col='variant', score_col='score', z_thre
     logger.info(df[variant_col][~constrains].tolist())
     logger.info(df[score_col][~constrains].tolist())
     df.drop(df.index[~constrains], inplace=True)
-    
-def read_fasta(fasta_file):
 
+    df.sort_values('variant', inplace=True)
+    df.reset_index(drop=True, inplace=True)
+    return df
+
+
+def read_fasta(fasta_file):
     fastau_file = open(fasta_file, 'r')
     fastau_lines = fastau_file.readlines()
     fastau_file.close()
@@ -167,6 +171,7 @@ def read_fasta(fasta_file):
         uniprot_seq = uniprot_seq + line.strip()
     return(uniprot_seq)
 
+<<<<<<< HEAD
 def check_path(path):
     os.chdir(os.getcwd())
     if path != None and path != '':
@@ -234,3 +239,5 @@ def read_slurms(path, printing=False):
                 for n, m in zip(canc, slurm_file_canc):
                     cancelfile.write(m+'\n')
                     cancelfile.write(n+'\n')
+=======
+>>>>>>> c4e6c9960746d7dc66489d600cc70f8bf8ce0b55

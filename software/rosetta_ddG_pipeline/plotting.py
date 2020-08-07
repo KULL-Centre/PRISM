@@ -12,6 +12,8 @@ import os
 
 
 # Third party imports
+import matplotlib
+matplotlib.use('Agg')
 from matplotlib.collections import PathCollection
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
