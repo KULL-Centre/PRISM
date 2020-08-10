@@ -177,7 +177,7 @@ def check_path(path):
 
         if path[0] == "/" and path != None:
             path=path
-        if path[0]!= "/" and path != None:
+        if (path[0]!= "/" and path != None) or (path[0]!= "." and path != None):
             path=os.path.join(os.getcwd(),path)
     return(path)
 
