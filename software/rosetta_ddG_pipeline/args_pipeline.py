@@ -165,7 +165,7 @@ def parse_args2():
                         )
     parser.add_argument('--mp_relax_xml',
                         default=os.path.join(
-                            rosetta_paths.path_to_parameters, 'mp_relax.xml'),
+                            rosetta_paths.path_to_data, 'mp', 'mp_relax.xml'),
                         dest='RELAX_XML_INPUT',
                         help='Relaxation xml file for membrane pipeline'
                         )
