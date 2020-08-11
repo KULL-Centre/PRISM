@@ -2,13 +2,13 @@
 import sys
 
 
-def pdb_to_fasta_seq(path_to_pdb):
+def pdb_to_fasta_seq(path_to_pdb,chain_id='NULL'):
     
     with open(path_to_pdb, 'r') as pdb_file:
         pdblines = pdb_file.readlines()
 
-    fasta_seq = ''
-
+    fasta_seq_full = ''
+    fasta_seq_chain = ''
     chainspec = 'NULL'
     residue_number = 'NULL'
 
@@ -48,16 +48,19 @@ def pdb_to_fasta_seq(path_to_pdb):
 
                 previous_chainspec = chainspec
                 chainspec = line[21]
-
+                
                 previous_residue_number = residue_number
                 residue_number = line[22:26]
 
                 residue_number = residue_number.lstrip()
-                if residue_number != previous_residue_number or chainspec != previous_chainspec:
-                        fasta_seq += residue_letter
 
-    return(fasta_seq)
+                if residue_number != previous_residue_number or chainspec != previous_chainspec:
+                        fasta_seq_full += residue_letter
+                if (residue_number != previous_residue_number or chainspec != previous_chainspec) and str(line[21]) == str(chain_id):
+                        fasta_seq_chain += residue_letter                
+
+    return(fasta_seq_full,fasta_seq_chain)
 
 if __name__ == '__main__':
-    fasta_sequence = pdb_to_fasta_seq(sys.argv[1])
+    fasta_sequence = pdb_to_fasta_seq(sys.argv[1],sys.argv[2])
     print(fasta_sequence)
