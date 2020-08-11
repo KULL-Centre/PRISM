@@ -250,9 +250,7 @@ def predict_stability(args):
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = structure_instance.write_parse_cartesian_ddg_sbatch(
                 folder,  partition=partition)
-            # Parse sbatch ddg parser
-            path_to_parse_ddg_sbatch = structure_instance.write_parse_cartesian_ddg_sbatch(
-                folder, structure_instance.fasta_seq, structure_instance.chain_id, sys_name=name, partition=args.SLURM_PARTITION)
+
 
     # Execution
     # Single SLURM execution
