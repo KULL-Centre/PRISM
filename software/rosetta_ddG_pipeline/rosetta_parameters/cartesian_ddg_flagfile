@@ -1,13 +1,12 @@
--fa_max_dis 9.0 
--ddg::dump_pdbs false 
+-fa_max_dis 9.0
+-ddg::dump_pdbs false
 -ddg:iterations 3
--score:weights beta_nov16_cart 
+-score:weights beta_nov16_cart
 -missing_density_to_jump
--ddg:mut_only 
--ddg:bbnbrs 1 
--beta_cart 
 -ddg:mut_only
+-ddg:bbnbrs 1
+-beta_cart
 -ex1
 -ex2
--ddg::legacy false
--optimize_proline
+-ddg::legacy true
+-optimize_proline true

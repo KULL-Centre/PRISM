@@ -1,0 +1,5 @@
+NAME = PagP
+CHAIN = A
+STRUCTURE = /data/test/mp-pipeline/input/PagP.pdb
+OUTPATH = 
+
