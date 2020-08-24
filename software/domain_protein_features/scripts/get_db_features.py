@@ -7,8 +7,8 @@ Date of last major changes: 2020-08-24
 """
 
 # Standard library imports
-import urllib.request
 import json
+import urllib.request
 
 
 def get_disprot_disordered(uniprot_id):

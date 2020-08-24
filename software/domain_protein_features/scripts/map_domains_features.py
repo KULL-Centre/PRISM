@@ -7,20 +7,13 @@ Date of last major changes: 2020-08-24
 """
 
 # Standard library imports
+import json
 import logging as log
 import os
-import sys
-import requests
-import time
-import urllib.request
 import urllib.parse
-import json
-import xmltodict
-import gzip
+import urllib.request
 
 # Third party imports
-from bs4 import BeautifulSoup as bs
-import numpy as np
 import pandas as pd
 
 # Local application imports

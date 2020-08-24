@@ -7,8 +7,8 @@ Date of last major changes: 2020-08-21
 """
 
 # Standard library imports
-import sys
 import urllib.request
+import sys
 
 
 def extract_uniprot_human_proteome_ids(reviewed="yes"):
