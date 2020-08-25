@@ -1,4 +1,6 @@
 [![Changelog](https://img.shields.io/badge/changelog--lightgrey.svg?style=flat)](CHANGELOG)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/KULL-Centre/PRISM/master?filepath=software%2Fdomain_protein_features%2Fjupyter_scripts%2Fextract_domain_protein_features_interactive.ipynb)
+
 
 The domain protein features script extracts the domains, protein features (incl. topology, TM and disordered regions, disulfid bridges, active and binding sites) and pdb-ids for a uniprot id.
 

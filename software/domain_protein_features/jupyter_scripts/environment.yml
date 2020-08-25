@@ -1,0 +1,9 @@
+channels:
+  - conda-forge
+dependencies:
+  - python
+  - numpy
+  - pip
+  - pip:
+    - xmltodict
+    - pandas
