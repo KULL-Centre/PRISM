@@ -79,45 +79,38 @@ general scheme:
 		[[extra information with position or start/end postition]],
 		[[list of pdb_ids associated to the uniprot and domain
  		[pdb_id, chain, pdb_start, pdb_end, uniprot_start, uniprot_end]],
-	[if specified, list of additional pdb_ids mapped to the domain family]]],
-	{(information which is not covered by the domain ranges, including definition and start and ending)})
+	 [if specified, list of additional pdb_ids mapped to the domain family]]],
+ [[information which is not covered by the domain ranges, including definition and start and ending]])
 
 
 example for uniprot_id = 'P10912'
 
-({'PF00041': [['fn3', '159', '244'],
-   [['Extracellular', '19', '264']],
-   [[['3HHR', 'C', '141', '226', '159', '244'],
-     ['1KF9', 'F', '1641', '1726', '159', '244'],
-     ...
-     ['1HWG', 'B', '141', '226', '159', '244'],
-     ['1HWG', 'C', '141', '226', '159', '244']],
-    [['6TPV', 'A', '321', '401', '', ''],
-     ['6TPV', 'A', '415', '500', '', ''],
-     ['5A40', 'E', '5', '75', '', ''],
-     ...
-     ['4JMH', 'A', '112', '186', '', ''],
-     ['3UTO', 'A', '9', '89', '', ''],
-     ['5DWU', 'B', '341', '419', '', '']]]],
-  'PF09067': [['EpoR_lig-bind', '43', '144'],
-   [['Extracellular', '19', '264'],
-    ['disulfid', '56', '66'],
-    ['disulfid', '101', '112'],
-    ['disulfid', '126', '140']],
-   [[['3HHR', 'C', '32', '126', '50', '144'],
-     ['1KF9', 'C', '533', '626', '51', '144'],
-     ...
-     ['1HWH', 'B', '32', '126', '50', '144'],
-     ['1HWG', 'C', '32', '126', '50', '144']],
-    [['3N06', 'B', '2', '96', '', ''],
-     ['1F6F', 'B', '5', '96', '', ''],
-     ...
-     ['6MOI', 'B', '13', '116', '', ''],
-     ['4I18', 'C', '3', '96', '', '']]]],
-  'PF12772': [['GHBP', '316', '617'],
-   [['Cytoplasmic', '289', '638'], ['disorder:D', 269, 620]],
+({'PF00041': [['fn3', 159, 244],
+   [['Extracellular', 19, 264]],
+   [[['3HHR', 'C', 141, 226, 159, 244],
+     ['1KF9', 'C', 641, 726, 159, 244],
+     	...
+     ['1KF9', 'F', 1641, 1726, 159, 244],
+     ['1HWG', 'C', 141, 226, 159, 244]],
+    [['6TPV', 'A', 321, 401, '', ''],
+     	...
+     ['5DWU', 'B', 341, 419, '', '']]]],
+  'PF09067': [['EpoR_lig-bind', 43, 144],
+   [['Extracellular', 19, 264],
+    ['disulfid', 56, 66],
+    ['disulfid', 101, 112],
+    ['disulfid', 126, 140]],
+   [[['3HHR', 'C', 32, 126, 50, 144],
+   		...
+     ['1HWG', 'C', 32, 126, 50, 144]],
+    [['3N06', 'B', 2, 96, '', ''],
+     ['1F6F', 'B', 5, 96, '', ''],
+     	...
+     ['4I18', 'C', 3, 96, '', '']]]],
+  'PF12772': [['GHBP', 316, 617],
+   [['Cytoplasmic', 289, 638], ['disorder:D', 269, 620]],
    [[], []]]},
- {('tm:Helical', '265', '288')})
+ [['tm:Helical', 265, 288]])
 
 
 

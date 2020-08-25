@@ -69,7 +69,7 @@ def parse_args():
     parser.add_argument( '--human_proteome', '-hp',
         type=lambda s: s.lower() in ['true', 't', 'yes', '1'],
         default=False,
-        help="Calculate domains and features for the human proteome"
+        help="Calculate domains and features for the human proteome (default: False)"
         )
     parser.add_argument( '--uniprot_id', '-u',
         type=str,
@@ -79,22 +79,22 @@ def parse_args():
     parser.add_argument( '--reviewed', '-r',
         type=str,
         default="yes",
-        help="Obtain only reviewed entries from uniprot (options: *, yes [default]"
+        help="Obtain only reviewed entries from uniprot (options: *, yes [default])"
         )
     parser.add_argument( '--domainfamily_pdbs', '-dfp',
         type=lambda s: s.lower() in ['true', 't', 'yes', '1'],
         default=False,
-        help="Get also all pdbs associated with each single domain family."
+        help="Get also all pdbs associated with each single domain family (default: False)"
         )
     parser.add_argument( '--nested', '-n',
         type=lambda s: s.lower() in ['true', 't', 'yes', '1'],
         default=False,
-        help="Get information about nested domains."
+        help="Get information about nested domains (default: False)"
         )
     parser.add_argument('--output_dir', '-o',
         type=str,
         default='',
-        help="Directory where files will be written. If not specified, no output files will be printed"
+        help="Directory where files will be written. If not specified, no output files will be printed."
         )
     
     args = parser.parse_args()
