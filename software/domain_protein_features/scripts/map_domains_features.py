@@ -107,22 +107,22 @@ def extract_single_infos(uniprot_id, human_proteome_info_df):
     else:
         disorder = mobidb_dis_content
     if tm_region:
-        tm_region = [[f'tm:{elem[2]}',elem[0],elem[1]] for elem in tm_region]
+        tm_region = [[f'tm:{elem[2]}',int(elem[0]),int(elem[1])] for elem in tm_region]
     if top_domain:
         tmp_top_domain = []
         for elem in top_domain:
             if len(elem) == 3:
-                tmp_top_domain.append([elem[2],elem[0],elem[1]])
+                tmp_top_domain.append([elem[2],int(elem[0]),int(elem[1])])
             else:
-                tmp_top_domain.append([elem[1],elem[0],elem[0]])
+                tmp_top_domain.append([elem[1],int(elem[0]),int(elem[0])])
         top_domain = tmp_top_domain
     if disorder:
-        disorder = [[f'disorder:{elem[2]}',elem[0],elem[1]] for elem in disorder]
+        disorder = [[f'disorder:{elem[2]}',int(elem[0]),int(elem[1])] for elem in disorder]
     if ss_list:
-        ss_list = [[elem[2],elem[0],elem[1]] for elem in ss_list]
+        ss_list = [[elem[2],int(elem[0]),int(elem[1])] for elem in ss_list]
     func_sites = bindingsite_list + activesite_list
     if func_sites:
-        func_sites = [[elem[1],elem[0]] for elem in func_sites]
+        func_sites = [[elem[1],int(elem[0])] for elem in func_sites]
     result_dict = {
         'tm_region': tm_region,
         'topol_domain': top_domain,
@@ -165,14 +165,14 @@ def map_pfam_pdb(uniprot_id, all_pfam_df, pdb_pfam_df, human_proteome_info_df, w
         results_pdb = results_pdb.loc[results_pdb[3] == key]
         arr = []
         for line in results_pdb.to_numpy():
-            arr.append([line[2], line[5], line[6], line[8], line[10], line[11]])
+            arr.append([line[2], line[5], int(line[6]), int(line[8]), int(line[10]), int(line[11])])
         domain_pdb_array = []
         if isinstance(pdb_pfam_df,(pd.core.frame.DataFrame)):
             new = pdb_pfam_df["PFAM_ACC"].str.split(".", n = 1, expand = True) 
             pdb_pfam_df["PFAM_ACC_short"] = new[0] 
             domain_pdb = pdb_pfam_df.loc[pdb_pfam_df['PFAM_ACC_short'] == key]
             for line in domain_pdb.to_numpy():
-                domain_pdb_array.append([line[0], line[1], line[2], line[3], '', ''])
+                domain_pdb_array.append([line[0], line[1], int(line[2]), int(line[3]), '', ''])
             #add_domain_pdb = []
             #for elem in domain_pdb_array:
             #    if not any(elem[0] in x[0] for x in arr):
@@ -181,10 +181,11 @@ def map_pfam_pdb(uniprot_id, all_pfam_df, pdb_pfam_df, human_proteome_info_df, w
         combined_dict[key] = result_arr
     if write_dir:
         with open(os.path.join(write_dir,f'domains_features_{uniprot_id}.json'), 'w') as json_file:
-            json.dump(human_genome, json_file, indent=4)
+            json.dump(combined_dict, json_file, indent=4)
     
     #information not covered by pfam regions
     uncovered_by_pfam = (set(tuple(i) for i in error_list) | set(tuple(i) for i in tp_results_to_list)) - (set(tuple(i) for i in error_list) & set(tuple(i) for i in tp_results_to_list))
+    uncovered_by_pfam = [list(elem) for elem in uncovered_by_pfam]
     if len(uncovered_by_pfam) == 0:
         return combined_dict, False
     else:
@@ -213,12 +214,16 @@ def get_domain_features_human_proteome(human_proteome_ids, all_pfam_df, pdb_pfam
             json.dump(human_genome, json_file, indent=4)
         if uncovered_info:
             with open(os.path.join(write_dir,'domains_features_human_genome_uncovered.json'), 'w') as json_file:
+                stri = json.dumps(uncovered_info)
                 json.dump(uncovered_info, json_file, indent=4)
         if error_list:
             with open(os.path.join(write_dir,'domains_features_human_genome_error_ids.txt'), 'w') as json_file:
-                json_file.write(f'{error_list}')
-    if uncovered_info:
-        logger.info(f'uncovered info by pfam: {uncovered_info}')
-    if error_list:
-        logger.info(f'ERROR: {error_list}')
+                stri = json.dumps(error_list)
+                json_file.write(f'{stri}')
+    else:
+        if uncovered_info:
+            logger.info(f'uncovered info by pfam: {uncovered_info}')
+        if error_list:
+            stri = json.dumps(error_list)
+            logger.info(f'ERROR: {stri}')
     return human_genome

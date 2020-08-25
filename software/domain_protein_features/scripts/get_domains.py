@@ -39,9 +39,9 @@ def extract_single_protein_pfam( uniprot_id, verbose=False ):
         subdic = dictString['pfam']['entry']['matches']['match']
         for keys in subdic:
             if isinstance(keys,str):
-                result_dic[subdic['accession']] = [subdic['id'], subdic['location']['start'], subdic['location']['end']]
+                result_dic[subdic['accession']] = [subdic['id'], int(subdic['location']['start']), int(subdic['location']['end'])]
             else:
-                result_dic[keys['accession']] = [keys['id'], keys['location']['start'], keys['location']['end']]
+                result_dic[keys['accession']] = [keys['id'], int(keys['location']['start']), int(keys['location']['end'])]
 
     if verbose:
         jsonString = json.dumps(xmltodict.parse(contents.decode("utf-8"), attr_prefix='', cdata_key='#text'), indent=4)

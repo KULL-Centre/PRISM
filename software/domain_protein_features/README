@@ -45,7 +45,7 @@ jupyter notebook
 Optional. The notebook contains the single calls of the functions and also the final call. Please consider that the call to run through the complete human proteome is time consuming (several hours).
 
 command line
-------------------
+-------------
 
 usage: run.py [-h] [--human_proteome HUMAN_PROTEOME] [--uniprot_id UNIPROT_ID] [--reviewed REVIEWED] [--domainfamily_pdbs DOMAINFAMILY_PDBS] [--nested NESTED] [--output_dir OUTPUT_DIR]
 
@@ -66,8 +66,11 @@ optional arguments:
 
 
 
-Result (single uniprot id)
-==========
+Result 
+=======
+
+The output can be saved (and loaded) as .json file or txt file.
+
 
 general scheme:
 
