@@ -48,7 +48,7 @@ Optional. The notebook contains the single calls of the functions and also the f
 
 command line
 -------------
-
+```
 usage: run.py [-h] [--human_proteome HUMAN_PROTEOME] [--uniprot_id UNIPROT_ID] [--reviewed REVIEWED] [--domainfamily_pdbs DOMAINFAMILY_PDBS] [--nested NESTED] [--output_dir OUTPUT_DIR]
 
 optional arguments:
@@ -66,7 +66,7 @@ optional arguments:
   --output_dir OUTPUT_DIR, -o OUTPUT_DIR
                         Directory where files will be specified, no output files will be printed
 
-
+```
 
 Result 
 =======
@@ -75,7 +75,7 @@ The output can be saved (and loaded) as .json file or txt file.
 
 
 general scheme:
-
+```
 ({pfam_domain_id: 
 	[[pfam_domain_name, start, end],
 		[[extra information with position or start/end postition]],
@@ -83,10 +83,10 @@ general scheme:
  		[pdb_id, chain, pdb_start, pdb_end, uniprot_start, uniprot_end]],
 	 [if specified, list of additional pdb_ids mapped to the domain family]]],
  [[information which is not covered by the domain ranges, including definition and start and ending]])
-
+```
 
 example for uniprot_id = 'P10912'
-
+```
 ({'PF00041': [['fn3', 159, 244],
    [['Extracellular', 19, 264]],
    [[['3HHR', 'C', 141, 226, 159, 244],
@@ -113,7 +113,7 @@ example for uniprot_id = 'P10912'
    [['Cytoplasmic', 289, 638], ['disorder:D', 269, 620]],
    [[], []]]},
  [['tm:Helical', 265, 288]])
-
+```
 
 
 Cite
