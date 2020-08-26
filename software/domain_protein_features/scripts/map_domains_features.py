@@ -191,7 +191,7 @@ def map_pfam_pdb(uniprot_id, all_pfam_df, pdb_pfam_df, human_proteome_info_df, w
     else:
         if write_dir:
             with open(os.path.join(write_dir,f'domains_features_uncovered_{uniprot_id}.json'), 'w') as json_file:
-                json.dump(human_genome, json_file, indent=4)
+                json.dump(uncovered_by_pfam, json_file, indent=4)
         return combined_dict, uncovered_by_pfam
 
 def get_domain_features_human_proteome(human_proteome_ids, all_pfam_df, pdb_pfam_df, human_proteome_info_df, write_dir=''):
