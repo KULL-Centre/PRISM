@@ -122,9 +122,7 @@ def predict_stability(args):
         structure_instance.path_to_cleaned_pdb, struc_dic_cleaned = structure_instance.clean_up_and_isolate()
         structure_instance.fasta_seq_full,structure_instance.fasta_seq = pdb_to_fasta_seq(
             structure_instance.path_to_cleaned_pdb,chain_id)
-        if uniprot_accesion != "":
-            structure_instance.uniprot_seq = read_fasta(
-                uniprot_accesion)
+        if os.path.isfile(uniprot_accesion):
             structure_instance.muscle_align_to_uniprot(structure_instance.uniprot_seq)
         else:
             structure_instance.muscle_align_to_uniprot(structure_instance.fasta_seq)
@@ -206,7 +204,7 @@ def predict_stability(args):
 
             # Parse sbatch relax parser
             path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(
-                folder, sys_name=f'{name}_relax', sc_name='relax_scores', partition=args.SLURM_PARTITION)
+                folder, sys_name=f'{name}_relax', partition=args.SLURM_PARTITION)
 
             # Parse sbatch ddg file
             ddg_input_ddgfile = create_copy(

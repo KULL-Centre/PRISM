@@ -38,7 +38,10 @@ class structure:
             self.folder=folder
             self.logger=logger
             if uniprot_accesion != '':
-                self.uniprot_seq = read_fasta(uniprot_accesion)
+                if os.path.isfile(uniprot_accesion):
+                    self.uniprot_seq = read_fasta(uniprot_accesion)
+                else:
+                    self.uniprot_seq = extract_by_uniprot_fasta(uniprot_accesion)[1][1]
             self.name='input'
         except:
             print('Failed initiation. Please check input parameters')

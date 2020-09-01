@@ -172,13 +172,8 @@ def read_fasta(fasta_file):
     return(uniprot_seq)
 
 def check_path(path):
-    os.chdir(os.getcwd())
-    if path != None and path != '':
-
-        if path[0] == "/" and path != None:
-            path=path
-        if (path[0]!= "/" and path != None) or (path[0]!= "." and path != None):
-            path=os.path.join(os.getcwd(),path)
+    if path and (os.path.isfile(path) or os.path.isdir(path)):
+        path=os.path.abspath(path)
     return(path)
 
 def read_slurms(path, printing=False):
