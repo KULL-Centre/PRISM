@@ -59,6 +59,7 @@ def predict_stability(args):
 
     if run_struc == None:
         run_struc = chain_id
+        
     # System name
     name = os.path.splitext(os.path.basename(structure_list))[0]
 
@@ -257,17 +258,8 @@ def predict_stability(args):
         relax_output_strucfile = find_copy(
             folder.relax_run, '.pdb', folder.relax_output, 'output.pdb')
 
-
-# if SLURM == False:
-#    path_to_scorefile = os.path.join(structure_instance.path_to_run_folder + '/relax_scores.sc')
-#    relax_pdb_out = relax_parse_results.parse_relax_results(path_to_scorefile, path_to_run_folder)
-# else:
-#    path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(os.path.join(structure_instance.path_to_run_folder + '/relax_scores.sc'), structure_instance.path_to_run_folder)
-#    relax_pdb_out = parse_relax_process_id = run_modes.relaxation(structure_instance.path_to_run_folder)
-# logger.info(f"Relaxed structure for ddG calculations: {relax_pdb_out}")
-
     if mode == 'ddg_calculation':
-        run_modes.ddg_calculation(folder)
+        run_modes.ddg_calculation(folder,parse_relax_process_id=None)
 #        ddg_output_score = find_copy(
 #            folder.ddG_run, '.sc', folder.ddG_output, 'output.sc')
 
@@ -279,15 +271,8 @@ def predict_stability(args):
     if mode == 'proceed' or mode == 'fullrun':
         # Start relax calculation
         parse_relax_process_id = run_modes.relaxation(folder)
-        # relax_output_strucfile = find_copy(
-        # folder.relax_run, '.pdb', folder.relax_output, 'output.pdb')
-        # Start ddG calculation
-        # ddg_input_struc = create_copy(
-        # os.path.join(folder.relax_output, 'output.pdb'), folder.ddG_input,
-        # name='input.pdb')
         run_modes.ddg_calculation(folder, parse_relax_process_id)
-#        ddg_output_score = find_copy(
-#            folder.ddG_run, '.sc', folder.ddG_output, 'output.sc')
+
 
 
 ##########################################################################

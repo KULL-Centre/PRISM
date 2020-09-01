@@ -13,14 +13,33 @@ Date of last major changes: 2020-04
 import logging as logger
 import os
 import sys
+from os.path import join
+import subprocess
 
 # Local application imports
 from helper import AttrDict, create_symlinks, create_copy, find_copy
-
+from get_memory_stats import check_memory
 
 def parse_relax_results(folder, sc_name='score_bn15_calibrated', logger_mode='info'):
     '''This function parses the scorefile from a rosetta
     pre-relaxation, and selects the lowest scoring one'''
+    
+    try:
+        job_id_pos= join(folder.relax_run, 'job_id_relax.txt')
+        with open(job_id_pos, 'r') as job_id_file:
+            relax_process_id=str(job_id_file.readlines()[-1])
+            print(relax_process_id)
+         
+        #Get stats 
+        shell_command = f'sacct --format="JobID,Start,End,CPUTime,ReqMem,MaxRSS,MaxVMSize,AveVMSize,JobName" > memory_usage_{relax_process_id}.log'
+        subprocess.call(shell_command, cwd=folder.relax_run, shell=True)
+                                                
+        check_memory(relax_process_id,folder.relax_run) 
+        
+    except: 
+        print('no memory file')
+    
+    
     relax_scores = {}
     for n in range(20):
         path_to_scorefile = os.path.join(
@@ -29,19 +48,13 @@ def parse_relax_results(folder, sc_name='score_bn15_calibrated', logger_mode='in
             scorelines = scorefile.readlines()
 
         # Put the relaxation scores in this dict
-        
-
         for line in scorelines:
             score_fields = line.split()
             name = score_fields[-1].strip()
-            #print(name,score_fields)
-            # check if this is an actual scoring line
             if score_fields[0].strip() == 'SCORE:' and name != 'description':
                 score = float(score_fields[1])
                 relax_scores[name] = score
     print(relax_scores)
-    # now find the lowest scoring one.
-    # set it to the last one, just to start with something
     most_relaxed = name
     for key in relax_scores:
         # it the key is more relaxed than the previous best, update the best.
@@ -51,8 +64,7 @@ def parse_relax_results(folder, sc_name='score_bn15_calibrated', logger_mode='in
 
     logger.info(f'most relaxed structure is {most_relaxed}.')
     logger.info('deleting the rest')
-#     and now delete all the structures that are not the best scoring one.
-#     it seems a little crude, but whatever.
+    #Deleting all the structures that are not the best scoring one.
     for key in relax_scores:
         if key != most_relaxed:
             path_to_tense = os.path.join(folder.relax_run, f'{key}.pdb')
