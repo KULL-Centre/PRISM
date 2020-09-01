@@ -21,7 +21,7 @@ import numpy as np
 import pdb_to_fasta_seq
 import rosetta_paths
 from AnalyseStruc import get_structure_parameters
-from helper import read_fasta
+from helper import read_fasta, extract_by_uniprot_fasta
 
 
 class structure:
@@ -37,8 +37,10 @@ class structure:
         self.folder=folder
         self.logger=logger
         if uniprot_accesion != '':
-            print(uniprot_accesion)
-            self.uniprot_seq = read_fasta(uniprot_accesion)
+            if os.path.isfile(uniprot_accesion):
+                self.uniprot_seq = read_fasta(uniprot_accesion)
+            else:
+                self.uniprot_seq = extract_by_uniprot_fasta(uniprot_accesion)[1][1]
         self.name='input'
         
     def clean_up_and_isolate(self, name='input',ligand=None):
@@ -79,7 +81,7 @@ class structure:
 
 
 
-    def muscle_align_to_uniprot(self, uniprot_sequence,name='input'):
+    def muscle_align_to_uniprot(self, uniprot_sequence, name='input'):
 
         path_to_muscle = rosetta_paths.path_to_muscle
         self.path_to_fasta = os.path.join(self.folder.prepare_checking, 'fasta_file.fasta')
