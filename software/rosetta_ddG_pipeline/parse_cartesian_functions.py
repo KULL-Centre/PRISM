@@ -4,6 +4,8 @@ import os
 import json
 
 def rosetta_cartesian_read(pathtofile, protein_seq='abcd'):
+    """This script takes the individual score files in the run folder and outputs a dictionary of dGs"""
+    
     score_file = open(pathtofile, "r")
     score_data = score_file.readlines()
     score_file.close()
@@ -32,7 +34,6 @@ def rosetta_cartesian_read(pathtofile, protein_seq='abcd'):
     }
 
     cartesian_scores = {}
-    #print(len(protein_seq))
     for line in score_data:
         score_fields = line.split()
         description = score_fields[2]
@@ -49,40 +50,34 @@ def rosetta_cartesian_read(pathtofile, protein_seq='abcd'):
         else:
             cartesian_scores[protein_seq[int(res_number) - 1 ] + res_number
                              + one_letter] = [dg]
-    #print(cartesian_scores)
     return cartesian_scores
 
 
 def ddgs_from_dg(dictionary_of_dGs):
+    """This scripts take a dictionaru of dGs and first creates a dictionary of WT dGS and then substract the variants dGs. After all substractions the ddG score is divided by 2.9 to convert to kcal/mol """
+    
+    #Creating dictionary of WT dGs
     wt_dGs = {}
-    #with open(structure_input) as json_file:
-    #    strucdata = json.load(json_file)
-        
     for entry in dictionary_of_dGs:
-
         if entry[0] == entry[-1]:
-
             residue_number = entry[1:-1]
             for item in dictionary_of_dGs[entry]:
                 if residue_number in wt_dGs:
                     wt_dGs[residue_number].append(float(item))
-
                 else:
                     wt_dGs[residue_number] = [float(item)]
-
+    
+    #Creating dictionary of variant dGs
     ddgs = {}
     dgs_as_floats = {}
     for mutation in dictionary_of_dGs:
         dgs_as_floats[mutation] = []
         for value in dictionary_of_dGs[mutation]:
             dgs_as_floats[mutation].append(float(value))
-
+    
+    # (variant - WT) / 2.9
     for mutation in dictionary_of_dGs:
-        #resdata=structure_input
-        #print(resdata)
-        #num=int(mutation[1:-1])
-        residue_number = mutation[1:-1]
-        
+        residue_number = mutation[1:-1]        
         ddgs[mutation] = np.divide((np.mean(dgs_as_floats[mutation]) - np.mean(wt_dGs[residue_number])), 2.9)
 
     return ddgs
