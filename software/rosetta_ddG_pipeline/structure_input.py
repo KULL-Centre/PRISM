@@ -257,7 +257,7 @@ class structure:
         return(path_to_sbatch)
 
 
-    def parse_relax_sbatch(self, folder, sys_name='', partition='sbinlab'):
+    def parse_relax_sbatch(self, folder, sys_name='', partition='sbinlab', sc_name='score_bn15_calibrated'):
         """This script creates the parse_relax.sbatch script"""
                                   
         path_to_parse_relax_script = os.path.join(
@@ -273,7 +273,7 @@ class structure:
 
 # launching parsing script 
 ''')
-            fp.write(f'python {path_to_parse_relax_script} {folder.relax_run} {folder.relax_output} {folder.ddG_input}')
+            fp.write(f'python {path_to_parse_relax_script} {folder.relax_run} {folder.relax_output} {folder.ddG_input} {sc_name}')
         self.logger.info(path_to_sbatch)
         return path_to_sbatch
 

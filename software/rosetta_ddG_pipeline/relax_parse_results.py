@@ -42,8 +42,12 @@ def parse_relax_results(folder, sc_name='score_bn15_calibrated', logger_mode='in
     
     relax_scores = {}
     for n in range(20):
-        path_to_scorefile = os.path.join(
-            folder.relax_run, f'{n}-{sc_name}.sc')
+        if sc_name=='score_bn15_calibrated':
+            path_to_scorefile = os.path.join(
+                folder.relax_run, f'{n}-{sc_name}.sc')
+        else:
+            path_to_scorefile = os.path.join(
+                folder.relax_run, f'{sc_name}.sc')
         with open(path_to_scorefile) as scorefile:
             scorelines = scorefile.readlines()
 
@@ -83,6 +87,7 @@ if __name__ == '__main__':
     folder = AttrDict()
     folder.update({'relax_run': sys.argv[1], 'relax_output': sys.argv[
                   2], 'ddG_input': sys.argv[3]})
+    print(sys.argv)
     if len(sys.argv) > 4:
         parse_relax_results(folder, sc_name=sys.argv[4])
     else:

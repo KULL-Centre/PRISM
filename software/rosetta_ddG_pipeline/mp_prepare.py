@@ -204,7 +204,7 @@ def mp_span_from_pdb_dssp(pdbinput, outdir_path, thickness=15, SLURM=False):
         return spanfiles
 
 
-def rosetta_relax_mp(folder, SLURM=False, num_struc=3, sys_name='mp', partition='sbinlab', repeats=2, lipid_type='DLPC'):
+def rosetta_relax_mp(folder, SLURM=False, num_struc=20, sys_name='mp', partition='sbinlab', repeats=2, lipid_type='DLPC', mp_thickness=15):
     Rosetta_script_exec = os.path.join(
         rosetta_paths.path_to_rosetta, f'bin/rosetta_scripts.{rosetta_paths.Rosetta_extension}')
     for root, dirs, files in os.walk(folder.relax_input):
@@ -223,19 +223,20 @@ def rosetta_relax_mp(folder, SLURM=False, num_struc=3, sys_name='mp', partition=
                       f'-mp:setup:spanfiles {spanfile} '
                       '-mp:scoring:hbond '  # Turn on membrane depth-dependent hydrogen bonding weight
                       f'-mp:lipids:composition {lipid_type} '
+                      f'-mp::thickness {mp_thickness} '
                       # Use the FastRelax mode of Rosetta Relax (uses 5-8
                       # repeat cycles)
-                      '-relax:fast '
+      #                '-relax:fast '
                       '-relax:jump_move true '  # Allow the MEM and other jumps to move during refinement
                       # Number of structures to generate
-                      f'-nstruct {num_struc} '
+                      f'-nstruct 1 '
                       # Wait to pack until the membrane mode is turned on
                       '-packing:pack_missing_sidechains 0 '
                       '-out:pdb '  # Output all PDB structures of refined models
                       # Specify destination for score file
                       f'-out:file:scorefile {os.path.join(folder.relax_run, "relax_scores.sc")} '
-                      # f'-mp::thickness {thickness} '
-                     f'-database {rosetta_paths.Rosetta_database_path} '
+                      '-out:prefix $SLURM_ARRAY_TASK_ID- '
+                      f'-database {rosetta_paths.Rosetta_database_path} '
                       '-ignore_unrecognized_res true '
                       '-score:weights franklin2019 '
                       #                        '-ignore_zero_occupancy false '
@@ -248,8 +249,9 @@ def rosetta_relax_mp(folder, SLURM=False, num_struc=3, sys_name='mp', partition=
         with open(path_to_sbatch, 'w') as fp:
             fp.write(f'''#!/bin/sh
 #SBATCH --job-name=relax_{sys_name}
-#SBATCH --time=10:00:00
+#SBATCH --time=24:00:00
 #SBATCH --mem 5000
+#SBATCH --array=0-{num_struc-1}
 #SBATCH --partition={partition}
 
 # launching rosetta relax 

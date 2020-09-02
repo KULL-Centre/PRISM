@@ -102,6 +102,8 @@ def predict_stability(args):
                     except:
                         mp_prepare.mp_TMalign_opm(
                             args.MP_ALIGN_REF, prep_struc, structure_instance.path, target_chain=structure_instance.chain_id, write_opm=True)                        
+                    prep_struc = create_copy(
+                        structure_instance.path, folder.prepare_input, name='input.pdb')
                 elif args.UNIPROT_ID != '':
                     logger.error('Uniprot-ID to ref pdb not implemented yet')
                     sys.exit()
@@ -200,11 +202,11 @@ def predict_stability(args):
             # Parse sbatch relax file
             logger.info('Create MP relax sbatch files.')
             path_to_relax_sbatch = mp_prepare.rosetta_relax_mp(
-                folder, SLURM=True, num_struc=3, sys_name=name, partition=partition)
+                folder, SLURM=True, repeats=args.BENCH_MP_RELAX_REPEAT, num_struc=args.BENCH_MP_RELAX_STRUCS, lipid_type=args.MP_LIPIDS, sys_name=name, partition=partition, mp_thickness=args.MP_THICKNESS)
 
             # Parse sbatch relax parser
             path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(
-                folder, sys_name=f'{name}_relax', partition=args.SLURM_PARTITION)
+                folder, sys_name=f'{name}_relax', partition=args.SLURM_PARTITION, sc_name='relax_scores')
 
             # Parse sbatch ddg file
             ddg_input_ddgfile = create_copy(

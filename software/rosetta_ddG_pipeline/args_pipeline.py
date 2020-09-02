@@ -218,6 +218,18 @@ def parse_args2():
                         dest='BENCH_MP_REPEAT',
                         help='For benchmark purpose: repeat value'
                         )
+    parser.add_argument('--benchmark_mp_relax_repeat',
+                        default=2,
+                        type=int,
+                        dest='BENCH_MP_RELAX_REPEAT',
+                        help='For benchmark purpose: relax repeat value'
+                        )
+    parser.add_argument('--benchmark_mp_relax_strucs',
+                        default=20,
+                        type=int,
+                        dest='BENCH_MP_RELAX_STRUCS',
+                        help='For benchmark purpose: relax structure value output'
+                        )
     parser.add_argument('--overwrite_path',
                         default=False,
                         type=lambda s: s.lower() in ['true', 't', 'yes', '1'],
