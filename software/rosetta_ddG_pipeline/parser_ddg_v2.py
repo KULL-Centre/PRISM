@@ -38,7 +38,6 @@ def csv_to_prism(data,structure_input,chain_id):
     output_df = pd.DataFrame(numpy_array, columns = ["variant", "Rosetta_ddg_score"])
     output_df["variant"] = new_variants
     output_df["Rosetta_ddg_score"] = data['Rosetta_ddg_score']
-    path_to_output='/groups/sbinlab/haagenb/benchmarks/'
     
     for m in range(len(data['variant'])):
         
