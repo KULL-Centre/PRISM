@@ -105,7 +105,8 @@ def get_structure_parameters(outpath,structure_id,printing=True):
                             fasta_seq_chain += residue_letter     
                         if ((int(residue_number) - int(previous_residue_number)) != 1) and residue_number != 0:
                             fasta_seq_chain += "-" * (int(residue_number) - int(previous_residue_number) -1 )         
-            
+                            fasta_seq_chain += residue_letter
+                            
         strucdata[str(record.annotations["chain"])]=strucdata[str(record.annotations["chain"])],seq,fasta_seq_chain
         
    

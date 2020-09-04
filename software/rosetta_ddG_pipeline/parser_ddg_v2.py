@@ -23,6 +23,39 @@ def csv_to_prism(data,structure_input,chain_id):
     path_to_output= str(path_to_data).split('/')
     path_to_output='/'.join(path_to_output[:-1])
     p=100
+    
+    relative_seq = strucdata["strucdata"][str(chain_id)][2]
+    relative_seq
+    new_variants=[]
+    resdata=strucdata['resdata']
+    for n in data['variant']:
+        k = n[1:-1]
+        pos=(resdata[str(k)][1])
+        new_variant=n[0]+str(pos)+n[-1]
+        new_variants=np.hstack((new_variants,new_variant))
+        
+    numpy_array = np.zeros(shape = (len(data), 2))    
+    output_df = pd.DataFrame(numpy_array, columns = ["variant", "Rosetta_ddg_score"])
+    output_df["variant"] = new_variants
+    output_df["Rosetta_ddg_score"] = data['Rosetta_ddg_score']
+    path_to_output='/groups/sbinlab/haagenb/benchmarks/'
+    
+    for m in range(len(data['variant'])):
+        
+        wt_old=data['variant'][m][0]
+        var_old= data['variant'][m][-1]
+        pos_new=output_df['variant'][m][1:-1]
+        wt_new=output_df['variant'][m][0]
+        var_new= output_df['variant'][m][-1]
+        if (data['Rosetta_ddg_score'][m] == output_df['Rosetta_ddg_score'][m]) and (wt_old == wt_new and var_old == var_new) and (str(relative_seq[int(pos_new)-1])==str(wt_new)):
+            continue
+        else:
+            break
+            print('error')
+            print('Check-1   ',str(relative_seq[int(pos_new)-1])==str(wt_new))
+            print('Check-2   ',data['Rosetta_ddg_score'][m]==output_df['Rosetta_ddg_score'][m])
+            print('Check-3   ',wt_old == wt_new and var_old == var_new)
+        
     with open(join(path_to_output, 'data.prism'), 'w') as prism_data:       
         for n in strucdata["DBREF"]:
             if strucdata["DBREF"][str(n)][2] == str(chain_id):
@@ -38,7 +71,7 @@ def csv_to_prism(data,structure_input,chain_id):
             prism_data.write('#\t Relative sequence: '+ relative_seq+"\n")
             prism_data.write('#\t pdb: '+ strucdata["DBREF"][p][1]+"\n")
             prism_data.write('#\t chain_id: '+ chain_id+"\n")
-            data.to_csv(prism_data, index = False,sep=' ')
+            output_df.to_csv(prism_data, index = False,sep=' ')
 
 def parse_rosetta_ddgs(sys_name, chain_id, fasta_seq, ddG_run, ddG_output, structure_input):
     """This script parses the results from the ddG calculations into two files. A regular data file containing only the data and the variants and a prism-like file with data variants and additional information"""
