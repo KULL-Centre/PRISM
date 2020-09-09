@@ -21,7 +21,7 @@ import rosetta_paths
 def rosetta_ddg_mp_pyrosetta(folder, mut_dict, SLURM=True, sys_name='',
                              partition='sbinlab', output_name='ddG.out', 
                              add_output_name='ddG_additional.out', repack_radius=0,
-                             lipids='DLPC', temperature=37.0, repeats=3,
+                             lipids='DLPC', temperature=37.0, repeats=5,
                              score_file_name='scores', is_pH=0, pH_value=7):
     ddg_script_exec = os.path.join(
         rosetta_paths.path_to_stability_pipeline, 'rosetta_mp_ddG_adapted.py')

@@ -223,7 +223,7 @@ def parse_args2():
                         help='For benchmark purpose: repack value'
                         )
     parser.add_argument('--benchmark_mp_repeat',
-                        default=3,
+                        default=5,
                         type=int,
                         dest='BENCH_MP_REPEAT',
                         help='For benchmark purpose: repeat value'
