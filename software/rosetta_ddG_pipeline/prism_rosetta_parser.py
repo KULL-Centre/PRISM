@@ -17,7 +17,6 @@ import pandas as pd
 
 
 # Local application imports
-from helper import extract_by_uniprot_fasta
 import rosetta_paths
 sys.path.insert(1, rosetta_paths.prims_parser)
 from PrismData import PrismParser, VariantData
@@ -38,7 +37,6 @@ def prism_to_mut(primsfile, mutfile):
     parser = PrismParser()
     data = parser.read(primsfile)
     data_frame1 = data.dataframe
-    mut_dic = {}
     with open(mutfile, 'w') as fp:
         searchlist = data_frame1["resi"].explode().unique()
         cleanedList = [x for x in searchlist if str(x) != 'nan']
@@ -49,12 +47,11 @@ def prism_to_mut(primsfile, mutfile):
                                 for l in data_frame2['aa_var']]) + native
             regex = re.compile('[^a-zA-Z]')
             final_variants = ''.join(set(regex.sub('', variants)))
-            mut_dic[str(resid)] = final_variants
             fp.write(f'{native} {resid} {final_variants} \n')
-    return mut_dic
+    return 
 
 
-def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=1, uniprot='', sys_name=''):
+def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=1, uniprot='', sys_name='', first_residue_number=1):
     # create prism file with rosetta values
     logger.info('Create prism file with rosetta ddG values')
     variant = []
@@ -86,11 +83,6 @@ def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=
             "version": "XXX",
         }
 
-    if uniprot == '':
-        keyword = sys_name
-    else:
-        keyword = uniprot
-    seq = extract_by_uniprot_fasta(keyword)
 
     metadata = {
         # new version always when the data is edited or major changes are made
@@ -98,9 +90,9 @@ def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=
         "version": version,
         # extracted from uniprot
         "protein": {
-            "name": seq[1][3].split("_")[0],
-            "organism": seq[1][2],
-            "uniprot": seq[1][0],
+            "name": sys_name,
+            "organism": "",
+            "uniprot": "",
             "sequence": sequence,
         },
         "rosetta": rosetta_info,
@@ -108,7 +100,7 @@ def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=
             #      "number": df["pos"].count(),
             #      "coverage": df["pos"].nunique() / len(seq[1][1]),
             "number": data["variant"].count(),
-            "coverage": len(set(sum(data["resi"], []))) / len(seq[1][1]),
+            "coverage": len(set(sum(data["resi"], []))) / len(sequence),
             "width": "single",
             #        "depth":,
         },
@@ -120,9 +112,11 @@ def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=
             #            "ddG": "Rosetta ddG values",
         },
     }
+    if first_residue_number != 1:
+        metadata['protein']['first_residue_number'] = first_residue_number
 
     comment = [
-        f"version {version} - {datetime.date(datetime.now())} - johanna.tiemann@gmail.com",
+        f"version {version} - {datetime.date(datetime.now())} - ddG pipeline",
     ]
 
     variant_dataset = VariantData(metadata, dataframeset)

@@ -22,11 +22,11 @@ import pdb_to_fasta_seq
 import rosetta_paths
 from AnalyseStruc import get_structure_parameters
 from helper import read_fasta
-
+from prism_rosetta_parser import prism_to_mut
 
 class structure:
     
-    def __init__(self,chain_id,name,folder,prep_struc,run_struc,logger,uniprot_accesion='',):
+    def __init__(self,chain_id,name,folder,prep_struc,run_struc,logger,input_dict,uniprot_accesion=''):
         #Initiating parameters for internal use in the script
         try:
             self.chain_id=chain_id
@@ -37,6 +37,7 @@ class structure:
             self.run_struc=run_struc
             self.folder=folder
             self.logger=logger
+            self.input_dict=input_dict
             if uniprot_accesion != '':
                 if os.path.isfile(uniprot_accesion):
                     self.uniprot_seq = read_fasta(uniprot_accesion)
@@ -169,10 +170,12 @@ class structure:
                         pos = resdata[n][1]
                         mutation_input.write(f'{wt} {pos}  {AA} \n')
     
-    def make_mutfiles(self, mutation_input):
+    def make_mutfiles(self, mutation_input, mutation_mode):
         """This scripts generation all the mutfiles for the Rosetta run. It uses a mutational input file to dictate which files to create"""
-        
+  
+
         check2 = False
+        mut_dic = {}
         resdata = self.struc_dic_cleaned["resdata"]
         strucdata = self.struc_dic_cleaned["strucdata"]        
         path_to_alignment = self.path_to_index_string
@@ -181,13 +184,19 @@ class structure:
         alignment_dic = {}
         for n in enumerate(alignment):
             alignment_dic[int(n[1])] = int(n[0] + 1)
-                      
-        if mutation_input == None:
-            self.make_mut_input()
-            path_to_mutation_input = self.folder.prepare_input    
-            mutation_input=os.path.join(path_to_mutation_input,'mutation_input.txt') 
 
-        if mutation_input != None and mutation_input != "proceed":
+        if mutation_input != "proceed":
+
+            if mutation_mode == 'prism':
+                self.logger.info(f'Convert prism file: {self.input_dict["PRISM_INPUT"]}')
+                path_to_mutation_input = self.folder.prepare_input    
+                mutation_input=os.path.join(path_to_mutation_input,'mutation_input.txt') 
+                prism_to_mut(self.input_dict['PRISM_INPUT'], mutation_input)
+            elif mutation_mode == 'all':
+                self.make_mut_input()
+                path_to_mutation_input = self.folder.prepare_input    
+                mutation_input=os.path.join(path_to_mutation_input,'mutation_input.txt') 
+
             mutate = {}
             self.logger.debug("Printing point mutations [WT, ResID, Mutations]")
             with open(mutation_input) as f:
@@ -200,31 +209,36 @@ class structure:
                     else:
                         val = wt + val
                         mutate[int(key)] = wt, val
-         
-            for residue_number in mutate:
-                residue_number_ros = alignment_dic[residue_number]                
-                self.logger.debug(f"{residue_number_ros}  {residue_number}")
-                #This checks that the position in the mutfile is the correct one in the fasta seqeunce
-                check = self.fasta_seq[residue_number_ros-1] in list(
-                    mutate[residue_number][0])
-                if check == False:
-                    check2 = True
-                final_list = []
-                for num in mutate[residue_number][1]:                    
-                    if num not in final_list:
-                        final_list.append(num)                
-                self.logger.debug(f"{mutate[residue_number][0]} {residue_number}  {''.join(final_list)}")
+            with open(os.path.join(self.folder.prepare_cleaning, 'mutation_clean.txt'), 'w') as fp:
+                for residue_number in mutate:
+                    if mutation_mode == 'all':
+                        residue_number_ros = alignment_dic[residue_number]
+                    else:
+                        residue_number_ros = self.struc_dic['resdata_reverse'][residue_number] 
+                    self.logger.debug(f"{residue_number_ros}  {residue_number}")
+                    #This checks that the position in the mutfile is the correct one in the fasta seqeunce
+                    check = self.fasta_seq[residue_number_ros-1] in list(
+                        mutate[residue_number][0])
+                    if check == False:
+                        check2 = True
+                    final_list = []
+                    for num in mutate[residue_number][1]:                    
+                        if num not in final_list:
+                            final_list.append(num)                
+                    self.logger.debug(f"{mutate[residue_number][0]} {residue_number}  {''.join(final_list)}")
 
-                mutfile = open(os.path.join(self.folder.prepare_mutfiles, f'mutfile{str(residue_number_ros):0>5}'), 'w')
-                
-                mutfile.write('total ' + str(len(final_list)))
-                for AAtype in final_list:
-                    mutfile.write('\n1\n')
-                    mutfile.write(self.fasta_seq[
-                                  residue_number_ros - 1] + ' ' + str(residue_number_ros) + ' ' + AAtype)
-                mutfile.close()
-        
-        return(check2)
+                    mutfile = open(os.path.join(self.folder.prepare_mutfiles, f'mutfile{str(residue_number_ros):0>5}'), 'w')
+                    
+                    mutfile.write('total ' + str(len(final_list)))
+                    mut_dic[str(residue_number_ros)] = "".join(final_list)
+                    fp.write(f'{self.fasta_seq[residue_number_ros - 1]} {residue_number_ros} {"".join(final_list)}\n')
+                    for AAtype in final_list:
+                        mutfile.write('\n1\n')
+                        mutfile.write(self.fasta_seq[
+                                      residue_number_ros - 1] + ' ' + str(residue_number_ros) + ' ' + AAtype)
+
+                    mutfile.close()
+        return(check2, mut_dic)
 
 
     def rosetta_sbatch_relax(self, folder, relaxfile='', sys_name='', partition='sbinlab'):

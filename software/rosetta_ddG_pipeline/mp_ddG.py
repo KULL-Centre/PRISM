@@ -8,13 +8,13 @@ Date of last major changes: 2020-05-01
 
 # Standard library imports
 import logging as logger
+import json
 import os
 import sys
 
 
 # Local application imports
-from helper import AttrDict, create_copy
-from prism_rosetta_parser import rosetta_to_prism
+from helper import AttrDict, create_copy, generate_output
 import rosetta_paths
 
 
@@ -79,24 +79,20 @@ echo $INDEX
         sys.exit()
 
 
-def postprocess_rosetta_ddg_mp_pyrosetta(folder, output_name='ddG.out', sys_name='', uniprot='', version=1, prims_nr='XXX'):
+def postprocess_rosetta_ddg_mp_pyrosetta(folder, output_name='ddG.out', sys_name='', uniprot='', version=1, prims_nr='XXX', chain_id='A'):
+  generate_output(folder, output_name=output_name, sys_name=sys_name, uniprot=uniprot, version=version, prims_nr=prims_nr, chain_id=chain_id)
     # The ddg_file should only contain the data, looking like this:
     # M1T,-0.52452 # first value=variant, second=mean([var1-WT1,var2-WT2, ...]) - comma separated
     # M1Y,0.2352,0.2342,.... # it may contain more values like the var-mut of
     # each run
-    ddg_file = os.path.join(folder.ddG_run, output_name)
-    prims_file = os.path.join(folder.ddG_output, f'prims_rosetta_{prims_nr}_{sys_name}.txt')
-    with open(os.path.join(folder.prepare_checking, 'fasta_file.fasta'), 'r') as fp:
-        fp.readline()
-        sequence = fp.readline().strip()
-    rosetta_to_prism(ddg_file, prims_file, sequence, rosetta_info=None,
-                     version=version, uniprot=uniprot, sys_name=sys_name)
-    create_copy(os.path.join(folder.ddG_input, 'input.pdb'), folder.output, name=f'{sys_name}_final.pdb')
-    create_copy(os.path.join(folder.prepare_checking, 'fasta_file.fasta'), folder.output, name=f'{sys_name}_seq.fasta')
-    create_copy(prims_file, folder.output)
+
+    #create_copy(os.path.join(folder.prepare_checking, 'fasta_file.fasta'), folder.output, name=f'{sys_name}_seq.fasta')
+    #create_copy(prims_file_pdb_nmbr, folder.output)
+    #create_copy(prims_file, folder.output)
 
 
-def write_parse_rosetta_ddg_mp_pyrosetta_sbatch(folder, uniprot='', sys_name='input', output_name='ddG.out', partition='sbinlab'):
+
+def write_parse_rosetta_ddg_mp_pyrosetta_sbatch(folder, chain_id='A', sys_name='input', output_name='ddG.out', partition='sbinlab'):
     score_sbatch_path = os.path.join(folder.ddG_input, 'parse_ddgs.sbatch')
     with open(score_sbatch_path, 'w') as fp:
         fp.write(f'''#!/bin/sh 
@@ -111,7 +107,7 @@ def write_parse_rosetta_ddg_mp_pyrosetta_sbatch(folder, uniprot='', sys_name='in
         fp.write((f'python3 {os.path.join(rosetta_paths.path_to_stability_pipeline, "mp_ddG.py")} '
                   f'{folder.prepare_checking} {folder.ddG_run} {folder.ddG_output} '
                   f'{folder.ddG_input} {folder.output} '
-                  f'{uniprot} {sys_name} {output_name}'
+                  f'{chain_id} {sys_name} {output_name}'
                   ))
     return score_sbatch_path
 
@@ -123,11 +119,11 @@ if __name__ == '__main__':
 
     if len(sys.argv) > 8:
         postprocess_rosetta_ddg_mp_pyrosetta(
-            folder, uniprot=sys.argv[6], sys_name=sys.argv[7], output_name=sys.argv[8])
+            folder, chain_id=sys.argv[6], sys_name=sys.argv[7], output_name=sys.argv[8])
     elif len(sys.argv) > 7:
         postprocess_rosetta_ddg_mp_pyrosetta(
-            folder, uniprot=sys.argv[6], sys_name=sys.argv[7])
+            folder, chain_id=sys.argv[6], sys_name=sys.argv[7])
     elif len(sys.argv) > 6:
-        postprocess_rosetta_ddg_mp_pyrosetta(folder, uniprot=sys.argv[6])
+        postprocess_rosetta_ddg_mp_pyrosetta(folder, chain_id=sys.argv[6])
     else:
         postprocess_rosetta_ddg_mp_pyrosetta(folder)
