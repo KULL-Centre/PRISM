@@ -351,16 +351,6 @@ def runtime_memory_stats(ddG_run_folder):
                                                 
         check_memory(ddg_process_id,ddG_run_folder) 
         
-    except: 
-        job_id_pos= join(ddG_run_folder, 'job_id_ddg.txt')
-        with open(job_id_pos, 'r') as job_id_file:
-            ddg_process_id=str(job_id_file.readlines()[-1])
-            print(ddg_process_id)
-         
-        #Get stats 
-        shell_command = f'sacct --format="JobID,Start,End,CPUTime,ReqMem,MaxRSS,MaxVMSize,AveVMSize,JobName" > memory_usage_{ddg_process_id}.log'
-        subprocess.call(shell_command, cwd=ddG_run_folder, shell=True)
-                                                
-        check_memory(ddg_process_id,ddG_run_folder)         
+    except:     
         print('no memory file')
     
