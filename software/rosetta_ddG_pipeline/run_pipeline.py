@@ -268,8 +268,11 @@ def predict_stability(args):
 #            folder.ddG_run, '.sc', folder.ddG_output, 'output.sc')
 
     if mode == 'analysis':
-        calc_all(folder, sys_name=name)
-        plot_all(folder, sys_name=name)
+        if args.PRISM_INPUT:
+            calc_all(folder, sys_name=name)
+            plot_all(folder, sys_name=name)
+        else:
+            logger.warning('No reference prism file provided. No analysis performed.')
 
     # Full SLURM execution
     if mode == 'proceed' or mode == 'fullrun':

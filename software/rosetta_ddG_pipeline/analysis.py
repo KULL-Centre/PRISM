@@ -40,7 +40,9 @@ for residue, pos_alph in zip(aa_order_alphabetical, range(len(aa_order_alphabeti
 def calc_cc(prismfile):
     parser = PrismParser()
     data = parser.read(prismfile)
-    data_frame1 = data.dataframe
+    data_frame_raw = data.dataframe
+    data_frame1 = data_frame_raw.dropna()
+
     spearman = stats.spearmanr(np.array(data_frame1)[
                                :, 1], np.array(data_frame1)[:, 2])
     pearson = stats.pearsonr(np.array(data_frame1)[
@@ -98,10 +100,10 @@ def calc_all(folder, sys_name='', drop_outliers=True, drop_pro=True):
     merged_metadata, merged_dataframe = read_from_prism(merged_prism_file_raw)
 
     merged_dataframe = merged_dataframe.rename(
-        columns={'norm_ddG_00': 'predicted_ddG', 'std_ddG_00': 'std_ddG', 'score_01': 'experimental_ddG'})
+        columns={merged_dataframe.keys()[1]: 'predicted_ddG', merged_dataframe.keys()[2]: 'std_ddG', merged_dataframe.keys()[3]: 'experimental_ddG'})
 
-    merged_dataframe['diff'] = merged_dataframe['experimental_ddG'].sub(
-        merged_dataframe['predicted_ddG'], axis=0)
+    merged_dataframe['diff'] = merged_dataframe['predicted_ddG'].sub(
+        merged_dataframe['experimental_ddG'], axis=0)
 
     merged_dataframe.sort_values('variant', inplace=True)
     merged_dataframe.reset_index(drop=True, inplace=True)
