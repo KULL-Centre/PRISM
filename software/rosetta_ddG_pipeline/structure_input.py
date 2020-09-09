@@ -214,7 +214,11 @@ class structure:
                     if mutation_mode == 'all':
                         residue_number_ros = alignment_dic[residue_number]
                     else:
-                        residue_number_ros = self.struc_dic['resdata_reverse'][residue_number] 
+                        try:
+                            residue_number_ros = self.struc_dic['resdata_reverse'][residue_number] 
+                        except:
+                            self.logger.warning(f"Residue {residue_number} present in the mutation/prism file is not resolved in the structure. No output generated for it.")
+                            continue
                     self.logger.debug(f"{residue_number_ros}  {residue_number}")
                     #This checks that the position in the mutfile is the correct one in the fasta sequence
                     check = self.fasta_seq[residue_number_ros-1] in list(
