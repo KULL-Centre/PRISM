@@ -140,7 +140,7 @@ def predict_stability(args):
                     structure_instance.span = mp_prepare.mp_span_from_pdb_octopus(
                         structure_instance.path_to_cleaned_pdb, folder.prepare_mp_span, thickness=args.MP_THICKNESS, SLURM=False)
                 elif args.MP_CALC_SPAN_MODE == 'False':
-                    logger.warn(
+                    logger.warning(
                         'No span file provided and no calculation method selected.')
                 else:
                     logger.error(
@@ -164,15 +164,14 @@ def predict_stability(args):
         
         check2, mut_dic = structure_instance.make_mutfiles(
             new_mut_input, args.MUT_MODE)
-        print(check2)
+
         new_mut_input = os.path.join(folder.prepare_cleaning, 'mutation_clean.txt')
         check1 = compare_mutfile(structure_instance.fasta_seq,
                                  folder.prepare_mutfiles, folder.prepare_checking, new_mut_input)
         check3, errors = pdbxmut(folder.prepare_mutfiles, struc_dic_cleaned)
-        check2 = False
 
         if check1 == True or check2 == True or check3 == True:
-            logger.info("check1:", check1, "check2:", check2, "check3:", check3)
+            logger.info(f"check1: {check1}, check2: {check2}, check3: {check3}")
             logger.error(
                 "ERROR: STOPPING SCRIPT DUE TO RESIDUE MISMATCH BETWEEN MUTFILE AND PDB SEQUENCE")
             sys.exit()

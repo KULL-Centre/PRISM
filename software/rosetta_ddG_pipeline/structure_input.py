@@ -216,7 +216,7 @@ class structure:
                     else:
                         residue_number_ros = self.struc_dic['resdata_reverse'][residue_number] 
                     self.logger.debug(f"{residue_number_ros}  {residue_number}")
-                    #This checks that the position in the mutfile is the correct one in the fasta seqeunce
+                    #This checks that the position in the mutfile is the correct one in the fasta sequence
                     check = self.fasta_seq[residue_number_ros-1] in list(
                         mutate[residue_number][0])
                     if check == False:
@@ -227,17 +227,14 @@ class structure:
                             final_list.append(num)                
                     self.logger.debug(f"{mutate[residue_number][0]} {residue_number}  {''.join(final_list)}")
 
-                    mutfile = open(os.path.join(self.folder.prepare_mutfiles, f'mutfile{str(residue_number_ros):0>5}'), 'w')
-                    
-                    mutfile.write('total ' + str(len(final_list)))
-                    mut_dic[str(residue_number_ros)] = "".join(final_list)
-                    fp.write(f'{self.fasta_seq[residue_number_ros - 1]} {residue_number_ros} {"".join(final_list)}\n')
-                    for AAtype in final_list:
-                        mutfile.write('\n1\n')
-                        mutfile.write(self.fasta_seq[
-                                      residue_number_ros - 1] + ' ' + str(residue_number_ros) + ' ' + AAtype)
-
-                    mutfile.close()
+                    with open(os.path.join(self.folder.prepare_mutfiles, f'mutfile{str(residue_number_ros):0>5}'), 'w') as mutfile:
+                        mutfile.write('total ' + str(len(final_list)))
+                        mut_dic[str(residue_number_ros)] = "".join(final_list)
+                        fp.write(f'{self.fasta_seq[residue_number_ros - 1]} {residue_number_ros} {"".join(final_list)}\n')
+                        for AAtype in final_list:
+                            mutfile.write('\n1\n')
+                            mutfile.write(self.fasta_seq[
+                                          residue_number_ros - 1] + ' ' + str(residue_number_ros) + ' ' + AAtype)
         return(check2, mut_dic)
 
 
