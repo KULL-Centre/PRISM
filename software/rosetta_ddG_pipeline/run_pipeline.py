@@ -146,7 +146,7 @@ def predict_stability(args):
                     logger.error(
                         'Other modes (struc, bcl, Boctopus) not yet implemented.')
                     sys.exit()
-            elif not isinstance(input_dict['MP_SPAN_INPUT'], NoneType):
+            elif input_dict['MP_SPAN_INPUT']:
                 structure_instance.span = create_copy(
                     input_dict['MP_SPAN_INPUT'], folder.prepare_mp_span, name='input.span')
 
@@ -229,7 +229,7 @@ def predict_stability(args):
                 is_pH=is_pH, pH_value=pH_value)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
-                folder, chain_id=args.CHAIN, sys_name=name, output_name='ddG.out', partition=partition)
+                folder, chain_id=args.CHAIN, sys_name=name, output_name='ddG.out', partition=partition, output_gaps=args.GAPS_OUTPUT)
         else:
             # Parse sbatch relax file
             relax_input_relaxfile = create_copy(

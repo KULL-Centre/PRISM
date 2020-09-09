@@ -14,7 +14,7 @@ import sys
 
 
 # Local application imports
-from helper import AttrDict, create_copy, generate_output
+from helper import AttrDict, create_copy, generate_output, runtime_memory_stats
 import rosetta_paths
 
 
@@ -79,8 +79,9 @@ echo $INDEX
         sys.exit()
 
 
-def postprocess_rosetta_ddg_mp_pyrosetta(folder, output_name='ddG.out', sys_name='', uniprot='', version=1, prims_nr='XXX', chain_id='A'):
-  generate_output(folder, output_name=output_name, sys_name=sys_name, uniprot=uniprot, version=version, prims_nr=prims_nr, chain_id=chain_id)
+def postprocess_rosetta_ddg_mp_pyrosetta(folder, output_name='ddG.out', sys_name='', version=1, prims_nr='XXX', chain_id='A', output_gaps=False):
+  runtime_memory_stats(folder.ddG_run)
+  generate_output(folder, output_name=output_name, sys_name=sys_name, version=version, prims_nr=prims_nr, chain_id=chain_id, output_gaps=output_gaps)
     # The ddg_file should only contain the data, looking like this:
     # M1T,-0.52452 # first value=variant, second=mean([var1-WT1,var2-WT2, ...]) - comma separated
     # M1Y,0.2352,0.2342,.... # it may contain more values like the var-mut of
@@ -92,7 +93,7 @@ def postprocess_rosetta_ddg_mp_pyrosetta(folder, output_name='ddG.out', sys_name
 
 
 
-def write_parse_rosetta_ddg_mp_pyrosetta_sbatch(folder, chain_id='A', sys_name='input', output_name='ddG.out', partition='sbinlab'):
+def write_parse_rosetta_ddg_mp_pyrosetta_sbatch(folder, chain_id='A', sys_name='input', output_name='ddG.out', partition='sbinlab', output_gaps=False):
     score_sbatch_path = os.path.join(folder.ddG_input, 'parse_ddgs.sbatch')
     with open(score_sbatch_path, 'w') as fp:
         fp.write(f'''#!/bin/sh 
@@ -107,7 +108,7 @@ def write_parse_rosetta_ddg_mp_pyrosetta_sbatch(folder, chain_id='A', sys_name='
         fp.write((f'python3 {os.path.join(rosetta_paths.path_to_stability_pipeline, "mp_ddG.py")} '
                   f'{folder.prepare_checking} {folder.ddG_run} {folder.ddG_output} '
                   f'{folder.ddG_input} {folder.output} '
-                  f'{chain_id} {sys_name} {output_name}'
+                  f'{chain_id} {sys_name} {output_name} {output_gaps}'
                   ))
     return score_sbatch_path
 
@@ -117,6 +118,9 @@ if __name__ == '__main__':
     folder.update({'prepare_checking': sys.argv[1], 'ddG_run': sys.argv[2],
                    'ddG_output': sys.argv[3], 'ddG_input': sys.argv[4], 'output': sys.argv[5]})
 
+    if len(sys.argv) > 9:
+        postprocess_rosetta_ddg_mp_pyrosetta(
+            folder, chain_id=sys.argv[6], sys_name=sys.argv[7], output_name=sys.argv[8], output_gaps=sys.argv[9])
     if len(sys.argv) > 8:
         postprocess_rosetta_ddg_mp_pyrosetta(
             folder, chain_id=sys.argv[6], sys_name=sys.argv[7], output_name=sys.argv[8])

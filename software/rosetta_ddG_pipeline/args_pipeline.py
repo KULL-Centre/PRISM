@@ -246,6 +246,12 @@ def parse_args2():
                         dest='OVERWRITE_PATH',
                         help='Overwrites paths when creating folders'
                         )
+    parser.add_argument('--gapped_output',
+                        default=False,
+                        type=lambda s: s.lower() in ['true', 't', 'yes', '1'],
+                        dest='GAPS_OUTPUT',
+                        help='Generates prism and pdb files which include gaps and starts with the residue-numbering from the original pdb'
+                        )
     parser.add_argument('--slurm_partition',
                         default='sbinlab',
                         dest='SLURM_PARTITION',

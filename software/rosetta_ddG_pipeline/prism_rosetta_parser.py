@@ -51,7 +51,7 @@ def prism_to_mut(primsfile, mutfile):
     return 
 
 
-def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=1, uniprot='', sys_name='', first_residue_number=1):
+def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=1, sys_name='', first_residue_number=1):
     # create prism file with rosetta values
     logger.info('Create prism file with rosetta ddG values')
     variant = []

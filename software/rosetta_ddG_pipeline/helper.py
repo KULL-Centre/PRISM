@@ -11,6 +11,7 @@ Date of last major changes: 2020-05-04
 import logging as logger
 import os
 import shutil
+import subprocess
 import urllib.request
 import sys
 from os import listdir
@@ -22,6 +23,7 @@ import numpy as np
 from scipy import stats
 
 # Local application imports
+from get_memory_stats import check_memory
 from prism_rosetta_parser import rosetta_to_prism
 
 
@@ -239,34 +241,39 @@ def read_slurms(path, printing=False):
                     cancelfile.write(n+'\n')
 
 
-def prism_to_pdbnumbering(ddg_file, ddg_pdbnumbering_file, seqdicfile, start1=False):
+def ddG_postprocessing(in_ddg, out_ddg, sec_all=None, startnr=1):
+    """does sort the variants and optionally shifts the numbering, depending on the sequence"""
     result_list = []
     start_resi = 0
-    with open(seqdicfile, 'r') as fp, open(ddg_file, 'r') as fp2, open(ddg_pdbnumbering_file, 'w') as fp3:
-        sec_all = json.load(fp)
+    if sec_all:
         seqdic = sec_all['resdata']
-        if start1:
+        if startnr ==1:
             minkey = min(sec_all['resdata_reverse'], key=sec_all['resdata_reverse'].get)
             start_resi = int(minkey)-1
+    with open(in_ddg, 'r') as fp2, open(out_ddg, 'w') as fp3:
         for line in fp2:
             line_str = line.split(',')
-            new_number = str(seqdic[line_str[0][1:-1]][1]-start_resi)
-            new_variant = f'{line_str[0][0]}{new_number}{line_str[0][-1]},{line_str[1]},{line_str[2]}'
-            result_list.append([new_number, line_str[0][-1], new_variant])
+            if sec_all:
+                new_number = str(seqdic[line_str[0][1:-1]][1]-start_resi)
+                new_variant = f'{line_str[0][0]}{new_number}{line_str[0][-1]},{line_str[1]},{line_str[2]}'
+                result_list.append([new_number, line_str[0][-1], new_variant])
+            else:
+                result_list.append([line_str[0][1:-1], line_str[0][-1], line])
+                
         sorted_list = sorted(result_list, key=lambda x: (int(x[0]), x[1]))
         for elem in sorted_list:
             fp3.write(f'{elem[-1]}')
 
 
-def rosetta_to_pdbnumbering(in_pdb, out_pdb, seqdicfile, start1=False):
+def shift_pdb_numbering(in_pdb, out_pdb, sec_all, startnr=1):
     result_list = []
     start_resi = 0
-    with open(seqdicfile, 'r') as fp, open(in_pdb, 'r') as fp2, open(out_pdb, 'w') as fp3:
-        sec_all = json.load(fp)
+    if sec_all:
         seqdic = sec_all['resdata']
-        if start1:
+        if startnr ==1:
             minkey = min(sec_all['resdata_reverse'], key=sec_all['resdata_reverse'].get)
             start_resi = int(minkey)-1
+    with open(in_pdb, 'r') as fp2, open(out_pdb, 'w') as fp3:
         for line in fp2:
             if line.startswith('ATOM'):
                 new_number = str(seqdic[line[22:26].strip()][1]-start_resi)
@@ -275,61 +282,85 @@ def rosetta_to_pdbnumbering(in_pdb, out_pdb, seqdicfile, start1=False):
             else:
                 fp3.write(line)
 
-
-def generate_output(folder, output_name='ddG.out', sys_name='', uniprot='', version=1, prims_nr='XXX', chain_id='A'):
+def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prims_nr='XXX', chain_id='A', output_gaps=False):
     ddg_file = os.path.join(folder.ddG_run, output_name)
     pdb_file = os.path.join(folder.ddG_input, 'input.pdb')
     seqdicfile = os.path.join(folder.prepare_checking, 'structure_input.json')
+    with open(seqdicfile, 'r') as fp:
+        sec_all = json.load(fp)
+        rosetta_seq = sec_all['strucdata'][chain_id][0]
+        sequence_pdbnbr = sec_all['strucdata'][chain_id][2]
+        seqdic = sec_all['resdata']
+        minkey = min(sec_all['resdata_reverse'], key=sec_all['resdata_reverse'].get)
+        first_residue_number = int(minkey)
 
-    try:
-        ddg_pdbnumbering_file = os.path.join(folder.ddG_run, f'{output_name[:-4]}_pdb_numbering{output_name[-4:]}')
-        prism_to_pdbnumbering(ddg_file, ddg_pdbnumbering_file, seqdicfile, start1=False)
-        pdb_numbering_file = os.path.join(folder.ddG_run, 'minim_pdb_numbering.pdb')
-        rosetta_to_pdbnumbering(pdb_file, pdb_numbering_file, seqdicfile, start1=False)
-        prims_file_pdb_nbr = os.path.join(folder.ddG_output, f'prims_rosetta_{prims_nr}_{sys_name}_pdb-nbr.txt')
-        with open(seqdicfile, 'r') as fp:
-            sec_all = json.load(fp)
-            sequence_pdbnbr = sec_all['strucdata'][chain_id][2]
-            minkey = min(sec_all['resdata_reverse'], key=sec_all['resdata_reverse'].get)
-            first_residue_number = int(minkey)
-        ini_d = True
-        sequence = ''
-        for elem in sequence_pdbnbr:
-          if elem == '-' and ini_d:
-            pass
-          else:
-            ini_d = False
-            sequence += elem
-
-        rosetta_to_prism(ddg_pdbnumbering_file, prims_file_pdb_nbr, sequence, rosetta_info=None,
-                         version=version, uniprot='', sys_name=sys_name, first_residue_number=first_residue_number)
-        create_copy(prims_file_pdb_nbr, folder.output)
-        create_copy(pdb_numbering_file, folder.output, name=f'{sys_name}_final_pdb-nbr.pdb')
-
-    except:
-        logger.warn(f'original pdb-numbering starts with residue-nr <=0 ({first_residue_number}) - no fitting file generated')
-        with open(seqdicfile, 'r') as fp:
-            sec_all = json.load(fp)
-            sequence_pdbnbr = sec_all['strucdata'][chain_id][2]
-            minkey = min(sec_all['resdata_reverse'], key=sec_all['resdata_reverse'].get)
-            first_residue_number = int(minkey)
-        ini_d = True
-        sequence = ''
-        for elem in sequence_pdbnbr:
-          if elem == '-' and ini_d:
-            pass
-          else:
-            ini_d = False
-            sequence += elem
-    ddg_corrected_file = os.path.join(folder.ddG_run, f'{output_name[:-4]}_corrected{output_name[-4:]}')
-    prism_to_pdbnumbering(ddg_file, ddg_corrected_file, seqdicfile, start1=True)
-    pdb_corrected_file = os.path.join(folder.ddG_run, 'minim_corrected.pdb')
-    rosetta_to_pdbnumbering(pdb_file, pdb_corrected_file, seqdicfile, start1=True)
+    ddg_sorted_file = os.path.join(folder.ddG_run, f'{output_name[:-4]}_sorted_continuous{output_name[-4:]}')
+    ddG_postprocessing(ddg_file, ddg_sorted_file, sec_all=None, startnr=1)
     prims_file = os.path.join(folder.ddG_output, f'prims_rosetta_{prims_nr}_{sys_name}.txt')
-
-    rosetta_to_prism(ddg_corrected_file, prims_file, sequence, rosetta_info=None,
-                     version=version, uniprot='', sys_name=sys_name, first_residue_number=1)
-    
+    rosetta_to_prism(ddg_sorted_file, prims_file, rosetta_seq, rosetta_info=None,
+                     version=version, sys_name=sys_name, first_residue_number=1)
     create_copy(prims_file, folder.output)
-    create_copy(pdb_corrected_file, folder.output, name=f'{sys_name}_final.pdb')
+    create_copy(pdb_file, folder.output, name=f'{sys_name}_final.pdb')
 
+    if output_gaps:
+        ini_d = True
+        sequence = ''
+        for elem in sequence_pdbnbr:
+          if elem == '-' and ini_d:
+            pass
+          else:
+            ini_d = False
+            sequence += elem
+        if first_residue_number >1:
+            ddg_shifted_gap_file = os.path.join(folder.ddG_run, f'{output_name[:-4]}_gap-shifted{output_name[-4:]}')
+            prims_gap_shifted_file = os.path.join(folder.ddG_output, f'prims_rosetta_{prims_nr}_{sys_name}_gap-shifted.txt')
+            ddG_postprocessing(ddg_file, ddg_shifted_gap_file, sec_all=sec_all, startnr=first_residue_number)
+            rosetta_to_prism(ddg_shifted_gap_file, prims_gap_shifted_file, sequence, rosetta_info=None,
+                             version=version, sys_name=sys_name, first_residue_number=first_residue_number)
+            create_copy(prims_gap_shifted_file, folder.output)
+
+            pdb_gap_shifted_file = os.path.join(folder.ddG_output, 'relaxed_gap_shifted.pdb')
+            shift_pdb_numbering(pdb_file, pdb_gap_shifted_file, sec_all, startnr=first_residue_number)
+            create_copy(pdb_gap_shifted_file, folder.output, name=f'{sys_name}_final_gap_shifted.pdb')
+        else:
+            logger.warn(f'original pdb-numbering starts with residue-nr <=0 ({first_residue_number}) - no fitting file generated')
+        ddg_gap_file = os.path.join(folder.ddG_run, f'{output_name[:-4]}_gap{output_name[-4:]}')
+        print(sequence)
+        ddG_postprocessing(ddg_file, ddg_gap_file, sec_all=sec_all, startnr=1)
+        prims_gap_file = os.path.join(folder.ddG_output, f'prims_rosetta_{prims_nr}_{sys_name}-gap.txt')
+        rosetta_to_prism(ddg_gap_file, prims_gap_file, sequence, rosetta_info=None,
+                         version=version, sys_name=sys_name, first_residue_number=1)
+        create_copy(prims_gap_file, folder.output)
+
+        pdb_gap_file = os.path.join(folder.ddG_output, 'relaxed_gap.pdb')
+        shift_pdb_numbering(pdb_file, pdb_gap_file, sec_all, startnr=1)
+        create_copy(pdb_gap_file, folder.output, name=f'{sys_name}_final_gap.pdb')
+
+
+def runtime_memory_stats(ddG_run_folder):
+    #This part collects informations about runtime and memory use
+    try:
+        job_id_pos= join(ddG_run_folder, 'job_id_ddg.txt')
+        with open(job_id_pos, 'r') as job_id_file:
+            ddg_process_id=str(job_id_file.readlines()[-1])
+            print(ddg_process_id)
+         
+        #Get stats 
+        shell_command = f'sacct --format="JobID,Start,End,CPUTime,ReqMem,MaxRSS,MaxVMSize,AveVMSize,JobName" > memory_usage_{ddg_process_id}.log'
+        subprocess.call(shell_command, cwd=ddG_run_folder, shell=True)
+                                                
+        check_memory(ddg_process_id,ddG_run_folder) 
+        
+    except: 
+        job_id_pos= join(ddG_run_folder, 'job_id_ddg.txt')
+        with open(job_id_pos, 'r') as job_id_file:
+            ddg_process_id=str(job_id_file.readlines()[-1])
+            print(ddg_process_id)
+         
+        #Get stats 
+        shell_command = f'sacct --format="JobID,Start,End,CPUTime,ReqMem,MaxRSS,MaxVMSize,AveVMSize,JobName" > memory_usage_{ddg_process_id}.log'
+        subprocess.call(shell_command, cwd=ddG_run_folder, shell=True)
+                                                
+        check_memory(ddg_process_id,ddG_run_folder)         
+        print('no memory file')
+    
