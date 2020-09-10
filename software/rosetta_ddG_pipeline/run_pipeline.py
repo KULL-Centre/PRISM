@@ -150,6 +150,9 @@ def predict_stability(args):
                 structure_instance.span = create_copy(
                     input_dict['MP_SPAN_INPUT'], folder.prepare_mp_span, name='input.span')
 
+            logger.info(f'Calculate lipid accessible residues')
+            lipacc_dic = mp_prepare.mp_lipid_acc_resi(structure_instance.path_to_cleaned_pdb, folder.prepare_mp_lipacc, folder.prepare_mp_span, thickness=args.MP_THICKNESS, SLURM=False)
+
         # Making mutfiles and checks
         if args.MUT_MODE == 'prism':
             new_mut_input = os.path.join(folder.prepare_input, 'input_mutfile')
@@ -226,7 +229,7 @@ def predict_stability(args):
                 folder, mut_dic, SLURM=True, sys_name=name, partition=args.SLURM_PARTITION,
                 repack_radius=args.BENCH_MP_REPACK, lipids=args.MP_LIPIDS,
                 temperature=args.MP_TEMPERATURE, repeats=args.BENCH_MP_REPEAT,
-                is_pH=is_pH, pH_value=pH_value)
+                is_pH=is_pH, pH_value=pH_value, lipacc_dic=lipacc_dic)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
                 folder, chain_id=args.CHAIN, sys_name=name, output_name='ddG.out', partition=partition, output_gaps=args.GAPS_OUTPUT)

@@ -22,7 +22,7 @@ def rosetta_ddg_mp_pyrosetta(folder, mut_dict, SLURM=True, sys_name='',
                              partition='sbinlab', output_name='ddG.out', 
                              add_output_name='ddG_additional.out', repack_radius=0,
                              lipids='DLPC', temperature=37.0, repeats=5,
-                             score_file_name='scores', is_pH=0, pH_value=7):
+                             score_file_name='scores', is_pH=0, pH_value=7, lipacc_dic={}):
     ddg_script_exec = os.path.join(
         rosetta_paths.path_to_stability_pipeline, 'rosetta_mp_ddG_adapted.py')
     input_struc = os.path.join(folder.ddG_input, 'input.pdb')
@@ -47,6 +47,10 @@ def rosetta_ddg_mp_pyrosetta(folder, mut_dict, SLURM=True, sys_name='',
                    f' --temperature {temperature}'
                    '')
 
+    lipacc_array = []
+    for elem in mut_dict.keys():
+      lipacc_array.append(lipacc_dic[int(elem)])
+
     if SLURM:
         path_to_sbatch = os.path.join(folder.ddG_input, 'rosetta_ddg.sbatch')
         with open(path_to_sbatch, 'w') as fp:
@@ -59,6 +63,7 @@ def rosetta_ddg_mp_pyrosetta(folder, mut_dict, SLURM=True, sys_name='',
 #SBATCH --nice
 RESIS=({' '.join(mut_dict.keys())})
 MUTS=({' '.join(mut_dict.values())})
+LIPACC=({' '.join(lipacc_array)})
 OFFSET=0
 INDEX=$((OFFSET+SLURM_ARRAY_TASK_ID))
 echo $INDEX
@@ -66,7 +71,8 @@ echo $INDEX
 # launching rosetta
 ''')
             new_ddG_command = ddG_command + \
-                ' --res ${RESIS[$INDEX]} --mut ${MUTS[$INDEX]} '
+                ' --res ${RESIS[$INDEX]} --mut ${MUTS[$INDEX]} ' + \
+                ' --lip_has_pore ${LIPACC[$INDEX]}'
             fp.write(new_ddG_command)
         logger.info(path_to_sbatch)
 

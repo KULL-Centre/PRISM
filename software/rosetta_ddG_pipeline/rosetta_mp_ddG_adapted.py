@@ -124,6 +124,11 @@ def main(args):
                       type=float,
                       help="Experimental temperature.", )
 
+    parser.add_option('--lip_has_pore',
+                      action="store", default='true',
+                      type=str,
+                      help="If residue faces lipids, set to false. Default=true", )
+
     # parse options
     (options, args) = parser.parse_args(args=args[1:])
     global Options
@@ -141,7 +146,7 @@ def main(args):
     rosetta_options = (f'-mp:setup:spanfiles {Options.in_span}'
                        f' -mp:lipids:temperature {Options.temperature}'
                        f' -mp:lipids:composition {Options.lipids}'
-                       f' -mp:lipids:has_pore false'
+                       f' -mp:lipids:has_pore {Options.lip_has_pore}'
                        f' -run:constant_seed'
                        f' -in:ignore_unrecognized_res'
                        f' -pH_mode -value_pH {Options.pH_value}')
