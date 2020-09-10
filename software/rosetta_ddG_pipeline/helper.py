@@ -282,9 +282,40 @@ def shift_pdb_numbering(in_pdb, out_pdb, sec_all, startnr=1):
             else:
                 fp3.write(line)
 
-def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prims_nr='XXX', chain_id='A', output_gaps=False):
+
+def add_ddG_to_bfactor(in_pdb, in_ddg, out_pdb, threshold=3.5):
+    with open(in_pdb, 'r') as fp, open(in_ddg, 'r') as fp2, open(out_pdb, 'w') as fp3:
+        ddG_resi_dic = {}
+        for line in fp2:
+            line_str = line.split(',')
+            resid = line_str[0][1:-1]
+            if resid in ddG_resi_dic.keys():
+                ddG_resi_arr = ddG_resi_dic[resid]
+                ddG_resi_arr.append(float(line_str[1]))
+                ddG_resi_dic[resid] = ddG_resi_arr
+            else:
+                ddG_resi_dic[resid] = [float(line_str[1])]
+        for line in fp:
+            if line.startswith('ATOM'):
+                resid = line[22:26].strip()
+                if resid in ddG_resi_dic.keys():
+                    bfactor = round(len(np.where( np.array(ddG_resi_dic[resid]) > threshold ))/20.0,2)
+                else:
+                    bfactor = 0.00
+                bfac_str = '%.2f'%(bfactor)
+                fp3.write(f'{line[:62]}{bfac_str}{line[66:]}')
+            else:
+                fp3.write(line)
+
+
+def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prims_nr='XXX', chain_id='A', output_gaps=False, bfac=True):
     ddg_file = os.path.join(folder.ddG_run, output_name)
-    pdb_file = os.path.join(folder.ddG_input, 'input.pdb')
+    pdb_file_raw = os.path.join(folder.ddG_input, 'input.pdb')
+    if bfac:
+        pdb_file = os.path.join(folder.ddG_run, 'input+bfac.pdb')
+        add_ddG_to_bfactor(pdb_file_raw, ddg_file, pdb_file, threshold=3.5)
+    else:
+        pdb_file = pdb_file_raw
     seqdicfile = os.path.join(folder.prepare_checking, 'structure_input.json')
     with open(seqdicfile, 'r') as fp:
         sec_all = json.load(fp)
