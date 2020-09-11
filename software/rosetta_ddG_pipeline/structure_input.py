@@ -225,6 +225,7 @@ class structure:
                         mutate[residue_number][0])
                     if check == False:
                         check2 = True
+                        self.logger.warning(f'Missmatch{self.fasta_seq[residue_number_ros-1]}, {residue_number},{mutate[residue_number][0]}')
                     final_list = []
                     for num in mutate[residue_number][1]:                    
                         if num not in final_list:

@@ -194,7 +194,6 @@ def mp_lipid_acc_resi(pdbinput, outdir_path, folder_spanfile, thickness=15, SLUR
     with open (out_pdb_file, 'r') as fp, open(os.path.join(outdir_path, "mp_lipid_acc_dic.json"), 'w') as fp2:
         for line in fp:
             if line.startswith('ATOM'):
-                print(line[60:66], line[22:26])
                 resid = int(line[22:26])
                 if line[60:66]==' 50.00':
                     lipacc_dic[resid] = 'true'

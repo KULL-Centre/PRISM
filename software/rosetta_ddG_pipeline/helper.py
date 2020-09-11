@@ -283,7 +283,7 @@ def shift_pdb_numbering(in_pdb, out_pdb, sec_all, startnr=1):
                 fp3.write(line)
 
 
-def add_ddG_to_bfactor(in_pdb, in_ddg, out_pdb, threshold=3.5):
+def add_ddG_to_bfactor(in_pdb, in_ddg, out_pdb, threshold=0.0):
     with open(in_pdb, 'r') as fp, open(in_ddg, 'r') as fp2, open(out_pdb, 'w') as fp3:
         ddG_resi_dic = {}
         for line in fp2:
@@ -299,7 +299,7 @@ def add_ddG_to_bfactor(in_pdb, in_ddg, out_pdb, threshold=3.5):
             if line.startswith('ATOM'):
                 resid = line[22:26].strip()
                 if resid in ddG_resi_dic.keys():
-                    bfactor = round(len(np.where( np.array(ddG_resi_dic[resid]) > threshold ))/20.0,2)
+                    bfactor = round(len(np.where( np.array(ddG_resi_dic[resid]) > threshold ))/len(ddG_resi_dic[resid]),2)
                 else:
                     bfactor = 0.00
                 bfac_str = '%.2f'%(bfactor)
