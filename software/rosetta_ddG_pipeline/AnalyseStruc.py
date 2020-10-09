@@ -75,9 +75,6 @@ def get_structure_parameters(outpath,structure_id,printing=True):
                 sequence.append(resdata[res][0])
         sequence_chain = ''.join([str(elem) for elem in sequence]) 
         strucdata[str(chain)[-2:-1]]= sequence_chain
-  
-    for record in SeqIO.parse(structure_id, "pdb-seqres"):
-        seq=str(record.seq)
         
         with open(structure_id, 'r') as pdb_file:
             pdblines = pdb_file.readlines()     
@@ -100,14 +97,48 @@ def get_structure_parameters(outpath,structure_id,printing=True):
                     previous_residue_number = residue_number
                     residue_number = line[22:26]
                     residue_number = residue_number.lstrip()
-                    if (residue_number != previous_residue_number or chainspec != previous_chainspec) and str(line[21]) == str(record.annotations["chain"]):
+                    if (residue_number != previous_residue_number or chainspec != previous_chainspec) and str(line[21]) == str(chain)[-2:-1]:
                         if ((int(residue_number) - int(previous_residue_number)) == 1 )or residue_number ==0:
                             fasta_seq_chain += residue_letter     
                         if ((int(residue_number) - int(previous_residue_number)) != 1) and residue_number != 0:
                             fasta_seq_chain += "-" * (int(residue_number) - int(previous_residue_number) -1 )         
-                            fasta_seq_chain += residue_letter
+                            fasta_seq_chain += residue_letter  
+                   
+        strucdata[str(chain)[-2:-1]]=sequence_chain,fasta_seq_chain
+    seq="hest"   
+    for record in SeqIO.parse(structure_id, "pdb-seqres"):
+        #seq=str(record.seq)
+        
+#        with open(structure_id, 'r') as pdb_file:
+#            pdblines = pdb_file.readlines()     
+#        fasta_seq_full = ''
+#        fasta_seq_chain = ''
+#        chainspec = 'NULL'
+#        residue_number = 0
+#        #Relative sequence
+#        for line in pdblines:
+#            if len(line) > 1:
+#                line_fields = line.split()
+#                if line_fields[0] == 'ATOM' and line[17:20] in aminocodes :
+#                    entry_type = line_fields[0]
+#                    atom_number = line_fields[1]
+#                    atom_type = line_fields[2]
+#                    residue_type = line[17:20]
+#                    residue_letter = aminocodes[residue_type]
+#                    previous_chainspec = chainspec
+#                    chainspec = line[21]              
+#                    previous_residue_number = residue_number
+#                    residue_number = line[22:26]
+#                    residue_number = residue_number.lstrip()
+#                    if (residue_number != previous_residue_number or chainspec != previous_chainspec) and str(line[21]) == str(record.annotations["chain"]):
+#                        if ((int(residue_number) - int(previous_residue_number)) == 1 )or residue_number ==0:
+#                            fasta_seq_chain += residue_letter     
+#                        if ((int(residue_number) - int(previous_residue_number)) != 1) and residue_number != 0:
+#                            fasta_seq_chain += "-" * (int(residue_number) - int(previous_residue_number) -1 )         
+#                            fasta_seq_chain += residue_letter
                             
-        strucdata[str(record.annotations["chain"])]=strucdata[str(record.annotations["chain"])],seq,fasta_seq_chain
+        #
+        strucdata[str(record.annotations["chain"])]=strucdata[str(record.annotations["chain"])],seq
         
    
     
