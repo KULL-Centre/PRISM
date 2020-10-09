@@ -28,7 +28,7 @@ import mp_prepare
 import mp_ddG
 from pdb_to_fasta_seq import pdb_to_fasta_seq
 from plotting import plot_all
-from prism_rosetta_parser import prism_to_mut, read_from_prism
+from prism_rosetta_parser import read_from_prism
 import rosetta_paths
 import run_modes
 import storeinputs
@@ -85,7 +85,7 @@ def predict_stability(args):
 
         # Create structure instance
         logger.info(f'Creating structure instance')
-        structure_instance = structure(chain_id,name,folder,prep_struc,run_struc,logger,uniprot_accesion=uniprot_accesion,)
+        structure_instance = structure(chain_id,name,folder,prep_struc,run_struc,logger,input_dict,uniprot_accesion=uniprot_accesion)
         run_name = 'input'
 
         # adjust mp structure if MP_ALIGN_MODE is selected
@@ -140,37 +140,41 @@ def predict_stability(args):
                     structure_instance.span = mp_prepare.mp_span_from_pdb_octopus(
                         structure_instance.path_to_cleaned_pdb, folder.prepare_mp_span, thickness=args.MP_THICKNESS, SLURM=False)
                 elif args.MP_CALC_SPAN_MODE == 'False':
-                    logger.warn(
+                    logger.warning(
                         'No span file provided and no calculation method selected.')
                 else:
                     logger.error(
                         'Other modes (struc, bcl, Boctopus) not yet implemented.')
                     sys.exit()
-            elif input_dict['MP_SPAN_INPUT'] != None:
+            elif input_dict['MP_SPAN_INPUT']:
                 structure_instance.span = create_copy(
                     input_dict['MP_SPAN_INPUT'], folder.prepare_mp_span, name='input.span')
 
+            logger.info(f'Calculate lipid accessible residues')
+            lipacc_dic = mp_prepare.mp_lipid_acc_resi(structure_instance.path_to_cleaned_pdb, folder.prepare_mp_lipacc, folder.prepare_mp_span, thickness=args.MP_THICKNESS, SLURM=False)
+
         # Making mutfiles and checks
-        print(f'Convert prism file if present: {input_dict["PRISM_INPUT"]}')
-        if input_dict['PRISM_INPUT'] == None:
-            new_mut_input = input_dict['MUTATION_INPUT']
-        #    mut_dic = get_mut_dict(input_dict['MUTATION_INPUT'])
-        else:
+        if args.MUT_MODE == 'prism':
             new_mut_input = os.path.join(folder.prepare_input, 'input_mutfile')
-            mut_dic = prism_to_mut(input_dict['PRISM_INPUT'], new_mut_input)
+        elif args.MUT_MODE == 'mut_file':
+            new_mut_input = input_dict['MUTATION_INPUT']
+        else:
+            new_mut_input = None
+        #    mut_dic = get_mut_dict(input_dict['MUTATION_INPUT'])
 
         logger.info(f'Generate mutfiles.')
-        print(input_dict['MUTATION_INPUT'])
+        logger.info(input_dict['MUTATION_INPUT'])
         
-        check2 = structure_instance.make_mutfiles(
-            new_mut_input)
+        check2, mut_dic = structure_instance.make_mutfiles(
+            new_mut_input, args.MUT_MODE)
+
+        new_mut_input = os.path.join(folder.prepare_cleaning, 'mutation_clean.txt')
         check1 = compare_mutfile(structure_instance.fasta_seq,
                                  folder.prepare_mutfiles, folder.prepare_checking, new_mut_input)
         check3, errors = pdbxmut(folder.prepare_mutfiles, struc_dic_cleaned)
-        check2 = False
 
         if check1 == True or check2 == True or check3 == True:
-            print("check1:", check1, "check2:", check2, "check3:", check3)
+            logger.info(f"check1: {check1}, check2: {check2}, check3: {check3}")
             logger.error(
                 "ERROR: STOPPING SCRIPT DUE TO RESIDUE MISMATCH BETWEEN MUTFILE AND PDB SEQUENCE")
             sys.exit()
@@ -202,7 +206,8 @@ def predict_stability(args):
             # Parse sbatch relax file
             logger.info('Create MP relax sbatch files.')
             path_to_relax_sbatch = mp_prepare.rosetta_relax_mp(
-                folder, SLURM=True, repeats=args.BENCH_MP_RELAX_REPEAT, num_struc=args.BENCH_MP_RELAX_STRUCS, lipid_type=args.MP_LIPIDS, sys_name=name, partition=partition, mp_thickness=args.MP_THICKNESS)
+                folder, SLURM=True, repeats=args.BENCH_MP_RELAX_REPEAT, num_struc=args.BENCH_MP_RELAX_STRUCS, 
+                lipid_type=args.MP_LIPIDS, sys_name=name, partition=partition, mp_thickness=args.MP_THICKNESS)
 
             # Parse sbatch relax parser
             path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(
@@ -224,10 +229,10 @@ def predict_stability(args):
                 folder, mut_dic, SLURM=True, sys_name=name, partition=args.SLURM_PARTITION,
                 repack_radius=args.BENCH_MP_REPACK, lipids=args.MP_LIPIDS,
                 temperature=args.MP_TEMPERATURE, repeats=args.BENCH_MP_REPEAT,
-                is_pH=is_pH, pH_value=pH_value)
+                is_pH=is_pH, pH_value=pH_value, lipacc_dic=lipacc_dic)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
-                folder, uniprot=args.UNIPROT_ID, sys_name=name, output_name='ddG.out', partition=partition)
+                folder, chain_id=args.CHAIN, sys_name=name, output_name='ddG.out', partition=partition, output_gaps=args.GAPS_OUTPUT)
         else:
             # Parse sbatch relax file
             relax_input_relaxfile = create_copy(
@@ -266,8 +271,11 @@ def predict_stability(args):
 #            folder.ddG_run, '.sc', folder.ddG_output, 'output.sc')
 
     if mode == 'analysis':
-        calc_all(folder, sys_name=name)
-        plot_all(folder, sys_name=name)
+        if args.PRISM_INPUT:
+            calc_all(folder, sys_name=name)
+            plot_all(folder, sys_name=name)
+        else:
+            logger.warning('No reference prism file provided. No analysis performed.')
 
     # Full SLURM execution
     if mode == 'proceed' or mode == 'fullrun':

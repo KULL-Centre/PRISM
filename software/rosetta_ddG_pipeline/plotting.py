@@ -243,37 +243,16 @@ def volcano_plot(pd_dataframe, out_folder, variant_col='variant', exp_score_col=
 def plot_all(folder, sys_name='', drop_outliers=True):
 
     rosetta_prims_file = os.path.join(folder.output, f'prims_rosetta_XXX_{sys_name}.txt')
-    rosetta_metadata, rosetta_dataframe = read_from_prism(rosetta_prims_file)
 
-    experimental_prims_file = os.path.join(
-        folder.input, 'prism_mave_input.txt')
-    experimental_metadata, experimental_dataframe = read_from_prism(
-        experimental_prims_file)
-
-    merged_dataframe = pd.concat([rosetta_dataframe[['variant', 'norm_ddG']],
-                                  experimental_dataframe[['score']]], axis=1)
-    merged_dataframe = merged_dataframe.rename(
-        columns={'norm_ddG': 'predicted_ddG', 'score': 'experimental_ddG'})
-
-    merged_dataframe['diff'] = merged_dataframe['experimental_ddG'].sub(
-        merged_dataframe['predicted_ddG'], axis=0)
-
-    merged_metadata = rosetta_metadata.copy()
-    merged_metadata['mave'] = experimental_metadata['mave']
-    merged_metadata['columns'] = {
-        'experimental_ddG': 'Experimental ddG',
-        'diff': 'Difference of experimental vs predicted ddG',
-        'predicted_ddG': merged_metadata[
-            'columns'].pop('norm_ddG')}
-
-    merged_prism_file = os.path.join(folder.analysis, f'prims_rosetta_mave_XXX_{sys_name}_merged.txt')
-    comment = ['Automatically generated file from stability_pipeline']
-    write_prism(merged_metadata, merged_dataframe,
-                merged_prism_file, comment='')
+    merged_prism_file = os.path.join(folder.analysis, f'prims_merged_XXX_{sys_name}_merged.txt')
+    merged_metadata, merged_dataframe = read_from_prism(merged_prism_file)
+    merged_dataframe_no_nan = merged_dataframe.dropna()
 
     if drop_outliers:
         drop_numerical_outliers(
             merged_dataframe, variant_col="variant", score_col="predicted_ddG", z_thresh=3)
+        drop_numerical_outliers(
+            merged_dataframe_no_nan, variant_col="variant", score_col="predicted_ddG", z_thresh=3)
 
     plot_sequence_heatmap(merged_dataframe, folder.analysis,
                           variant_col="variant", score_col="predicted_ddG")
@@ -283,13 +262,13 @@ def plot_all(folder, sys_name='', drop_outliers=True):
     simple_plot_heatmap(merged_dataframe[['predicted_ddG']], folder.analysis,
                         sys_name=sys_name, ranges=ranges, title='Normalized Rosetta run')
 
-    joint_plot(merged_dataframe, folder.analysis, variant_col='variant',
+    joint_plot(merged_dataframe_no_nan, folder.analysis, variant_col='variant',
                exp_score_col='experimental_ddG', ros_score_col='predicted_ddG', sys_name=sys_name)
 
-    violin_plot(merged_dataframe, folder.analysis,
+    violin_plot(merged_dataframe_no_nan, folder.analysis,
                 variant_col='variant', diff_score_col='diff', sys_name=sys_name)
 
-    volcano_plot(merged_dataframe, folder.analysis, variant_col='variant',
+    volcano_plot(merged_dataframe_no_nan, folder.analysis, variant_col='variant',
                  exp_score_col='experimental_ddG', ros_score_col='predicted_ddG', sys_name=sys_name)
 
 

@@ -12,6 +12,8 @@ import logging as logger
 import os
 import subprocess
 import sys
+import glob
+import json
 
 # Third party imports
 from Bio import PDB
@@ -152,6 +154,53 @@ def mp_span_from_pdb_octopus(pdbinput, outdir_path, SLURM=False):
                 spanfiles.append(os.path.join(outdir_path, new_filename))
         logger.info("Span process done")
         return spanfiles
+
+
+def mp_lipid_acc_resi(pdbinput, outdir_path, folder_spanfile, thickness=15, SLURM=False):
+    """
+    Calculates the residues which are accessible by lipids. 
+    Rosetta scripts used: mp_lipid_acc
+    Cite:   Koehler Leman, Lyskov, & Bonneau (2017) BMC Bioinformatics (https://doi.org/10.1186/s12859-017-1541-z)
+    Documentation: https://www.rosettacommons.org/docs/latest/application_documentation/membrane_proteins/RosettaMP-App-MPSpanFromPDB
+    """
+    for root, dirs, files in os.walk(folder_spanfile):
+        for file in files:
+            if file.endswith('.span'):
+                spanfile = os.path.join(root, file)
+    Rosetta_lipacc_exec = os.path.join(
+        rosetta_paths.path_to_rosetta, f'bin/mp_lipid_acc.{rosetta_paths.Rosetta_extension}')
+    lipacc_command = (f'{Rosetta_lipacc_exec} '
+                    f'-in:file:s {pdbinput} '
+                    f'-database {rosetta_paths.Rosetta_database_path} '
+                    f'-mp:setup:spanfiles {spanfile} '
+                    '')
+    logger.info(f"Lipid_acc_resi call function: {lipacc_command}")
+
+    if SLURM:
+        logger.warn("need to write the slurm script!")
+        sys.exit()
+        lipacc_call = subprocess.Popen('sbatch rosetta_lipacc.sbatch', stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT, shell=True, cwd=outdir_path)
+        lipacc_process_id_info = lipacc_call.communicate()
+        lipacc_process_id = str(lipacc_process_id_info[0]).split()[3][0:-3]
+        logger.info(lipacc_process_id_info)
+    else:
+        lipacc_call = subprocess.Popen(
+            lipacc_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, cwd=outdir_path)
+        lipacc_process_id_info = lipacc_call.communicate()
+    
+    lipacc_dic = {}
+    out_pdb_file = glob.glob(os.path.join(outdir_path, '*.pdb'))[0]
+    with open (out_pdb_file, 'r') as fp, open(os.path.join(outdir_path, "mp_lipid_acc_dic.json"), 'w') as fp2:
+        for line in fp:
+            if line.startswith('ATOM'):
+                resid = int(line[22:26])
+                if line[60:66]==' 50.00':
+                    lipacc_dic[resid] = 'true'
+                else:
+                    lipacc_dic[resid] = 'false'
+        json.dump(lipacc_dic, fp2, indent=4) 
+    return lipacc_dic
 
 
 def mp_span_from_pdb_dssp(pdbinput, outdir_path, thickness=15, SLURM=False):

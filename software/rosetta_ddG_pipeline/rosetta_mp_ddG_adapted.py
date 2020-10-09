@@ -90,6 +90,11 @@ def main(args):
                       type=float,
                       help="Repack the residues within this radius",)
 
+    parser.add_option('--rescale',
+                      action="store", default=1.0,
+                      type=float,
+                      help="Rescale REU to kcal/mol",)
+
     parser.add_option('--output_breakdown', '-b',
                       action="store", default="scores.sc",
                       help="Output mutant and native score breakdown by weighted energy term into a scorefile", )
@@ -104,19 +109,25 @@ def main(args):
                       help="Predict ddG and specified pH value. Default 7. Will not work if include pH is not passed", )
 
     parser.add_option('--repeats',
-                      action="store", default=3,
+                      action="store", default=5,
                       type=int,
-                      help="Number of ddG calculations. Default 3.", )
+                      help="Number of ddG calculations. Default 5.", )
 
     parser.add_option('--lipids', '-l',
                       action="store", default='DLPC',
-                      choices=['DLPC', ],
+                      choices=['DLPC', 'DMPC', 'DOPC', 'DPPC', 'POPC', 'DLPE', 
+                        'DMPE', 'DOPE', 'DPPE', 'POPE', 'DLPG', 'DMPG', 'DOPG', 'DPPG', 'POPG'],
                       help="Specify lipids from options.", )
 
     parser.add_option('--temperature', '-t',
                       action="store", default=37.0,
                       type=float,
                       help="Experimental temperature.", )
+
+    parser.add_option('--lip_has_pore',
+                      action="store", default='true',
+                      type=str,
+                      help="If residue faces lipids, set to false. Default=true", )
 
     # parse options
     (options, args) = parser.parse_args(args=args[1:])
@@ -135,7 +146,7 @@ def main(args):
     rosetta_options = (f'-mp:setup:spanfiles {Options.in_span}'
                        f' -mp:lipids:temperature {Options.temperature}'
                        f' -mp:lipids:composition {Options.lipids}'
-                       f' -mp:lipids:has_pore false'
+                       f' -mp:lipids:has_pore {Options.lip_has_pore}'
                        f' -run:constant_seed'
                        f' -in:ignore_unrecognized_res'
                        f' -pH_mode -value_pH {Options.pH_value}')
@@ -180,6 +191,7 @@ def main(args):
     else:
         AAs = ['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L',
                'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y']
+    
     for aa in AAs:
         with open(Options.out, 'a') as f, open(Options.out_add, 'a') as fp2:
             result_ddG = []
@@ -187,11 +199,15 @@ def main(args):
                 ddGs = compute_ddG(repacked_native, sfxn, int(
                     Options.res), aa, Options.repack_radius, Options.output_breakdown)
                 res_str = str(native_res) + str(Options.res) + str(ddGs[0])
-                result_ddG.append(ddGs[3])
-                fp2.write(res_str + "," + str(ddGs[3]) + "," +
-                          str(ddGs[1]) + "," + str(ddGs[2]) + "\n")
+                rescaled_ddG = ddGs[3]/Options.rescale
+                result_ddG.append(rescaled_ddG)
+                fp2.write(f"{res_str},{rescaled_ddG},{ddGs[3]},{ddGs[1]},{ddGs[2]}\n")
+
             result_ddG = np.array(result_ddG)
-            f.write(f'{res_str},{round(np.mean(result_ddG),3)},{round(np.std(result_ddG),3)}\n')
+            small_k = int(Options.repeats/2)+1
+            smallest_idx = np.argpartition(result_ddG, small_k)
+            smallest_array = result_ddG[smallest_idx[:small_k]]
+            f.write(f'{res_str},{round(np.mean(smallest_array),3)},{round(np.std(smallest_array),3)}\n')
 
 ###############################################################################
 

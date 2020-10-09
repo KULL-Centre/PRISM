@@ -7,11 +7,11 @@ import numpy as np
 import re
 
 from argparse import ArgumentParser
-from helper import read_slurms
+from helper import read_slurms, runtime_memory_stats
 import os
 
 import pandas as pd
-from get_memory_stats import check_memory
+
 
 def csv_to_prism(data,structure_input,chain_id):
     """This script convert the regular data file, to a prism-like file. This file contains more information than regular files and are ideal for sharing data"""
@@ -75,32 +75,7 @@ def csv_to_prism(data,structure_input,chain_id):
 def parse_rosetta_ddgs(sys_name, chain_id, fasta_seq, ddG_run, ddG_output, structure_input):
     """This script parses the results from the ddG calculations into two files. A regular data file containing only the data and the variants and a prism-like file with data variants and additional information"""
     
-    #This part collects informations about runtime and memory use
-    try:
-        job_id_pos= join(ddG_run, 'job_id_ddg.txt')
-        with open(job_id_pos, 'r') as job_id_file:
-            ddg_process_id=str(job_id_file.readlines()[-1])
-            print(ddg_process_id)
-         
-        #Get stats 
-        shell_command = f'sacct --format="JobID,Start,End,CPUTime,ReqMem,MaxRSS,MaxVMSize,AveVMSize,JobName" > memory_usage_{ddg_process_id}.log'
-        subprocess.call(shell_command, cwd=ddG_run, shell=True)
-                                                
-        check_memory(ddg_process_id,ddG_run) 
-        
-    except: 
-        job_id_pos= join(ddG_run, 'job_id_ddg.txt')
-        with open(job_id_pos, 'r') as job_id_file:
-            ddg_process_id=str(job_id_file.readlines()[-1])
-            print(ddg_process_id)
-         
-        #Get stats 
-        shell_command = f'sacct --format="JobID,Start,End,CPUTime,ReqMem,MaxRSS,MaxVMSize,AveVMSize,JobName" > memory_usage_{ddg_process_id}.log'
-        subprocess.call(shell_command, cwd=ddG_run, shell=True)
-                                                
-        check_memory(ddg_process_id,ddG_run)         
-        print('no memory file')
-    
+    runtime_memory_stats(ddG_run)
     
     path_to_run_folder = ddG_run
     

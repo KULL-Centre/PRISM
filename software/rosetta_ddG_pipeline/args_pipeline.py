@@ -16,7 +16,6 @@ import re
 # Local application imports
 import rosetta_paths
 
-
 def parse_args2():
     """
     Argument parser function
@@ -52,6 +51,17 @@ def parse_args2():
                         default=None,
                         dest='MUTATION_INPUT',
                         help='mutation input file'
+                        )
+    parser.add_argument('--mutate_mode', '-mm',
+                        choices=['all', 'prism', 'mut_file'],
+                        default='all',
+                        dest='MUT_MODE',
+                        help=('Mutation modes:\n'
+                              '\tall: mutate residues in pdb \n'
+                              '\tprism: mutate variants present in prism file \n'
+                              '\tmut_file: mutate variants present in mutation file \n'
+                              'Default value: all'
+                              )
                         )
     parser.add_argument('--prism', '-p',
                         default=None,
@@ -213,7 +223,7 @@ def parse_args2():
                         help='For benchmark purpose: repack value'
                         )
     parser.add_argument('--benchmark_mp_repeat',
-                        default=3,
+                        default=5,
                         type=int,
                         dest='BENCH_MP_REPEAT',
                         help='For benchmark purpose: repeat value'
@@ -236,6 +246,12 @@ def parse_args2():
                         dest='OVERWRITE_PATH',
                         help='Overwrites paths when creating folders'
                         )
+    parser.add_argument('--gapped_output',
+                        default=False,
+                        type=lambda s: s.lower() in ['true', 't', 'yes', '1'],
+                        dest='GAPS_OUTPUT',
+                        help='Generates prism and pdb files which include gaps and starts with the residue-numbering from the original pdb'
+                        )
     parser.add_argument('--slurm_partition',
                         default='sbinlab',
                         dest='SLURM_PARTITION',
@@ -247,5 +263,14 @@ def parse_args2():
                         help='Make pipeline more verbose'
                         )
     args = parser.parse_args()
+
+    # Handle user input errors
+    if args.MUT_MODE == 'prism' and args.PRISM_INPUT == None:
+      parser.error("Please specify a prism input file or change the mutation mode.")
+    elif args.MUT_MODE == 'mut_file' and args.MUTATION_INPUT == None:
+      parser.error("Please specify a mutation input file or change the mutation mode.")
+    if args.MUTATION_INPUT != None:
+      print('Mutation mode changed to mut_file')
+      args.MUT_MODE = 'mut_file'
 
     return args
