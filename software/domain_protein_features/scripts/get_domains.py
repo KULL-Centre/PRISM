@@ -3,7 +3,7 @@ sequence/structural features from uniprot ids
 
 Author: Johanna K.S. Tiemann
 
-Date of last major changes: 2020-08-24
+Date of last major changes: 2020-10-19
 
 """
 
@@ -22,7 +22,7 @@ import pandas as pd
 
 def extract_single_protein_pfam( uniprot_id, verbose=False ):
     """
-    Extracts domain information from pfam for present uniprot ID
+    Extracts domain information from pfam for present uniprot ID. Return type changed from dictionary to list of dictionaries.
     """
 
     disprot_url = (
@@ -34,20 +34,20 @@ def extract_single_protein_pfam( uniprot_id, verbose=False ):
     
     dictString = xmltodict.parse(contents.decode("utf-8"), attr_prefix='', cdata_key='#text')
 
-    result_dic={}
+    result_ls=[]
     if 'matches' in dictString['pfam']['entry'].keys():
         subdic = dictString['pfam']['entry']['matches']['match']
         for keys in subdic:
             if isinstance(keys,str):
-                result_dic[subdic['accession']] = [subdic['id'], int(subdic['location']['start']), int(subdic['location']['end'])]
+                result_ls.append({'acc': subdic['accession'], 'id':subdic['id'], 'start':int(subdic['location']['start']), 'end':int(subdic['location']['end'])})
             else:
-                result_dic[keys['accession']] = [keys['id'], int(keys['location']['start']), int(keys['location']['end'])]
+                result_ls.append({'acc': keys['accession'], 'id':keys['id'], 'start':int(keys['location']['start']), 'end':int(keys['location']['end'])})
 
     if verbose:
         jsonString = json.dumps(xmltodict.parse(contents.decode("utf-8"), attr_prefix='', cdata_key='#text'), indent=4)
-        return result_dic, jsonString
+        return result_ls, jsonString
     else:
-        return result_dic
+        return result_ls
 
 
 def extract_pfam_nested(write_dir=''):
