@@ -284,8 +284,10 @@ def shift_pdb_numbering(in_pdb, out_pdb, sec_all, startnr=1):
 
 
 def add_ddG_to_bfactor(in_pdb, in_ddg, out_pdb, threshold=0.0):
+    rr=1
     with open(in_pdb, 'r') as fp, open(in_ddg, 'r') as fp2, open(out_pdb, 'w') as fp3:
         ddG_resi_dic = {}
+        ddG_resi_array = []
         for line in fp2:
             line_str = line.split(',')
             resid = line_str[0][1:-1]
@@ -295,15 +297,32 @@ def add_ddG_to_bfactor(in_pdb, in_ddg, out_pdb, threshold=0.0):
                 ddG_resi_dic[resid] = ddG_resi_arr
             else:
                 ddG_resi_dic[resid] = [float(line_str[1])]
+            ddG_resi_array.append(float(line_str[1]))
+
         for line in fp:
             if line.startswith('ATOM'):
                 resid = line[22:26].strip()
                 if resid in ddG_resi_dic.keys():
-                    bfactor = round(len(np.where( np.array(ddG_resi_dic[resid]) > threshold ))/len(ddG_resi_dic[resid]),2)
+                    #bfactor = round(len(np.where( np.array(ddG_resi_dic[resid]) > threshold ))/len(ddG_resi_dic[resid]),2)
+                    #bfactor = round(np.average(ddG_resi_dic[resid]),2)
+                    df = ddG_resi_dic[resid]
+                    df2 = np.average(df)
+                    normalized_df=(df2-np.min(df))/(np.max(df)-np.min(df))
+                    bfactor = round(normalized_df,2)
                 else:
-                    bfactor = 0.00
+                    bfactor = -1.00
                 bfac_str = '%.2f'%(bfactor)
-                fp3.write(f'{line[:62]}{bfac_str}{line[66:]}')
+                fp3.write(f'{line[:61]}{" "*(5-len(bfac_str))}{bfac_str}{line[66:]}')
+            elif line.startswith('HETATM'):
+                if line.split()[-1]=='X':
+                    if rr==1:
+                        rr=0
+                        bfac_str = '%.2f'%(-1.00)
+                    else:
+                        bfac_str = '%.2f'%(1.00)
+                    fp3.write(f'{line[:61]}{" "*(5-len(bfac_str))}{bfac_str}{line[66:]}')
+                else:
+                    fp3.write(line)
             else:
                 fp3.write(line)
 
