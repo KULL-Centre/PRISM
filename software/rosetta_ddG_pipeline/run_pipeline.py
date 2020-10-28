@@ -173,8 +173,8 @@ def predict_stability(args):
         new_mut_input = os.path.join(folder.prepare_cleaning, 'mutation_clean.txt')
         check1 = compare_mutfile(structure_instance.fasta_seq,
                                  folder.prepare_mutfiles, folder.prepare_checking, new_mut_input)
-        #check3, errors = pdbxmut(folder.prepare_mutfiles, struc_dic_cleaned)
-        check3= False
+        check3, errors = pdbxmut(folder.prepare_mutfiles, struc_dic_cleaned)
+        #check3= False
 
         if check1 == True or check2 == True or check3 == True:
             logger.info(f"check1: {check1}, check2: {check2}, check3: {check3}")
