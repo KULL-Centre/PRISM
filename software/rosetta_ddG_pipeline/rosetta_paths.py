@@ -5,9 +5,9 @@ default_path = {
     'muscle_exec': '/groups/sbinlab/software/muscle/muscle3.8.31_i86linux64',
     'TMalign_exec': '/groups/sbinlab/software/TMalign/TMalign',
     'ddG_pipeline': '/sbinlab/software/PRISM/software/rosetta_ddG_pipeline',
-    'Rosetta_main_path': '/sbinlab/software/Rosetta_2018_Oct_d557f8/source/',
+    'Rosetta_main_path': '/sbinlab/software/Rosetta_2020_July_dc83fa/source/',
     'Rosetta_tools_path': '/sbinlab/software/Rosetta_tools/tools/',
-    'Rosetta_database_path': '/sbinlab/software/Rosetta_2018_Oct_d557f8/database/',
+    'Rosetta_database_path': '/sbinlab/software/Rosetta_2020_July_dc83fa/database/',
     'Rosetta_extension': 'linuxgccrelease',
     'prims_parser': '/sbinlab/tiemann/repos/PRISM/prism/scripts',
 }
