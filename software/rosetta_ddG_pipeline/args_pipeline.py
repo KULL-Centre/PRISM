@@ -240,6 +240,12 @@ def parse_args2():
                         dest='BENCH_MP_RELAX_STRUCS',
                         help='For benchmark purpose: relax structure value output'
                         )
+    parser.add_argument('--mp_ignore_relax_mp_flags',
+                        default=False,
+                        type=lambda s: s.lower() in ['true', 't', 'yes', '1'],
+                        dest='MP_IGNORE_RELAX_MP_FLAGS',
+                        help='For relax checking'
+                        )
     parser.add_argument('--overwrite_path',
                         default=False,
                         type=lambda s: s.lower() in ['true', 't', 'yes', '1'],
@@ -262,6 +268,12 @@ def parse_args2():
                         dest='VERBOSE',
                         help='Make pipeline more verbose'
                         )
+    parser.add_argument('--mp_energy_func',
+                        default='franklin2019',
+                        dest='MP_ENERGY_FUNC',
+                        help='MP Energy function (mainly for benchmarking).'
+                        )
+
     args = parser.parse_args()
 
     # Handle user input errors

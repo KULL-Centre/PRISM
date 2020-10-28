@@ -22,7 +22,8 @@ def rosetta_ddg_mp_pyrosetta(folder, mut_dict, SLURM=True, sys_name='',
                              partition='sbinlab', output_name='ddG.out', 
                              add_output_name='ddG_additional.out', repack_radius=0,
                              lipids='DLPC', temperature=37.0, repeats=5,
-                             score_file_name='scores', is_pH=0, pH_value=7, lipacc_dic={}):
+                             score_file_name='scores', is_pH=0, pH_value=7, 
+                             score_function='franklin2019', lipacc_dic={}):
     ddg_script_exec = os.path.join(
         rosetta_paths.path_to_stability_pipeline, 'rosetta_mp_ddG_adapted.py')
     input_struc = os.path.join(folder.ddG_input, 'input.pdb')
@@ -45,6 +46,7 @@ def rosetta_ddg_mp_pyrosetta(folder, mut_dict, SLURM=True, sys_name='',
                    f' --repeats {repeats}'
                    f' --lipids {lipids}'
                    f' --temperature {temperature}'
+                   f' --score_function {score_function}'
                    '')
 
     lipacc_array = []
@@ -83,6 +85,117 @@ echo $INDEX
                                              f'--mut {mut_dict[resid]} ')
             logger.info(new_ddG_command)
         sys.exit()
+
+
+
+
+
+def rosetta_ddg_mp_rosettascripts(folder, SLURM=False, num_struc=20, sys_name='mp', partition='sbinlab', repeats=2, lipid_type='DLPC', 
+  mp_thickness=15, mp_switch_off=False, score_function='franklin2019'):
+    Rosetta_script_exec = os.path.join(
+        rosetta_paths.path_to_rosetta, f'bin/rosetta_scripts.{rosetta_paths.Rosetta_extension}')
+    for root, dirs, files in os.walk(folder.ddG_input):
+        for file in files:
+            if file.endswith('.span'):
+                spanfile = os.path.join(root, file)
+    if mp_switch_off:
+        ddG_command = (f'{Rosetta_script_exec} '
+                      # Use the membrane relax protocol Rosetta script
+                      f'-parser:protocol {os.path.join(folder.ddG_input, "relax.xml")} '
+                      # Repeatition of FastRelax
+                      f'-parser:script_vars repeats={repeats} '
+                      # Input PDB Structure: PDB file for protein structure
+                      f'-in:file:s {os.path.join(folder.ddG_input, "input.pdb")} '
+                      # Spanfile describing trans-membrane spans of the
+                      # starting structure
+#                      f'-mp:setup:spanfiles {spanfile} '
+#                      '-mp:scoring:hbond '  # Turn on membrane depth-dependent hydrogen bonding weight
+#                      f'-mp:lipids:composition {lipid_type} '
+#                      f'-mp::thickness {mp_thickness} '
+                      # Use the FastRelax mode of Rosetta Relax (uses 5-8
+                      # repeat cycles)
+      #                '-relax:fast '
+#                      '-relax:jump_move true '  # Allow the MEM and other jumps to move during refinement
+      #                '-relax:bb_move false ' # Set all backbone torsion angles to unmovable during minimization. --> not working
+                      # Number of structures to generate
+                      f'-nstruct 1 '
+                      # Wait to pack until the membrane mode is turned on
+                      '-packing:pack_missing_sidechains 0 '
+                      '-out:pdb '  # Output all PDB structures of refined models
+                      # Specify destination for score file
+                      f'-out:file:scorefile {os.path.join(folder.ddG_run, "relax_scores.sc")} '
+                      '-out:prefix $SLURM_ARRAY_TASK_ID- '
+                      f'-database {rosetta_paths.Rosetta_database_path} '
+                      '-ignore_unrecognized_res true '
+                      f'-score:weights {score_function} '
+                      #                        '-ignore_zero_occupancy false '
+                      '')
+    else:
+        ddG_command = (f'{Rosetta_script_exec} '
+                      # Use the membrane relax protocol Rosetta script
+                      f'-parser:protocol {os.path.join(folder.ddG_input, "relax.xml")} '
+                      # Repeatition of FastRelax
+                      f'-parser:script_vars repeats={repeats} energy_func={score_function} '
+                      # Input PDB Structure: PDB file for protein structure
+                      f'-in:file:s {os.path.join(folder.ddG_input, "input.pdb")} '
+                      # Spanfile describing trans-membrane spans of the
+                      # starting structure
+                      f'-mp:setup:spanfiles {spanfile} '
+                      '-mp:scoring:hbond '  # Turn on membrane depth-dependent hydrogen bonding weight
+                      f'-mp:lipids:composition {lipid_type} '
+                      f'-mp::thickness {mp_thickness} '
+                      # Use the FastRelax mode of Rosetta Relax (uses 5-8
+                      # repeat cycles)
+      #                '-relax:fast '
+#                      '-relax:jump_move true '  # Allow the MEM and other jumps to move during refinement
+      #                '-relax:bb_move false ' # Set all backbone torsion angles to unmovable during minimization. --> not working
+                      # Number of structures to generate
+                      f'-nstruct 1 '
+                      # Wait to pack until the membrane mode is turned on
+                      '-packing:pack_missing_sidechains 0 '
+                      '-out:pdb '  # Output all PDB structures of refined models
+                      # Specify destination for score file
+                      f'-out:file:scorefile {os.path.join(folder.ddG_run, "relax_scores.sc")} '
+                      '-out:prefix $SLURM_ARRAY_TASK_ID- '
+                      f'-database {rosetta_paths.Rosetta_database_path} '
+                      '-ignore_unrecognized_res true '
+                      f'-score:weights {score_function} '
+                      #                        '-ignore_zero_occupancy false '
+                      '')
+    logger.info(f'MP relax call function: {ddG_command}')
+
+    if SLURM:
+        path_to_sbatch = os.path.join(folder.ddG_input, 'rosetta_ddg.sbatch')
+        with open(path_to_sbatch, 'w') as fp:
+            fp.write(f'''#!/bin/sh
+#SBATCH --job-name=mp_ddG_{sys_name}
+#SBATCH --array=0-{len(mut_dict.keys())}
+#SBATCH --time=32:00:00
+#SBATCH --mem 5000
+#SBATCH --partition={partition}
+#SBATCH --nice
+RESIS=({' '.join(mut_dict.keys())})
+MUTS=({' '.join(mut_dict.values())})
+LIPACC=({' '.join(lipacc_array)})
+OFFSET=0
+INDEX=$((OFFSET+SLURM_ARRAY_TASK_ID))
+echo $INDEX
+
+# launching rosetta
+''')
+            fp.write(f'{ddG_command} ')
+        logger.info(f'Location of relax sbatch file: {path_to_sbatch}')
+        return(path_to_sbatch)
+    else:
+        ddG_call = subprocess.Popen(relax_command,
+                                      stdout=subprocess.PIPE,
+                                      stderr=subprocess.STDOUT,
+                                      shell=True,
+                                      cwd=folder.ddG_run)
+        ddG_process_id_info = ddG_call.communicate()
+        with open(os.path.join(folder.ddG_run, 'ddG.log'), 'w') as fp:
+            fp.writelines(ddG_process_id_info[0].decode())
+
 
 
 def postprocess_rosetta_ddg_mp_pyrosetta(folder, output_name='ddG.out', sys_name='', version=1, prims_nr='XXX', chain_id='A', output_gaps=False):

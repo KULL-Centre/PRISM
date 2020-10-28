@@ -5,12 +5,12 @@
 	<MOVERS>
 		<AddMembraneMover name="add_memb"/>
 		<MembranePositionFromTopologyMover name="init_pos"/>
-		<FastRelax name="fast_relax" scorefxn="memb_hires" repeats="%%repeats%%"/> 
+		<ddG name="ddg" scorefxn="%%energy_func%%" repack="1" per_residue_ddg="true"/>
 	</MOVERS>
 	<PROTOCOLS>
 		<Add mover="add_memb"/>
 		<Add mover="init_pos"/>
-		<Add mover="fast_relax"/>
+		<Add mover_name="ddg"/> 
 	</PROTOCOLS>
 	<OUTPUT scorefxn="memb_hires" />
 </ROSETTASCRIPTS>

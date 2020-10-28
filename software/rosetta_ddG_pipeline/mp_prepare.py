@@ -253,18 +253,52 @@ def mp_span_from_pdb_dssp(pdbinput, outdir_path, thickness=15, SLURM=False):
         return spanfiles
 
 
-def rosetta_relax_mp(folder, SLURM=False, num_struc=20, sys_name='mp', partition='sbinlab', repeats=2, lipid_type='DLPC', mp_thickness=15):
+def rosetta_relax_mp(folder, SLURM=False, num_struc=20, sys_name='mp', partition='sbinlab', repeats=2, lipid_type='DLPC', 
+  mp_thickness=15, mp_switch_off=False, score_function='franklin2019'):
     Rosetta_script_exec = os.path.join(
         rosetta_paths.path_to_rosetta, f'bin/rosetta_scripts.{rosetta_paths.Rosetta_extension}')
     for root, dirs, files in os.walk(folder.relax_input):
         for file in files:
             if file.endswith('.span'):
                 spanfile = os.path.join(root, file)
-    relax_command = (f'{Rosetta_script_exec} '
+    if mp_switch_off:
+        relax_command = (f'{Rosetta_script_exec} '
                       # Use the membrane relax protocol Rosetta script
                       f'-parser:protocol {os.path.join(folder.relax_input, "relax.xml")} '
                       # Repeatition of FastRelax
-                      f'-parser:script_vars repeats={repeats} '
+                      f'-parser:script_vars repeats={repeats} energy_func={score_function} '
+                      # Input PDB Structure: PDB file for protein structure
+                      f'-in:file:s {os.path.join(folder.relax_input, "input.pdb")} '
+                      # Spanfile describing trans-membrane spans of the
+                      # starting structure
+#                      f'-mp:setup:spanfiles {spanfile} '
+#                      '-mp:scoring:hbond '  # Turn on membrane depth-dependent hydrogen bonding weight
+#                      f'-mp:lipids:composition {lipid_type} '
+#                      f'-mp::thickness {mp_thickness} '
+                      # Use the FastRelax mode of Rosetta Relax (uses 5-8
+                      # repeat cycles)
+      #                '-relax:fast '
+#                      '-relax:jump_move true '  # Allow the MEM and other jumps to move during refinement
+      #                '-relax:bb_move false ' # Set all backbone torsion angles to unmovable during minimization. --> not working
+                      # Number of structures to generate
+                      f'-nstruct 1 '
+                      # Wait to pack until the membrane mode is turned on
+                      '-packing:pack_missing_sidechains 0 '
+                      '-out:pdb '  # Output all PDB structures of refined models
+                      # Specify destination for score file
+                      f'-out:file:scorefile {os.path.join(folder.relax_run, "relax_scores.sc")} '
+                      '-out:prefix $SLURM_ARRAY_TASK_ID- '
+                      f'-database {rosetta_paths.Rosetta_database_path} '
+                      '-ignore_unrecognized_res true '
+                      f'-score:weights {score_function} '
+                      #                        '-ignore_zero_occupancy false '
+                      '')
+    else:
+        relax_command = (f'{Rosetta_script_exec} '
+                      # Use the membrane relax protocol Rosetta script
+                      f'-parser:protocol {os.path.join(folder.relax_input, "relax.xml")} '
+                      # Repeatition of FastRelax
+                      f'-parser:script_vars repeats={repeats} energy_func={score_function} '
                       # Input PDB Structure: PDB file for protein structure
                       f'-in:file:s {os.path.join(folder.relax_input, "input.pdb")} '
                       # Spanfile describing trans-membrane spans of the
@@ -277,6 +311,7 @@ def rosetta_relax_mp(folder, SLURM=False, num_struc=20, sys_name='mp', partition
                       # repeat cycles)
       #                '-relax:fast '
                       '-relax:jump_move true '  # Allow the MEM and other jumps to move during refinement
+      #                '-relax:bb_move false ' # Set all backbone torsion angles to unmovable during minimization. --> not working
                       # Number of structures to generate
                       f'-nstruct 1 '
                       # Wait to pack until the membrane mode is turned on
@@ -287,7 +322,7 @@ def rosetta_relax_mp(folder, SLURM=False, num_struc=20, sys_name='mp', partition
                       '-out:prefix $SLURM_ARRAY_TASK_ID- '
                       f'-database {rosetta_paths.Rosetta_database_path} '
                       '-ignore_unrecognized_res true '
-                      '-score:weights franklin2019 '
+                      f'-score:weights {score_function} '
                       #                        '-ignore_zero_occupancy false '
                       '')
     logger.info(f'MP relax call function: {relax_command}')

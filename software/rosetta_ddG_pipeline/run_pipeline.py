@@ -97,9 +97,11 @@ def predict_stability(args):
                     structure_instance.path = os.path.join(
                         folder.prepare_mp_superpose, f'{run_name}.pdb')
                     try:
+                        logger.info('Run OPM alignment with superpose')
                         mp_prepare.mp_superpose_opm(
                             args.MP_ALIGN_REF, prep_struc, structure_instance.path, target_chain=structure_instance.chain_id, write_opm=True)
                     except:
+                        logger.info('Run OPM alignment with TM align')
                         mp_prepare.mp_TMalign_opm(
                             args.MP_ALIGN_REF, prep_struc, structure_instance.path, target_chain=structure_instance.chain_id, write_opm=True)                        
                     prep_struc = create_copy(
@@ -121,7 +123,6 @@ def predict_stability(args):
 
         # Cleaning pdb and making fasta based on pdb or uniprot-id if provided
         logger.info(f'Prepare the pdb and extract fasta file')
-        #structure_instance.path_to_cleaned_pdb, struc_dic_cleaned = structure_instance.clean_up_and_isolate()
         structure_instance.path_to_cleaned_pdb, struc_dic_cleaned = structure_instance.clean_up_and_isolate()
         structure_instance.fasta_seq_full,structure_instance.fasta_seq = pdb_to_fasta_seq(
             structure_instance.path_to_cleaned_pdb,chain_id)
@@ -174,6 +175,7 @@ def predict_stability(args):
                                  folder.prepare_mutfiles, folder.prepare_checking, new_mut_input)
         #check3, errors = pdbxmut(folder.prepare_mutfiles, struc_dic_cleaned)
         check3= False
+
         if check1 == True or check2 == True or check3 == True:
             logger.info(f"check1: {check1}, check2: {check2}, check3: {check3}")
             logger.error(
@@ -208,7 +210,8 @@ def predict_stability(args):
             logger.info('Create MP relax sbatch files.')
             path_to_relax_sbatch = mp_prepare.rosetta_relax_mp(
                 folder, SLURM=True, repeats=args.BENCH_MP_RELAX_REPEAT, num_struc=args.BENCH_MP_RELAX_STRUCS, 
-                lipid_type=args.MP_LIPIDS, sys_name=name, partition=partition, mp_thickness=args.MP_THICKNESS)
+                lipid_type=args.MP_LIPIDS, sys_name=name, partition=partition, mp_thickness=args.MP_THICKNESS, 
+                mp_switch_off=args.MP_IGNORE_RELAX_MP_FLAGS, score_function=args.MP_ENERGY_FUNC)
 
             # Parse sbatch relax parser
             path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(
@@ -230,7 +233,7 @@ def predict_stability(args):
                 folder, mut_dic, SLURM=True, sys_name=name, partition=args.SLURM_PARTITION,
                 repack_radius=args.BENCH_MP_REPACK, lipids=args.MP_LIPIDS,
                 temperature=args.MP_TEMPERATURE, repeats=args.BENCH_MP_REPEAT,
-                is_pH=is_pH, pH_value=pH_value, lipacc_dic=lipacc_dic)
+                is_pH=is_pH, pH_value=pH_value, lipacc_dic=lipacc_dic, score_function=args.MP_ENERGY_FUNC)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
                 folder, chain_id=args.CHAIN, sys_name=name, output_name='ddG.out', partition=partition, output_gaps=args.GAPS_OUTPUT)

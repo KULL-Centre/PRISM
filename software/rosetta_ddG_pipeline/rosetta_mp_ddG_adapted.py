@@ -129,6 +129,11 @@ def main(args):
                       type=str,
                       help="If residue faces lipids, set to false. Default=true", )
 
+    parser.add_option('--score_function',
+                      action="store", default='franklin2019',
+                      type=str,
+                      help="ddG score function. Default=franklin2019", )
+
     # parse options
     (options, args) = parser.parse_args(args=args[1:])
     global Options
@@ -147,7 +152,7 @@ def main(args):
                        f' -mp:lipids:temperature {Options.temperature}'
                        f' -mp:lipids:composition {Options.lipids}'
                        f' -mp:lipids:has_pore {Options.lip_has_pore}'
-                       f' -run:constant_seed'
+                  #     f' -run:constant_seed'
                        f' -in:ignore_unrecognized_res'
                        f' -pH_mode -value_pH {Options.pH_value}')
 
@@ -159,7 +164,7 @@ def main(args):
     # Create an energy function
     sfxn = pyrosetta.rosetta.core.scoring.ScoreFunction()
     # Create a smoothed membrane full atom energy function (pH 7 calculations)
-    sfxn = create_score_function("franklin2019")
+    sfxn = create_score_function(Options.score_function)
 
 
     # Load Pose, & turn on the membrane
