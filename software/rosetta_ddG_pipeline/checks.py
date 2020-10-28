@@ -60,7 +60,7 @@ def pdbxmut(input_mutfiles,structure_dic):
         mutfiles.close
         while decs > 2:
             try:
-                mut_res=(mutations[1]); m_id=int((mut_res[2:decs])); x,y,z=resdata[m_id]
+                mut_res=(mutations[1]); m_id=int((mut_res[2:decs])); x,y,z=resdata[str(m_id)]
                 decs=0
             except:
                 decs+=-1
