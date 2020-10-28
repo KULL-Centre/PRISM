@@ -52,10 +52,11 @@ class structure:
         """This script is for cleaning the pdb file from unwanted entities"""
         
         #This cleans the protein and removes ligands
-        if  ligand == None:           
+        if  ligand == None: 
+            pdb_name=name+'.pdb'
             self.path_to_clean_pdb = rosetta_paths.path_to_clean_pdb
             #Runs shell script
-            shell_command = f'python2 {self.path_to_clean_pdb} {self.prep_struc} {self.run_struc}'
+            shell_command = f'python2 {self.path_to_clean_pdb} ../input/input.pdb {self.run_struc}'
             self.logger.info('Running clean_pdb.py script')
             subprocess.call(shell_command, cwd=self.folder.prepare_cleaning, shell=True)
             self.logger.info('end of output from clean_pdb.py')
