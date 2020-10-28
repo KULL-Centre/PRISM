@@ -52,11 +52,10 @@ class structure:
         """This script is for cleaning the pdb file from unwanted entities"""
         
         #This cleans the protein and removes ligands
-        if  ligand == None: 
-            pdb_name=name+'.pdb'
+        if  ligand == None:           
             self.path_to_clean_pdb = rosetta_paths.path_to_clean_pdb
             #Runs shell script
-            shell_command = f'python2 {self.path_to_clean_pdb} ../input/input.pdb {self.run_struc}'
+            shell_command = f'python2 {self.path_to_clean_pdb} {self.prep_struc} {self.run_struc}'
             self.logger.info('Running clean_pdb.py script')
             subprocess.call(shell_command, cwd=self.folder.prepare_cleaning, shell=True)
             self.logger.info('end of output from clean_pdb.py')
@@ -83,11 +82,10 @@ class structure:
             path_to_cleaned_pdb = os.path.join(self.folder.prepare_cleaning, f'{name}.pdb{self.chain_id}.pdb')
         #Creates struc.json from cleaned pdb file           
         struc_dic_cleaned= get_structure_parameters(
-            self.folder.prepare_cleaning, self.path_to_cleaned_pdb,printing=False)
+            self.folder.prepare_cleaning, path_to_cleaned_pdb,printing=False)
         self.struc_dic_cleaned= struc_dic_cleaned
-        #self.struc_dic_cleaned= self.struc_dic
-        #return(path_to_cleaned_pdb,struc_dic_cleaned)
         return(path_to_cleaned_pdb,struc_dic_cleaned)
+
 
 
     def muscle_align_to_uniprot(self, uniprot_sequence,name='input'):
