@@ -82,10 +82,11 @@ class structure:
             path_to_cleaned_pdb = os.path.join(self.folder.prepare_cleaning, f'{name}.pdb{self.chain_id}.pdb')
         #Creates struc.json from cleaned pdb file           
         struc_dic_cleaned= get_structure_parameters(
-            self.folder.prepare_cleaning, path_to_cleaned_pdb,printing=False)
+            self.folder.prepare_cleaning, self.path_to_cleaned_pdb,printing=False)
         self.struc_dic_cleaned= struc_dic_cleaned
+        #self.struc_dic_cleaned= self.struc_dic
+        #return(path_to_cleaned_pdb,struc_dic_cleaned)
         return(path_to_cleaned_pdb,struc_dic_cleaned)
-
 
 
     def muscle_align_to_uniprot(self, uniprot_sequence,name='input'):

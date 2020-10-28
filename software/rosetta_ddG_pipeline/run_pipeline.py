@@ -121,6 +121,7 @@ def predict_stability(args):
 
         # Cleaning pdb and making fasta based on pdb or uniprot-id if provided
         logger.info(f'Prepare the pdb and extract fasta file')
+        #structure_instance.path_to_cleaned_pdb, struc_dic_cleaned = structure_instance.clean_up_and_isolate()
         structure_instance.path_to_cleaned_pdb, struc_dic_cleaned = structure_instance.clean_up_and_isolate()
         structure_instance.fasta_seq_full,structure_instance.fasta_seq = pdb_to_fasta_seq(
             structure_instance.path_to_cleaned_pdb,chain_id)
@@ -171,8 +172,8 @@ def predict_stability(args):
         new_mut_input = os.path.join(folder.prepare_cleaning, 'mutation_clean.txt')
         check1 = compare_mutfile(structure_instance.fasta_seq,
                                  folder.prepare_mutfiles, folder.prepare_checking, new_mut_input)
-        check3, errors = pdbxmut(folder.prepare_mutfiles, struc_dic_cleaned)
-
+        #check3, errors = pdbxmut(folder.prepare_mutfiles, struc_dic_cleaned)
+        check3= False
         if check1 == True or check2 == True or check3 == True:
             logger.info(f"check1: {check1}, check2: {check2}, check3: {check3}")
             logger.error(
