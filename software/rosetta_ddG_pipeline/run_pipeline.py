@@ -259,7 +259,7 @@ def predict_stability(args):
                 folder, ddg_input_mutfile_dir, ddgfile=ddg_input_ddgfile, sys_name=name,  partition=partition)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = structure_instance.write_parse_cartesian_ddg_sbatch(
-                folder,  partition=partition)
+                folder,  partition=partition, output_gaps=args.GAPS_OUTPUT)
 
 
     # Execution

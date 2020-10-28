@@ -12,6 +12,8 @@ import os
 
 import pandas as pd
 
+from helper import AttrDict, generate_output
+
 
 def csv_to_prism(data,structure_input,chain_id):
     """This script convert the regular data file, to a prism-like file. This file contains more information than regular files and are ideal for sharing data"""
@@ -72,7 +74,7 @@ def csv_to_prism(data,structure_input,chain_id):
             prism_data.write('#\t chain_id: '+ chain_id+"\n")
             output_df.to_csv(prism_data, index = False,sep=' ')
 
-def parse_rosetta_ddgs(sys_name, chain_id, fasta_seq, ddG_run, ddG_output, structure_input):
+def parse_rosetta_ddgs(sys_name, chain_id, fasta_seq, ddG_run, ddG_output, structure_input, ddG_input, output, prepare_checking, output_gaps=False):
     """This script parses the results from the ddG calculations into two files. A regular data file containing only the data and the variants and a prism-like file with data variants and additional information"""
     
     runtime_memory_stats(ddG_run)
@@ -84,7 +86,7 @@ def parse_rosetta_ddgs(sys_name, chain_id, fasta_seq, ddG_run, ddG_output, struc
     shell_command = f'cat *.ddg | grep -v WT > {rosetta_summary_file}'
     subprocess.call(shell_command, cwd=path_to_run_folder, shell=True)
 
-    rosetta_cartesian_ddgs_dict = ddgs_from_dg(rosetta_cartesian_read(
+    rosetta_cartesian_ddgs_dict, rosetta_cartesian_ddgs_array = ddgs_from_dg(rosetta_cartesian_read(
         join(path_to_run_folder, rosetta_summary_file), fasta_seq))
     
     
@@ -124,14 +126,23 @@ def parse_rosetta_ddgs(sys_name, chain_id, fasta_seq, ddG_run, ddG_output, struc
     output_filename = PROTEIN_NAME+"_"+uniprot_accession_name+"_" + pdb_name +"_rosetta"
     stats = "Positions: " + str(len(fasta_seq)) + ", variants: " + str(len(output_df))
     print(uniprot_accession_name, pdb_name, stats)
-    output_file_path = join(ddG_output,output_filename)
+    output_file_path = join(ddG_run,output_filename)
     output_df.to_csv(output_file_path + ".csv", index = False)
     #Trying to make .prism file
-    try:
-        data=output_file_path + ".csv"
-        csv_to_prism(data,structure_input,chain_id)
-    except:
-        print('Cannot create .prism file due to error')
+    with open (join(ddG_run,'ddg.out'), 'w') as fp:
+        for elem in rosetta_cartesian_ddgs_array:
+            fp.write(f'{elem[0]},{elem[1]},{elem[2]}\n')
+    folder = AttrDict()
+    folder.update({'prepare_checking': prepare_checking, 'ddG_run': ddG_run,
+                   'ddG_output': ddG_output, 'ddG_input': ddG_input, 'output': output})
+    generate_output(folder, output_name='ddg.out', sys_name=sys_name, 
+        chain_id=chain_id, output_gaps=output_gaps)
+
+#    try:
+#        data=output_file_path + ".csv"
+#        csv_to_prism(data,structure_input,chain_id)
+#    except:
+#        print('Cannot create .prism file due to error')
         
     #Checking for warnings and cancels
     try: 
@@ -140,4 +151,6 @@ def parse_rosetta_ddgs(sys_name, chain_id, fasta_seq, ddG_run, ddG_output, struc
         print('cant print warnings due to error. Please check slurm files manually')
     
 if __name__ == '__main__':
-    parse_rosetta_ddgs(sys_name=sys.argv[1], chain_id=sys.argv[2], fasta_seq=sys.argv[3], ddG_run=sys.argv[4], ddG_output=sys.argv[5], structure_input=sys.argv[6])
+    parse_rosetta_ddgs(sys_name=sys.argv[1], chain_id=sys.argv[2], fasta_seq=sys.argv[3], 
+        ddG_run=sys.argv[4], ddG_output=sys.argv[5], structure_input=sys.argv[6], 
+        ddG_input=sys.argv[7], output=sys.argv[8], prepare_checking=sys.argv[9], output_gaps=sys.argv[10])

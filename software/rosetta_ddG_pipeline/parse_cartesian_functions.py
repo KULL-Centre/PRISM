@@ -69,6 +69,7 @@ def ddgs_from_dg(dictionary_of_dGs):
     
     #Creating dictionary of variant dGs
     ddgs = {}
+    ddgs_array = []
     dgs_as_floats = {}
     for mutation in dictionary_of_dGs:
         dgs_as_floats[mutation] = []
@@ -77,10 +78,14 @@ def ddgs_from_dg(dictionary_of_dGs):
     
     # (variant - WT) / 2.9
     for mutation in dictionary_of_dGs:
-        residue_number = mutation[1:-1]        
+        residue_number = mutation[1:-1]
+        ddg = []
+        for indi in range(len(dgs_as_floats[mutation])):
+            ddg.append((dgs_as_floats[mutation][indi]-np.mean(wt_dGs[residue_number]))/2.9)
+        ddgs_array.append([mutation, np.mean(ddg), np.std(ddg)])
         ddgs[mutation] = np.divide((np.mean(dgs_as_floats[mutation]) - np.mean(wt_dGs[residue_number])), 2.9)
 
-    return ddgs
+    return ddgs, ddgs_array
 
 
 def postprocess_rosetta_ddg_prism_copy(folder, output_name='ddG.out', sys_name='', uniprot='', version=1, prims_nr='XXX'):
