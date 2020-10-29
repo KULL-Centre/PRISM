@@ -78,8 +78,8 @@ def predict_stability(args):
     if mode == 'create' or mode == 'fullrun':
         logger.info(f'Preparation started')
         # Get input files
-        prep_struc = create_copy(
-            input_dict['STRUC_FILE'], folder.prepare_input, name='input.pdb')
+        prep_struc = check_path(create_copy(
+            input_dict['STRUC_FILE'], folder.prepare_input, name='input.pdb'))
 
         # Defining structure parameters
 
@@ -183,8 +183,8 @@ def predict_stability(args):
             sys.exit()
 
         # Create hard link to mutfile directory and to output structure
-        prepare_output_struc = create_copy(
-            structure_instance.path_to_cleaned_pdb, folder.prepare_output, name='output.pdb')
+        prepare_output_struc = check_path(create_copy(
+            structure_instance.path_to_cleaned_pdb, folder.prepare_output, name='output.pdb'))
         if args.IS_MP == True:
             prepare_output_span_dir = create_copy(folder.prepare_mp_span, f'{folder.prepare_output}', name='spanfiles', directory=True)
         else:
@@ -192,8 +192,8 @@ def predict_stability(args):
                 folder.prepare_mutfiles, folder.prepare_output, name='mutfiles', directory=True)
 
         # Copy files for relax & run
-        relax_input_struc = create_copy(
-            prepare_output_struc, folder.relax_input, name='input.pdb')
+        relax_input_struc = check_path(create_copy(
+            prepare_output_struc, folder.relax_input, name='input.pdb'))
 
         # Generate sbatch files
         logger.info(f'Generate sbatch files')
@@ -239,8 +239,8 @@ def predict_stability(args):
                 folder, chain_id=args.CHAIN, sys_name=name, output_name='ddG.out', partition=partition, output_gaps=args.GAPS_OUTPUT)
         else:
             # Parse sbatch relax file
-            relax_input_relaxfile = create_copy(
-                input_dict['RELAX_FLAG_FILE'], folder.relax_input, name='relax_flagfile')
+            relax_input_relaxfile = check_path(create_copy(
+                input_dict['RELAX_FLAG_FILE'], folder.relax_input, name='relax_flagfile'))
             path_to_relax_sbatch = structure_instance.rosetta_sbatch_relax(
                 folder, relaxfile=relax_input_relaxfile, sys_name=name,  partition=partition)
             # Parse sbatch relax parser
@@ -251,8 +251,8 @@ def predict_stability(args):
                 folder, partition=args.SLURM_PARTITION)
 
             # Parse sbatch ddg file
-            ddg_input_ddgfile = create_copy(
-                input_dict['DDG_FLAG_FILE'], folder.ddG_input, name='ddg_flagfile')
+            ddg_input_ddgfile = check_path(create_copy(
+                input_dict['DDG_FLAG_FILE'], folder.ddG_input, name='ddg_flagfile'))
             ddg_input_mutfile_dir = create_copy(
                 prepare_output_ddg_mutfile_dir, folder.ddG_input, name='mutfiles', directory=True)
             path_to_ddg_calc_sbatch = structure_instance.write_rosetta_cartesian_ddg_sbatch(

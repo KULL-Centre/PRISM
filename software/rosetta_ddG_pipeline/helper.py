@@ -178,9 +178,13 @@ def read_fasta(fasta_file):
     return(uniprot_seq)
 
 def check_path(path):
+    
     if path and (os.path.isfile(path) or os.path.isdir(path)):
-        path=os.path.abspath(path)
-    return(path)
+        path_new=os.path.abspath(path)
+        return(path_new)
+    else:
+        return(path)
+    
 
 def read_slurms(path, printing=False):
     files = [f for f in listdir(path) if isfile(join(path, f))]

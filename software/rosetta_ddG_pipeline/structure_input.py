@@ -246,7 +246,7 @@ class structure:
     def rosetta_sbatch_relax(self, folder, relaxfile='', sys_name='', partition='sbinlab'):
         """This script creates the rosetta_relax.sbatch script"""
                                   
-        structure_path = os.path.join(self.folder.relax_input, 'input.pdb')
+        structure_path = os.path.abspath(os.path.join(self.folder.relax_input, 'input.pdb'))
         path_to_sbatch = os.path.join(
             self.folder.relax_input, 'rosetta_relax.sbatch')
         if relaxfile == '':
@@ -298,7 +298,7 @@ class structure:
         """This script creates the rosetta_dddg.sbatch script"""
                                   
         path_to_sbatch = os.path.join(self.folder.ddG_input, 'rosetta_ddg.sbatch')
-        structure_path = os.path.join(self.folder.ddG_input, 'input.pdb')
+        structure_path = os.path.abspath(os.path.join(self.folder.ddG_input, 'input.pdb'))
         relax_input = os.path.join(self.folder.ddG_input, 'input.pdb')
         if input_mutfiles == '':
             input_mutfiles = os.path.join(self.folder.ddG_input, 'mutfiles')
