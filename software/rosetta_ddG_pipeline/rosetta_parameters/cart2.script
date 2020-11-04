@@ -1,8 +1,23 @@
 switch:cartesian
 repeat 2
-ramp_repack_min 0.02  0.01     1.0  50
-ramp_repack_min 0.250 0.01     0.5  50
-ramp_repack_min 0.550 0.01     0.0 100
-ramp_repack_min 1     0.00001  0.0 200
+coord_cst_weight 1.0
+scale:fa_rep 0.040
+repack
+scale:fa_rep 0.051
+min 0.01
+coord_cst_weight 0.5
+scale:fa_rep 0.265
+repack
+scale:fa_rep 0.280
+min 0.01
+coord_cst_weight 0.0
+scale:fa_rep 0.559
+repack
+scale:fa_rep 0.581
+min 0.01
+coord_cst_weight 0.0
+scale:fa_rep 1
+repack
+min 0.00001
 accept_to_best
 endrepeat

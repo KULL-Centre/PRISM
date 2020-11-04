@@ -40,7 +40,9 @@ for residue, pos_alph in zip(aa_order_alphabetical, range(len(aa_order_alphabeti
 def calc_cc(prismfile):
     parser = PrismParser()
     data = parser.read(prismfile)
-    data_frame1 = data.dataframe
+    data_frame_raw = data.dataframe
+    data_frame1 = data_frame_raw.dropna()
+
     spearman = stats.spearmanr(np.array(data_frame1)[
                                :, 1], np.array(data_frame1)[:, 2])
     pearson = stats.pearsonr(np.array(data_frame1)[
@@ -77,7 +79,7 @@ def calc_cc(prismfile):
     return statistics
 
 
-def calc_all(folder, sys_name='', drop_outliers=True, drop_pro=True):
+def calc_all(folder, sys_name='', drop_outliers=True, drop_pro=True, lower_thres=True, threshold=10, fitted_exp=True, fitted_exp_10=True):
 
     rosetta_prims_file = os.path.join(folder.output, f'prims_rosetta_XXX_{sys_name}.txt')
     rosetta_metadata, rosetta_dataframe = read_from_prism(rosetta_prims_file)
@@ -88,7 +90,6 @@ def calc_all(folder, sys_name='', drop_outliers=True, drop_pro=True):
         experimental_prims_file)
     experimental_dataframe = experimental_dataframe[~experimental_dataframe.variant.str.contains(r".\*", case=False, na=False)]
     experimental_dataframe = experimental_dataframe[~experimental_dataframe.variant.str.contains(r".\=", case=False, na=False)]
-
     merged_prism_file_raw = os.path.join(folder.analysis, f'prims_merged_XXX_{sys_name}_merged_raw.txt')
 
     shell_command = (f'python {os.path.join(rosetta_paths.prims_parser, "PrismData.py")} '
@@ -96,12 +97,10 @@ def calc_all(folder, sys_name='', drop_outliers=True, drop_pro=True):
                      f'--merge {merged_prism_file_raw}')
     subprocess.call(shell_command, shell=True)
     merged_metadata, merged_dataframe = read_from_prism(merged_prism_file_raw)
-
     merged_dataframe = merged_dataframe.rename(
-        columns={'norm_ddG_00': 'predicted_ddG', 'std_ddG_00': 'std_ddG', 'score_01': 'experimental_ddG'})
-
-    merged_dataframe['diff'] = merged_dataframe['experimental_ddG'].sub(
-        merged_dataframe['predicted_ddG'], axis=0)
+        columns={merged_dataframe.keys()[1]: 'predicted_ddG', merged_dataframe.keys()[2]: 'std_ddG', merged_dataframe.keys()[3]: 'experimental_ddG'})
+    merged_dataframe['diff'] = merged_dataframe['predicted_ddG'].sub(
+        merged_dataframe['experimental_ddG'], axis=0)
 
     merged_dataframe.sort_values('variant', inplace=True)
     merged_dataframe.reset_index(drop=True, inplace=True)
@@ -146,6 +145,48 @@ def calc_all(folder, sys_name='', drop_outliers=True, drop_pro=True):
         stats_no_outlier = calc_cc(
             merged_prism_file2)
         statistics['correlation_no_outlier'] = stats_no_outlier
+
+    if lower_thres:
+        merged_dataframe4 = merged_dataframe[merged_dataframe['predicted_ddG'] < threshold] 
+        merged_dataframe_no_outlier = drop_numerical_outliers(
+            merged_dataframe4, variant_col="variant", score_col="predicted_ddG", z_thresh=3)
+        merged_prism_file4 = os.path.join(folder.analysis, f'prims_merged_XXX_{sys_name}_merged_lower_thres.txt')
+        write_prism(merged_metadata, merged_dataframe_no_outlier,
+                    merged_prism_file4, comment=comment)
+
+        stats_below_thres = calc_cc(
+            merged_prism_file4)
+        statistics['correlation_below_thres'] = stats_below_thres
+
+    if fitted_exp_10:
+        merged_dataframe_no_nan = merged_dataframe.dropna()
+        ranges = [min(merged_dataframe_no_nan[['experimental_ddG']].min(axis=1))* 1.1, max(
+            merged_dataframe_no_nan[['experimental_ddG']].max(axis=1))* 1.1]
+        merged_dataframe5 = merged_dataframe[merged_dataframe['predicted_ddG'] < ranges[1]] 
+        merged_dataframe5 = merged_dataframe5[merged_dataframe5['predicted_ddG'] > ranges[0]] 
+        merged_dataframe_no_outlier = drop_numerical_outliers(
+            merged_dataframe5, variant_col="variant", score_col="predicted_ddG", z_thresh=3)
+        merged_prism_file5 = os.path.join(folder.analysis, f'prims_merged_XXX_{sys_name}_merged_cut_exp_10.txt')
+        write_prism(merged_metadata, merged_dataframe_no_outlier,
+                    merged_prism_file5, comment=comment)
+
+        stats_cut_exp = calc_cc(merged_prism_file5)
+        statistics['correlation_cut_exp_10'] = stats_cut_exp
+
+    if fitted_exp:
+        merged_dataframe_no_nan = merged_dataframe.dropna()
+        ranges = [min(merged_dataframe_no_nan[['experimental_ddG']].min(axis=1)), max(
+            merged_dataframe_no_nan[['experimental_ddG']].max(axis=1))]
+        merged_dataframe5 = merged_dataframe[merged_dataframe['predicted_ddG'] < ranges[1]] 
+        merged_dataframe5 = merged_dataframe5[merged_dataframe5['predicted_ddG'] > ranges[0]] 
+        merged_dataframe_no_outlier = drop_numerical_outliers(
+            merged_dataframe5, variant_col="variant", score_col="predicted_ddG", z_thresh=3)
+        merged_prism_file5 = os.path.join(folder.analysis, f'prims_merged_XXX_{sys_name}_merged_cut_exp.txt')
+        write_prism(merged_metadata, merged_dataframe_no_outlier,
+                    merged_prism_file5, comment=comment)
+
+        stats_cut_exp = calc_cc(merged_prism_file5)
+        statistics['correlation_cut_exp'] = stats_cut_exp
 
     statistic_outfile = os.path.join(folder.analysis, 'statistic.json')
     with open(statistic_outfile, 'w') as fp:

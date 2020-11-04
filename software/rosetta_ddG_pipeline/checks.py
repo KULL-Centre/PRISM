@@ -4,10 +4,11 @@ import os
 import numpy as np
 
 def compare_mutfile(fasta_seq, path_to_run_folder,prepare_checking,mutation_input=None):
+    """This function checks the created mutfiles and compares them to the fasta_sequence"""
+    
     mutfiles_folder = path_to_run_folder +'/'
     error=False
     path_to_alignment = os.path.join(prepare_checking, 'uniprot_index_list.txt')
-    #print(path_to_alignment)
     alignment = np.loadtxt(path_to_alignment)   
     alignment_dic={}
     for n in enumerate(alignment):
@@ -19,7 +20,6 @@ def compare_mutfile(fasta_seq, path_to_run_folder,prepare_checking,mutation_inpu
             mutfile = open(os.path.join(mutfiles_folder,f'mutfile{str(residue_number):0>5}'), 'r')
             f= mutfile.readlines()
             fasta_seq_list=list(fasta_seq)
-            #print(residue_number," ",f[2][0]," ",fasta_seq_list[residue_number-1][0])
             if f[2][0] != fasta_seq_list[residue_number-1][0]:
                 error=True
                 print("ERROR: RESIDUE MISMATCH")
@@ -31,9 +31,7 @@ def compare_mutfile(fasta_seq, path_to_run_folder,prepare_checking,mutation_inpu
         s = mut_input.readlines()
         listToStr = ''.join([str(elem) for elem in s]) 
         a= listToStr.split()
-        #print(a)
         ran = list(range(0,len(a),3))
-        #print("ran",ran)
         for residue_number in ran:
             res = a[residue_number+1]
 
@@ -41,7 +39,6 @@ def compare_mutfile(fasta_seq, path_to_run_folder,prepare_checking,mutation_inpu
             mutfile = open(os.path.join(mutfiles_folder,f'mutfile{str(residue_number_ros):0>5}'), 'r')
             f= mutfile.readlines()
             fasta_seq_list=list(fasta_seq)
-            #print(res," ",f[2][0]," ",fasta_seq_list[int(residue_number_ros)-1][0])
             if f[2][0] != fasta_seq_list[int(residue_number_ros)-1][0]:
                 print(f[2][0],fasta_seq_list[int(residue_number_ros)-1][0])
                 error=True
@@ -50,6 +47,8 @@ def compare_mutfile(fasta_seq, path_to_run_folder,prepare_checking,mutation_inpu
         return(error)
 
 def pdbxmut(input_mutfiles,structure_dic):
+    """This function checks the created mutfiles and compares them to the structure directory"""
+    
     resdata = structure_dic["resdata"]
     p=os.listdir(input_mutfiles);errors =0;check3 = False;
     for files in p:

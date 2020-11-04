@@ -61,6 +61,8 @@ class folder2:
                 join(self.prepare_mp_files, 'superpose'))
             self.prepare_mp_span = check_paths(
                 join(self.prepare_mp_files, 'membrane_span'))
+            self.prepare_mp_lipacc = check_paths(
+                join(self.prepare_mp_files, 'mp_lipid_acc'))
 
         self.relax_input = check_paths(join(self.relax, 'input'))
         self.relax_run = check_paths(join(self.relax, 'run'))

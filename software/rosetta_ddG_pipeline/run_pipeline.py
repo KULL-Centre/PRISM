@@ -28,7 +28,7 @@ import mp_prepare
 import mp_ddG
 from pdb_to_fasta_seq import pdb_to_fasta_seq
 from plotting import plot_all
-from prism_rosetta_parser import prism_to_mut, read_from_prism
+from prism_rosetta_parser import read_from_prism
 import rosetta_paths
 import run_modes
 import storeinputs
@@ -59,6 +59,7 @@ def predict_stability(args):
 
     if run_struc == None:
         run_struc = chain_id
+        
     # System name
     name = os.path.splitext(os.path.basename(structure_list))[0]
 
@@ -77,14 +78,14 @@ def predict_stability(args):
     if mode == 'create' or mode == 'fullrun':
         logger.info(f'Preparation started')
         # Get input files
-        prep_struc = create_copy(
-            input_dict['STRUC_FILE'], folder.prepare_input, name='input.pdb')
+        prep_struc = check_path(create_copy(
+            input_dict['STRUC_FILE'], folder.prepare_input, name='input.pdb'))
 
         # Defining structure parameters
 
         # Create structure instance
         logger.info(f'Creating structure instance')
-        structure_instance = structure(chain_id,name,folder,prep_struc,run_struc,logger,uniprot_accesion=uniprot_accesion,)
+        structure_instance = structure(chain_id,name,folder,prep_struc,run_struc,logger,input_dict,uniprot_accesion=uniprot_accesion)
         run_name = 'input'
 
         # adjust mp structure if MP_ALIGN_MODE is selected
@@ -96,11 +97,15 @@ def predict_stability(args):
                     structure_instance.path = os.path.join(
                         folder.prepare_mp_superpose, f'{run_name}.pdb')
                     try:
+                        logger.info('Run OPM alignment with superpose')
                         mp_prepare.mp_superpose_opm(
                             args.MP_ALIGN_REF, prep_struc, structure_instance.path, target_chain=structure_instance.chain_id, write_opm=True)
                     except:
+                        logger.info('Run OPM alignment with TM align')
                         mp_prepare.mp_TMalign_opm(
                             args.MP_ALIGN_REF, prep_struc, structure_instance.path, target_chain=structure_instance.chain_id, write_opm=True)                        
+                    prep_struc = create_copy(
+                        structure_instance.path, folder.prepare_input, name='input.pdb')
                 elif args.UNIPROT_ID != '':
                     logger.error('Uniprot-ID to ref pdb not implemented yet')
                     sys.exit()
@@ -121,9 +126,7 @@ def predict_stability(args):
         structure_instance.path_to_cleaned_pdb, struc_dic_cleaned = structure_instance.clean_up_and_isolate()
         structure_instance.fasta_seq_full,structure_instance.fasta_seq = pdb_to_fasta_seq(
             structure_instance.path_to_cleaned_pdb,chain_id)
-        if uniprot_accesion != "":
-            structure_instance.uniprot_seq = read_fasta(
-                uniprot_accesion)
+        if os.path.isfile(uniprot_accesion):
             structure_instance.muscle_align_to_uniprot(structure_instance.uniprot_seq)
         else:
             structure_instance.muscle_align_to_uniprot(structure_instance.fasta_seq)
@@ -139,44 +142,49 @@ def predict_stability(args):
                     structure_instance.span = mp_prepare.mp_span_from_pdb_octopus(
                         structure_instance.path_to_cleaned_pdb, folder.prepare_mp_span, thickness=args.MP_THICKNESS, SLURM=False)
                 elif args.MP_CALC_SPAN_MODE == 'False':
-                    logger.warn(
+                    logger.warning(
                         'No span file provided and no calculation method selected.')
                 else:
                     logger.error(
                         'Other modes (struc, bcl, Boctopus) not yet implemented.')
                     sys.exit()
-            elif input_dict['MP_SPAN_INPUT'] != None:
+            elif input_dict['MP_SPAN_INPUT']:
                 structure_instance.span = create_copy(
                     input_dict['MP_SPAN_INPUT'], folder.prepare_mp_span, name='input.span')
 
+            logger.info(f'Calculate lipid accessible residues')
+            lipacc_dic = mp_prepare.mp_lipid_acc_resi(structure_instance.path_to_cleaned_pdb, folder.prepare_mp_lipacc, folder.prepare_mp_span, thickness=args.MP_THICKNESS, SLURM=False)
+
         # Making mutfiles and checks
-        print(f'Convert prism file if present: {input_dict["PRISM_INPUT"]}')
-        if input_dict['PRISM_INPUT'] == None:
-            new_mut_input = input_dict['MUTATION_INPUT']
-        #    mut_dic = get_mut_dict(input_dict['MUTATION_INPUT'])
-        else:
+        if args.MUT_MODE == 'prism':
             new_mut_input = os.path.join(folder.prepare_input, 'input_mutfile')
-            mut_dic = prism_to_mut(input_dict['PRISM_INPUT'], new_mut_input)
+        elif args.MUT_MODE == 'mut_file':
+            new_mut_input = input_dict['MUTATION_INPUT']
+        else:
+            new_mut_input = None
+        #    mut_dic = get_mut_dict(input_dict['MUTATION_INPUT'])
 
         logger.info(f'Generate mutfiles.')
-        print(input_dict['MUTATION_INPUT'])
+        logger.info(input_dict['MUTATION_INPUT'])
         
-        check2 = structure_instance.make_mutfiles(
-            new_mut_input)
+        check2, mut_dic = structure_instance.make_mutfiles(
+            new_mut_input, args.MUT_MODE)
+
+        new_mut_input = os.path.join(folder.prepare_cleaning, 'mutation_clean.txt')
         check1 = compare_mutfile(structure_instance.fasta_seq,
                                  folder.prepare_mutfiles, folder.prepare_checking, new_mut_input)
         check3, errors = pdbxmut(folder.prepare_mutfiles, struc_dic_cleaned)
-        check2 = False
+        #check3= False
 
         if check1 == True or check2 == True or check3 == True:
-            print("check1:", check1, "check2:", check2, "check3:", check3)
+            logger.info(f"check1: {check1}, check2: {check2}, check3: {check3}")
             logger.error(
                 "ERROR: STOPPING SCRIPT DUE TO RESIDUE MISMATCH BETWEEN MUTFILE AND PDB SEQUENCE")
             sys.exit()
 
         # Create hard link to mutfile directory and to output structure
-        prepare_output_struc = create_copy(
-            structure_instance.path_to_cleaned_pdb, folder.prepare_output, name='output.pdb')
+        prepare_output_struc = check_path(create_copy(
+            structure_instance.path_to_cleaned_pdb, folder.prepare_output, name='output.pdb'))
         if args.IS_MP == True:
             prepare_output_span_dir = create_copy(folder.prepare_mp_span, f'{folder.prepare_output}', name='spanfiles', directory=True)
         else:
@@ -184,8 +192,8 @@ def predict_stability(args):
                 folder.prepare_mutfiles, folder.prepare_output, name='mutfiles', directory=True)
 
         # Copy files for relax & run
-        relax_input_struc = create_copy(
-            prepare_output_struc, folder.relax_input, name='input.pdb')
+        relax_input_struc = check_path(create_copy(
+            prepare_output_struc, folder.relax_input, name='input.pdb'))
 
         # Generate sbatch files
         logger.info(f'Generate sbatch files')
@@ -201,11 +209,13 @@ def predict_stability(args):
             # Parse sbatch relax file
             logger.info('Create MP relax sbatch files.')
             path_to_relax_sbatch = mp_prepare.rosetta_relax_mp(
-                folder, SLURM=True, num_struc=3, sys_name=name, partition=partition)
+                folder, SLURM=True, repeats=args.BENCH_MP_RELAX_REPEAT, num_struc=args.BENCH_MP_RELAX_STRUCS, 
+                lipid_type=args.MP_LIPIDS, sys_name=name, partition=partition, mp_thickness=args.MP_THICKNESS, 
+                mp_switch_off=args.MP_IGNORE_RELAX_MP_FLAGS, score_function=args.MP_ENERGY_FUNC)
 
             # Parse sbatch relax parser
             path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(
-                folder, sys_name=f'{name}_relax', sc_name='relax_scores', partition=args.SLURM_PARTITION)
+                folder, sys_name=f'{name}_relax', partition=args.SLURM_PARTITION, sc_name='relax_scores')
 
             # Parse sbatch ddg file
             ddg_input_ddgfile = create_copy(
@@ -223,14 +233,14 @@ def predict_stability(args):
                 folder, mut_dic, SLURM=True, sys_name=name, partition=args.SLURM_PARTITION,
                 repack_radius=args.BENCH_MP_REPACK, lipids=args.MP_LIPIDS,
                 temperature=args.MP_TEMPERATURE, repeats=args.BENCH_MP_REPEAT,
-                is_pH=is_pH, pH_value=pH_value)
+                is_pH=is_pH, pH_value=pH_value, lipacc_dic=lipacc_dic, score_function=args.MP_ENERGY_FUNC)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
-                folder, uniprot=args.UNIPROT_ID, sys_name=name, output_name='ddG.out', partition=partition)
+                folder, chain_id=args.CHAIN, sys_name=name, output_name='ddG.out', partition=partition, output_gaps=args.GAPS_OUTPUT)
         else:
             # Parse sbatch relax file
-            relax_input_relaxfile = create_copy(
-                input_dict['RELAX_FLAG_FILE'], folder.relax_input, name='relax_flagfile')
+            relax_input_relaxfile = check_path(create_copy(
+                input_dict['RELAX_FLAG_FILE'], folder.relax_input, name='relax_flagfile'))
             path_to_relax_sbatch = structure_instance.rosetta_sbatch_relax(
                 folder, relaxfile=relax_input_relaxfile, sys_name=name,  partition=partition)
             # Parse sbatch relax parser
@@ -241,15 +251,15 @@ def predict_stability(args):
                 folder, partition=args.SLURM_PARTITION)
 
             # Parse sbatch ddg file
-            ddg_input_ddgfile = create_copy(
-                input_dict['DDG_FLAG_FILE'], folder.ddG_input, name='ddg_flagfile')
+            ddg_input_ddgfile = check_path(create_copy(
+                input_dict['DDG_FLAG_FILE'], folder.ddG_input, name='ddg_flagfile'))
             ddg_input_mutfile_dir = create_copy(
                 prepare_output_ddg_mutfile_dir, folder.ddG_input, name='mutfiles', directory=True)
             path_to_ddg_calc_sbatch = structure_instance.write_rosetta_cartesian_ddg_sbatch(
                 folder, ddg_input_mutfile_dir, ddgfile=ddg_input_ddgfile, sys_name=name,  partition=partition)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = structure_instance.write_parse_cartesian_ddg_sbatch(
-                folder,  partition=partition)
+                folder,  partition=partition, output_gaps=args.GAPS_OUTPUT)
 
 
     # Execution
@@ -259,37 +269,24 @@ def predict_stability(args):
         relax_output_strucfile = find_copy(
             folder.relax_run, '.pdb', folder.relax_output, 'output.pdb')
 
-
-# if SLURM == False:
-#    path_to_scorefile = os.path.join(structure_instance.path_to_run_folder + '/relax_scores.sc')
-#    relax_pdb_out = relax_parse_results.parse_relax_results(path_to_scorefile, path_to_run_folder)
-# else:
-#    path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(os.path.join(structure_instance.path_to_run_folder + '/relax_scores.sc'), structure_instance.path_to_run_folder)
-#    relax_pdb_out = parse_relax_process_id = run_modes.relaxation(structure_instance.path_to_run_folder)
-# logger.info(f"Relaxed structure for ddG calculations: {relax_pdb_out}")
-
     if mode == 'ddg_calculation':
-        run_modes.ddg_calculation(folder)
+        run_modes.ddg_calculation(folder,parse_relax_process_id=None)
 #        ddg_output_score = find_copy(
 #            folder.ddG_run, '.sc', folder.ddG_output, 'output.sc')
 
     if mode == 'analysis':
-        calc_all(folder, sys_name=name)
-        plot_all(folder, sys_name=name)
+        if args.PRISM_INPUT:
+            calc_all(folder, sys_name=name)
+            plot_all(folder, sys_name=name)
+        else:
+            logger.warning('No reference prism file provided. No analysis performed.')
 
     # Full SLURM execution
     if mode == 'proceed' or mode == 'fullrun':
         # Start relax calculation
         parse_relax_process_id = run_modes.relaxation(folder)
-        # relax_output_strucfile = find_copy(
-        # folder.relax_run, '.pdb', folder.relax_output, 'output.pdb')
-        # Start ddG calculation
-        # ddg_input_struc = create_copy(
-        # os.path.join(folder.relax_output, 'output.pdb'), folder.ddG_input,
-        # name='input.pdb')
         run_modes.ddg_calculation(folder, parse_relax_process_id)
-#        ddg_output_score = find_copy(
-#            folder.ddG_run, '.sc', folder.ddG_output, 'output.sc')
+
 
 
 ##########################################################################

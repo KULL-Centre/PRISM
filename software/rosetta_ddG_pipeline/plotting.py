@@ -228,68 +228,109 @@ def volcano_plot(pd_dataframe, out_folder, variant_col='variant', exp_score_col=
         data=pd_dataframe,
         markers=markers,
         # palette=['green','orange','brown','dodgerblue','red'],
-        legend='full')
+        legend=False)#'full')
 
     # Plot each individual point separately
     # for i,row in enumerate(pandas_data_no_outlier.predicted_ddG):
     #g.set_prop_cycle( marker=markers)
 
-    g.legend(loc='center right', bbox_to_anchor=(1.16, 0.5), ncol=1)
+    #g.legend(loc='center right', bbox_to_anchor=(1.16, 0.5), ncol=1)
     const_line()
     plt.savefig(os.path.join(out_folder, f'{sys_name}_volcano.png'),
+                facecolor='w', dpi=300, bbox_inches='tight')
+
+
+def regression_plot(pd_dataframe, out_folder, variant_col='variant', exp_score_col='experimental_ddG', ros_score_col='predicted_ddG', sys_name=''):
+
+    plt.figure(figsize=(10, 10))
+
+    g = sns.regplot(y=ros_score_col, x=exp_score_col, data=pd_dataframe)
+    plt.savefig(os.path.join(out_folder, f'{sys_name}_regression.png'),
+                facecolor='w', dpi=300, bbox_inches='tight')
+
+
+def regression_plot2(pd_dataframe, out_folder, variant_col='variant', exp_score_col='experimental_ddG', ros_score_col='predicted_ddG', sys_name=''):
+
+    plt.figure(figsize=(10, 10))
+
+    g = sns.regplot(y=ros_score_col, x=exp_score_col, data=pd_dataframe)
+    for line in range(0,pd_dataframe.shape[0]):
+        g.text(pd_dataframe[exp_score_col][line], pd_dataframe[ros_score_col][line], pd_dataframe['variant'][line], horizontalalignment='left', size='large', color='black', weight='semibold')
+    plt.savefig(os.path.join(out_folder, f'{sys_name}_regression2.png'),
+                facecolor='w', dpi=300, bbox_inches='tight')
+
+
+def regression_plot3(pd_dataframe, out_folder, variant_col='variant', exp_score_col='experimental_ddG', ros_score_col='predicted_ddG', sys_name=''):
+
+    plt.figure(figsize=(10, 10))
+
+    g = sns.regplot(y=ros_score_col, x=exp_score_col, data=pd_dataframe)
+    for line in range(0,pd_dataframe.shape[0]):
+        g.text(pd_dataframe[exp_score_col][line], pd_dataframe[ros_score_col][line], pd_dataframe['variant'][line][-1], horizontalalignment='left', size='large', color='black', weight='semibold')
+    plt.savefig(os.path.join(out_folder, f'{sys_name}_regression3.png'),
                 facecolor='w', dpi=300, bbox_inches='tight')
 
 
 def plot_all(folder, sys_name='', drop_outliers=True):
 
     rosetta_prims_file = os.path.join(folder.output, f'prims_rosetta_XXX_{sys_name}.txt')
-    rosetta_metadata, rosetta_dataframe = read_from_prism(rosetta_prims_file)
 
-    experimental_prims_file = os.path.join(
-        folder.input, 'prism_mave_input.txt')
-    experimental_metadata, experimental_dataframe = read_from_prism(
-        experimental_prims_file)
+    merged_prism_file = os.path.join(folder.analysis, f'prims_merged_XXX_{sys_name}_merged.txt')
+    merged_metadata, merged_dataframe = read_from_prism(merged_prism_file)
+    merged_dataframe_no_nan = merged_dataframe.dropna()
 
-    merged_dataframe = pd.concat([rosetta_dataframe[['variant', 'norm_ddG']],
-                                  experimental_dataframe[['score']]], axis=1)
-    merged_dataframe = merged_dataframe.rename(
-        columns={'norm_ddG': 'predicted_ddG', 'score': 'experimental_ddG'})
-
-    merged_dataframe['diff'] = merged_dataframe['experimental_ddG'].sub(
-        merged_dataframe['predicted_ddG'], axis=0)
-
-    merged_metadata = rosetta_metadata.copy()
-    merged_metadata['mave'] = experimental_metadata['mave']
-    merged_metadata['columns'] = {
-        'experimental_ddG': 'Experimental ddG',
-        'diff': 'Difference of experimental vs predicted ddG',
-        'predicted_ddG': merged_metadata[
-            'columns'].pop('norm_ddG')}
-
-    merged_prism_file = os.path.join(folder.analysis, f'prims_rosetta_mave_XXX_{sys_name}_merged.txt')
-    comment = ['Automatically generated file from stability_pipeline']
-    write_prism(merged_metadata, merged_dataframe,
-                merged_prism_file, comment='')
+    ranges = [min(merged_dataframe[['predicted_ddG']].min(axis=1)), max(
+        merged_dataframe[['predicted_ddG']].mean(axis=1)) * 1.75]
 
     if drop_outliers:
+        #merged_dataframe = merged_dataframe[merged_dataframe['predicted_ddG'] < 10] 
+        #merged_dataframe_no_nan = merged_dataframe_no_nan[merged_dataframe_no_nan['predicted_ddG'] < 10] 
+        #ranges = [min(merged_dataframe[['predicted_ddG']].min(axis=1)), max(
+        #    merged_dataframe[['predicted_ddG']].mean(axis=1)) * 1.75]
+        #drop_numerical_outliers(
+        #    merged_dataframe, variant_col="variant", score_col="predicted_ddG", z_thresh=3)
+        #drop_numerical_outliers(
+        #    merged_dataframe_no_nan, variant_col="variant", score_col="predicted_ddG", z_thresh=3)
+
+        merged_dataframe_no_nan = merged_dataframe.dropna()
+        ranges = [min(merged_dataframe_no_nan[['experimental_ddG']].min(axis=1)), max(
+            merged_dataframe_no_nan[['experimental_ddG']].max(axis=1))]
+
+        merged_dataframe = merged_dataframe[merged_dataframe['predicted_ddG'] < ranges[1]] 
+        merged_dataframe = merged_dataframe[merged_dataframe['predicted_ddG'] > ranges[0]] 
+        merged_dataframe_no_nan = merged_dataframe_no_nan[merged_dataframe_no_nan['predicted_ddG'] < ranges[1]] 
+        merged_dataframe_no_nan = merged_dataframe_no_nan[merged_dataframe_no_nan['predicted_ddG'] > ranges[0]]
         drop_numerical_outliers(
             merged_dataframe, variant_col="variant", score_col="predicted_ddG", z_thresh=3)
+        drop_numerical_outliers(
+            merged_dataframe_no_nan, variant_col="variant", score_col="predicted_ddG", z_thresh=3)
+
 
     plot_sequence_heatmap(merged_dataframe, folder.analysis,
                           variant_col="variant", score_col="predicted_ddG")
 
     ranges = [min(merged_dataframe[['predicted_ddG']].min(axis=1)), max(
         merged_dataframe[['predicted_ddG']].mean(axis=1)) * 1.75]
+
     simple_plot_heatmap(merged_dataframe[['predicted_ddG']], folder.analysis,
                         sys_name=sys_name, ranges=ranges, title='Normalized Rosetta run')
 
-    joint_plot(merged_dataframe, folder.analysis, variant_col='variant',
+    joint_plot(merged_dataframe_no_nan, folder.analysis, variant_col='variant',
                exp_score_col='experimental_ddG', ros_score_col='predicted_ddG', sys_name=sys_name)
 
-    violin_plot(merged_dataframe, folder.analysis,
+    violin_plot(merged_dataframe_no_nan, folder.analysis,
                 variant_col='variant', diff_score_col='diff', sys_name=sys_name)
 
-    volcano_plot(merged_dataframe, folder.analysis, variant_col='variant',
+    volcano_plot(merged_dataframe_no_nan, folder.analysis, variant_col='variant',
+                 exp_score_col='experimental_ddG', ros_score_col='predicted_ddG', sys_name=sys_name)
+
+    regression_plot(merged_dataframe_no_nan, folder.analysis, variant_col='variant',
+                 exp_score_col='experimental_ddG', ros_score_col='predicted_ddG', sys_name=sys_name)
+
+    regression_plot2(merged_dataframe_no_nan, folder.analysis, variant_col='variant',
+                 exp_score_col='experimental_ddG', ros_score_col='predicted_ddG', sys_name=sys_name)
+
+    regression_plot3(merged_dataframe_no_nan, folder.analysis, variant_col='variant',
                  exp_score_col='experimental_ddG', ros_score_col='predicted_ddG', sys_name=sys_name)
 
 
