@@ -15,7 +15,9 @@ import pandas as pd
 
 
 def extract_uniprot_info(uniprot_id, reviewed='*'):
-    """Uniprot search request"""
+    """Uniprot search request
+    Get info from here (https://www.uniprot.org/help/uniprotkb_column_names)
+    """
     search_string = (
         'https://www.uniprot.org/uniprot/'
         f'?query=reviewed:{reviewed}'
@@ -40,6 +42,18 @@ def extract_uniprot_info(uniprot_id, reviewed='*'):
         'database(InterPro),'
         'database(SUPFAM),'
         'database(PROSITE),'
+        'database(MUTAGENESIS),'
+        'comment(ALLERGEN),'
+        'comment(BIOTECHNOLOGY),'
+        'comment(DISRUPTION%20PHENOTYPE),'
+        'comment(DISEASE),'
+        'comment(PHARMACEUTICAL),'
+        'comment(TOXIC%20DOSE),'
+        'feature(NATURAL%20VARIANT),'
+        'feature(GLYCOSYLATION),'
+        'feature(INITIATOR%20METHIONINE),'
+        'feature(LIPIDATION),'
+        'feature(MODIFIED%20RESIDUE),'
     )
     req2 = urllib.request.Request(search_string)
     with urllib.request.urlopen(req2) as f:

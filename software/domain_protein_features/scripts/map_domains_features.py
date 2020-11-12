@@ -144,19 +144,23 @@ def map_pfam_pdb(uniprot_id, all_pfam_df, pdb_pfam_df, human_proteome_info_df, w
         tp_results_to_list += tp_results[elem] 
     combined_dict = {}
     error_list = []
-    for key in result_dic:
+    for key_index, key_dicx in enumerate(result_dic):
         result_arr = []
-        result_arr.append(result_dic[key])
+        key = key_dicx['acc']
+        key_id = key_dicx['id']
+        key_start = key_dicx['start']
+        key_end = key_dicx['end']
+        result_arr.append([key_id, key_start, key_end])
         results_info = []
         for key2 in tp_results:
             for entry in tp_results[key2]:
                 if len(entry) == 2:
-                    if int(result_dic[key][1]) <= int(entry[1]) <= int(result_dic[key][2]):
+                    if int(key_start) <= int(entry[1]) <= int(key_end):
                         results_info.append(entry)
                         error_list.append(entry)
                 else:
                     range1 = range(int(entry[1]),int(entry[2]))
-                    range2 = range(int(result_dic[key][1]), int(result_dic[key][2]))
+                    range2 = range(int(key_start), int(key_end))
                     if set(range1).intersection(range2):
                         results_info.append(entry)
                         error_list.append(entry)
@@ -178,7 +182,7 @@ def map_pfam_pdb(uniprot_id, all_pfam_df, pdb_pfam_df, human_proteome_info_df, w
             #    if not any(elem[0] in x[0] for x in arr):
             #        add_domain_pdb.append(elem)
         result_arr.append([arr,domain_pdb_array])
-        combined_dict[key] = result_arr
+        combined_dict[key_index] = {key: result_arr}
     if write_dir:
         with open(os.path.join(write_dir,f'domains_features_{uniprot_id}.json'), 'w') as json_file:
             json.dump(combined_dict, json_file, indent=4)
