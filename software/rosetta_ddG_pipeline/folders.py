@@ -15,6 +15,7 @@ from sys import exit
 
 # Local application imports
 from args_pipeline import parse_args2
+from helper import check_path
 
 
 def check_paths(dir_path, overwrite_path=True):
@@ -27,6 +28,7 @@ def check_paths(dir_path, overwrite_path=True):
         else:
             logger.error(f'Directory {dir_path} already exists. overwrite_path set to {overwrite_path}, so we stop the execution. Please provide a different output directory.')
             exit()  # will terminate the complete script
+    dir_path = check_path(dir_path)
     return dir_path
 
 
