@@ -300,9 +300,9 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 
 	#As far as I can see the dataframe row names have to start at 0 for the write_prism method to work.
 	#So for assignements generally index = position-1 or the other way around, position = index+1
-	output_df = pd.DataFrame(data='None', index=range(0, len(uniprot_info_df['Sequence'][0])), columns=variant_list)
+	output_df = pd.DataFrame(data='None', index=range(0, len(uniprot_info_df['sequence'][0])), columns=variant_list)
 	
-	for index, res in enumerate(uniprot_info_df['Sequence'][0]):
+	for index, res in enumerate(uniprot_info_df['sequence'][0]):
 		#need +1 here since enumerate starts at 0
 		output_df.loc[index,'variant'] = res+str(index+1)+'='
 	
@@ -405,7 +405,7 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 			"name": uniprot_info_df['Entry name'][0],
 			"organism": uniprot_info_df['organism'][0],
 			"uniprot": uniprot_info_df['Entry'][0],
-			"sequence": uniprot_info_df['Sequence'][0],
+			"sequence": uniprot_info_df['sequence'][0],
 		},
 		"uniprot": {},
 		"columns": columns_dic,
