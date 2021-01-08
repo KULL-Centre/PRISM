@@ -1,0 +1,40 @@
+<ROSETTASCRIPTS>
+# source: https://github.com/RosettaCommons/rosetta_scripts_scripts/pull/14
+  <TASKOPERATIONS>
+  </TASKOPERATIONS>
+  <SCOREFXNS>
+    <ScoreFunction name="ref" weights="%%energy_func%%" >
+      <Reweight scoretype="coordinate_constraint" weight="0.5" />
+    </ScoreFunction>
+  </SCOREFXNS>
+  <FILTERS>
+  </FILTERS>
+  <MOVERS>
+  	<AddMembraneMover name="add_memb"/>
+	<MembranePositionFromTopologyMover name="init_pos"/>
+    <AtomCoordinateCstMover name="constrain_relax_to_start_coords"
+      coord_dev="0.5"
+      bounded="false"
+      sidechain="false"
+      />
+    <VirtualRoot name="i_am_vroot"
+      removable="true"
+      remove="false" />
+    <FastRelax name="FastRelax"
+      ramp_down_constraints="false"
+      repeats="%%repeats%%"
+      delete_virtual_residues_after_FastRelax="true"
+      scorefxn="ref"
+      />
+  </MOVERS>
+  <APPLY_TO_POSE>
+  </APPLY_TO_POSE>
+  <PROTOCOLS>
+  	<Add mover="add_memb"/>
+	<Add mover="init_pos"/>
+    <Add mover="i_am_vroot"/>
+    <Add mover="constrain_relax_to_start_coords"/>
+    <Add mover="FastRelax"/>
+  </PROTOCOLS>
+  <OUTPUT scorefxn="ref" />
+</ROSETTASCRIPTS>

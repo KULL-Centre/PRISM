@@ -96,14 +96,14 @@ def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=
             "sequence": sequence,
         },
         "rosetta": rosetta_info,
-        "variants": {
+  #      "variants": {
             #      "number": df["pos"].count(),
             #      "coverage": df["pos"].nunique() / len(seq[1][1]),
-            "number": data["variant"].count(),
-            "coverage": len(set(sum(data["resi"], []))) / len(sequence),
-            "width": "single",
+  #          "number": data["variant"].count(),
+  #          "coverage": len(set(sum(data["resi"], []))) / len(sequence),
+  #          "width": "single",
             #        "depth":,
-        },
+  #      },
         # columns is dependent on the data. different conditions go into
         # different PRISM_files
         "columns": {

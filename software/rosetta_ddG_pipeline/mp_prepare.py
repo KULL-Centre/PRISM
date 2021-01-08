@@ -28,7 +28,7 @@ from mp_helper import extract_from_opm
 
 def mp_superpose_opm(reference_chain, target, filename, target_chain='A',
                      ref_model_id=0, target_model_id=0,
-                     ref_align_atoms=[], target_align_atoms=[], write_opm=False):
+                     ref_align_atoms=[], target_align_atoms=[], write_opm=True):
     # Adapted from https://gist.github.com/andersx/6354971
     # Copyright (c) 2010-2016 Anders S. Christensen
 
@@ -123,7 +123,7 @@ def mp_TMalign_opm(reference_chain, target, filename, target_chain='A',
 def mp_span_from_pdb_octopus(pdbinput, outdir_path, SLURM=False):
 
     Rosetta_span_exec = os.path.join(
-        rosetta_paths.path_to_rosetta, 'bin/spanfile_from_pdb.{rosetta_paths.Rosetta_extension}')
+        rosetta_paths.path_to_rosetta, f'bin/spanfile_from_pdb.{rosetta_paths.Rosetta_extension}')
     span_command = f'{Rosetta_span_exec} -in:file:s {pdbinput}'
     logger.info(f"Span call function: {span_command}")
 
