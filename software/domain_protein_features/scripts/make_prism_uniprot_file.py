@@ -49,13 +49,10 @@ else:
 
 logger = log.getLogger(__name__)
 
-#local paths for HZ
+#local paths for HZ. Change this to your paths
 #server	
 path_base = '/storage1/hezscha/'
 import_path_base = path_base + 'src/'
-#local
-#path_base = '/home/henrike/Documents/PD_AS/'
-#import_path_base = '/home/henrike/Documents/PD_AS/src/'
 
 try:
 	# The insertion index should be 1 because index 0 is this file
@@ -214,6 +211,10 @@ direct_link_features = {
 def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 	
 	'''
+	
+	#OBS!
+	It turns out features that can have notes don't always do. I.e. p53 P04637 has this Dna binding feature without a note: DNA_BIND 102..292
+	
 	#two conceptually different types of features:
 	#1. features where you need the other fields to usefully describe the feature:
 	#function
@@ -273,7 +274,8 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 	dlf = ['DISULFID', 'CROSSLNK']
 	
 	logger.info('Extract info from uniprot')
-	uniprot_info_df = extract_uniprot_info(uniprot_id, reviewed='yes')
+
+	uniprot_info_df = extract_uniprot_info(uniprot_id)
 	#for debugging
 	#print(uniprot_info_df.columns)
 
@@ -287,20 +289,40 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 	# ~ variant_list = ['variant', 'pfam_name', 'TRANSMEM', 'TOPO_DOM', 
 					 # ~ 'MOTIF', 'REGION', 'DISULFID','BINDING']
 	variant_list = ['variant', 
-					'pfam_name', 
+					'pfam_name',
+					'ACT_SITE',
+					'BINDING',
+					'DNA_BIND',
+					'METAL',
+					'NP_BIND',
+					'SITE',
 					'TRANSMEM', 
+					'INTRAMEM',
 					'TOPO_DOM', 
+					'LIPID',
+					'MOD_RES',
+					'CARBOHYD',
+					'INIT_MET',
+					'PEPTIDE',
+					'SIGNAL',
+					'TRANSIT',
+					'CROSSLNK',
+					'DISULFID',
+					'STRAND',
+					'HELIX',
+					'TURN',
+					'COILED',
+					'COMPBIAS',
 					'MOTIF', 
 					'REGION', 
-					'DISULFID',
-					'BINDING']
+					'ZN_FING']
 	
 	#for later haha
-	# ~ DBs = ['disprot', 'mobidb']				 
+	DBs = ['disprot', 'mobidb']				 
 
 	#As far as I can see the dataframe row names have to start at 0 for the write_prism method to work.
 	#So for assignements generally index = position-1 or the other way around, position = index+1
-	output_df = pd.DataFrame(data='None', index=range(0, len(uniprot_info_df['sequence'][0])), columns=variant_list)
+	output_df = pd.DataFrame(data='None', index=range(0, len(uniprot_info_df['sequence'][0])), columns=variant_list+DBs)
 	
 	for index, res in enumerate(uniprot_info_df['sequence'][0]):
 		#need +1 here since enumerate starts at 0
@@ -355,14 +377,28 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 			if len(uniprot_info_df[return_to_request_feature[ft]][0]) > 0:
 				string_entry = uniprot_info_df[return_to_request_feature[ft]][0]
 				ls = string_entry.split(ft)[1:] #the first item of the split will always be empty because the string starts with the feature name
+				
 				for item in ls:
 					#a feature that has a note field and a location 
-					match_obj = re.search('\s(\d+)(?:\.\.(\d+))?;\s+/note="([^/]+?)"(?:[;]|$)', item)
+					match_obj = re.search('\s(\d+)(?:\.\.(\d+))?(?:;\s+/note="([^"]+?)"(?:[;]|$))*', item)
+
+					#though features in this group may have a note, they don't necessarily do. I.e. p53 P04637 has this DNA binding feature without a note: 
+					#DNA_BIND 102..292 
+					#and those Metal binding features with notes: 
+					#METAL 176;  /note="Zinc"; METAL 179;  /note="Zinc"; METAL 238;  /note="Zinc"; METAL 242;  /note="Zinc" 
+					
 					if match_obj:
 						f_start = int(match_obj.groups()[0])
-						#in any case, you should not allow the note to have white space otherwise it will make problems with writing the whitespace separated prism files
-						note = re.sub(' ', '_', match_obj.groups()[2])
 						
+						#check if there was a note found:
+						#in any case, you should not allow the note to have white space otherwise it will make problems with writing the whitespace separated prism files
+						if match_obj.groups()[2] is None:
+							#if there was no note to clarify, we will just save the feature's name instead as we do with features that don't have notes/do not require an explanation
+							note = ft
+						else:
+							note = re.sub(' ', '_', match_obj.groups()[2])
+						
+						#there are either one or two positions named: If it's one, the features applies to that position. If it's two, the feature applies to the range between them.
 						#if the second match group is empty there was only one position
 						if match_obj.groups()[1] is None:
 							#assign the note to the single named position
@@ -382,16 +418,57 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 					
 					#can't process info with the current setup, print it to see what's up
 					else:
-						print(item)	
+						print("Couldn't process:")
+						print(item)
+						print('of', ft)
+						print('whole string:', string_entry)
 	
-	#database references: TDB
+
+	#database references
+	#the request to uniprot API returns the identifier of this protein in another DB and then you can go look it up there
+	#we need this for disprot and mobi
+	#example is p35, P04637(uniprot), DP00086(disprot)
+	#actually for disprot as Johanna also wrote you can just directly use the uniprot ID without getting the disprot one
+	disp_list = get_disprot_disordered(uniprot_id)
+	#print('Disprot:', disp_list)
+	if not disp_list == 'NA':
+		#returns a list of lists: (start, end, type),(start, end, type)
+		for sublist in disp_list:
+			f_start = int(sublist[0])
+			f_end = int(sublist[1])
+			for index in range(f_start, f_end+1):
+				output_df.loc[index-1,'disprot'] = sublist[2]
+	
+	#mobi
+	#mobi DB actually has an entry for p53/P04637 which you can get with:
+	#r_mobi = requests.get('https://mobidb.bio.unipd.it/ws/P04637/consensus', headers={ "Content-Type" : "application/json"})
+	#however, the uniprot api doesn't return a crossref (it does for disprot though), so we always query. I have re-written the query to return NA if the entry does not exist or there are no predicted disordered regions
+	mobi_ls = get_mobidb_disordered(uniprot_id)
+	#print('MobiDB', mobi_ls)
+	if not mobi_ls == 'NA':
+		#returns a list of lists but only with positions: (start,end),(start,end),...
+		for sublist in mobi_ls:
+			f_start = int(sublist[0])
+			f_end = int(sublist[1])
+			for index in range(f_start, f_end+1):
+				output_df.loc[index-1,'mobidb'] = 'disordered'
 	
 	#for checking:
-	#print('resulting df:')
-	#print(output_df.head())
-	#print(output_df.size)
-	#print(output_df.shape)
+	# ~ print('resulting df:')
+	# ~ print(output_df.head())
+	# ~ print(output_df.size)
+	# ~ print(output_df.shape)
 	
+	#drop columns and rows that have only None
+	#first turn None into proper NAs 
+	output_df.replace(to_replace=['None'], value=np.nan, inplace=True)
+	output_df.dropna(axis='columns', how='all', inplace=True)
+	output_df.dropna(axis='rows', how='all', inplace=True)
+	
+	# ~ print('df after omitting NA rows and cols:')
+	# ~ print(output_df.head())
+	# ~ print(output_df.size)
+	# ~ print(output_df.shape)
 	
 	logger.info('Generate metadata')
 	#column descriptions for prism header
@@ -418,23 +495,18 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 
 #trying out the function make_uniprot_prism_files
 output_dir = path_base + 'pos_spec_prism_files/results/'
-uniprot_id = 'P07550'
-prism_file = os.path.join(output_dir, f'prism_uniprot_XXX_{uniprot_id}.txt')
-make_uniprot_prism_files(uniprot_id, prism_file, version=1)
-meta_data, dataframe = read_from_prism(prism_file)
 
-#second example
-# ~ uniprot_id = 'Q9BQB6'
-# ~ uniprot_id = 'P04637' #p53
-# ~ uniprot_id = 'P35520' #CBS
-# ~ prism_file = os.path.join(output_dir, f'prism_uniprot_XXX_{uniprot_id}.txt')
-# ~ make_uniprot_prism_files(uniprot_id, prism_file, version=1)
-# ~ meta_data, dataframe = read_from_prism(prism_file)
+#more examples
+#uniprotIDs = ['P07550','P04637', 'P35520']
+uniprotIDs = ['P04637', 'Q9NTF0']
 
-#third
-# ~ uniprot_id = 'P78563'
-# ~ prism_file = os.path.join(output_dir, f'prism_uniprot_XXX_{uniprot_id}.txt')
-# ~ make_uniprot_prism_files(uniprot_id, prism_file, version=1)
-# ~ meta_data, dataframe = read_from_prism(prism_file)
+for uniprot_id in uniprotIDs:
+	print(uniprot_id)
+	prism_file = os.path.join(output_dir, f'prism_uniprot_XXX_{uniprot_id}.txt')
+	make_uniprot_prism_files(uniprot_id, prism_file, version=1)
+	#try to reimport the file we just made to check for compatibility with the prism parser
+	meta_data, dataframe = read_from_prism(prism_file)
+	#print('\n\n')
+
 
 
