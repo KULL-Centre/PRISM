@@ -87,6 +87,11 @@ except (ModuleNotFoundError, ImportError) as e:
 else:
 	logger.info("Import succeeded")
 
+#parse arguments
+################################################################################
+parser.add_argument('-uniprot', dest="uniprot", help="Comma separated list of uniprot IDs (no white space)")
+args = parser.parse_args()
+################################################################################
 
 #functions
 #PRISM parser functions
@@ -498,7 +503,8 @@ output_dir = path_base + 'pos_spec_prism_files/results/'
 
 #more examples
 #uniprotIDs = ['P07550','P04637', 'P35520']
-uniprotIDs = ['P04637', 'Q9NTF0']
+#uniprotIDs = ['P04637', 'Q9NTF0']
+uniprotIDs = args.uniprot.split(',')
 
 for uniprot_id in uniprotIDs:
 	print(uniprot_id)
