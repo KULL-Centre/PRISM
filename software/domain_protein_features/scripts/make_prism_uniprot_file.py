@@ -89,6 +89,7 @@ else:
 
 #parse arguments
 ################################################################################
+parser = argparse.ArgumentParser()
 parser.add_argument('-uniprot', dest="uniprot", help="Comma separated list of uniprot IDs (no white space)")
 args = parser.parse_args()
 ################################################################################
