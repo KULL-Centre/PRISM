@@ -472,6 +472,8 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 	output_df.dropna(axis='columns', how='all', inplace=True)
 	#when dropping rows with only NA ignore the first col which is the name of the var
 	output_df.dropna(axis='index', how='all', subset = list(output_df.columns.values[1:]), inplace=True)
+	#remember to reset the index after dropping rows so that it starts with 0 again, otherwise writing the prism file will fail
+	output_df = output_df.reset_index(drop=True)
 	
 	# ~ print('df after omitting NA rows and cols:')
 	# ~ print(output_df.head())
