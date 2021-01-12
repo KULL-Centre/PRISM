@@ -91,6 +91,7 @@ else:
 ################################################################################
 parser = argparse.ArgumentParser()
 parser.add_argument('-uniprot', dest="uniprot", help="Comma separated list of uniprot IDs (no white space)")
+parser.add_argument('-outdir', dest="outdir", help="Output directory for prism_uniprot files. Will be current working directory if not given.")
 args = parser.parse_args()
 ################################################################################
 
@@ -469,7 +470,8 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 	#first turn None into proper NAs 
 	output_df.replace(to_replace=['None'], value=np.nan, inplace=True)
 	output_df.dropna(axis='columns', how='all', inplace=True)
-	output_df.dropna(axis='rows', how='all', inplace=True)
+	#when dropping rows with only NA ignore the first col which is the name of the var
+	output_df.dropna(axis='index', how='all', subset = list(output_df.columns.values[1:]), inplace=True)
 	
 	# ~ print('df after omitting NA rows and cols:')
 	# ~ print(output_df.head())
@@ -500,7 +502,8 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 	logger.info('uniprot prism files written!')
 
 #trying out the function make_uniprot_prism_files
-output_dir = path_base + 'pos_spec_prism_files/results/'
+#output_dir = path_base + 'pos_spec_prism_files/results/'
+output_dir = args.outdir if args.outdir else os.getcwd()
 
 #more examples
 #uniprotIDs = ['P07550','P04637', 'P35520']
