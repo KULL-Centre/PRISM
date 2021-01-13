@@ -56,7 +56,11 @@ def get_mobidb_disordered(uniprot_id, server = 'https://mobidb.bio.unipd.it/api/
 	
 	else:
 		contents = r.json()[0]
-		if 'regions' in contents['prediction-disorder-mobidb_lite']:
+		#interestingly, some uniprot IDs that are predicted to have no disordered regions like P00374 have an entry called 'prediction-disorder-mobidb_lite' but it doesn't have any regions, while others (also predicted to have no disordered regions) just have an empty return.
+		if not contents:
+			return('NA')
+		
+		elif 'regions' in contents['prediction-disorder-mobidb_lite']:
 			disordered_region = []
 			for elem in contents['prediction-disorder-mobidb_lite']['regions']:
 				#disordered_region.append([elem[0],elem[1]])
