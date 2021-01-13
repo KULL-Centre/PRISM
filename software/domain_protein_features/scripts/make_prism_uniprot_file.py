@@ -92,6 +92,7 @@ else:
 parser = argparse.ArgumentParser()
 parser.add_argument('-uniprot', dest="uniprot", help="Comma separated list of uniprot IDs (no white space)")
 parser.add_argument('-outdir', dest="outdir", help="Output directory for prism_uniprot files. Will be current working directory if not given.")
+parser.add_argument('-m', dest="mode", choices=['overwrite', 'leave'], default = 'leave', help="What do when the output file already exists. Leave (default) or overwrite")
 args = parser.parse_args()
 ################################################################################
 
@@ -517,10 +518,19 @@ uniprotIDs = args.uniprot.split(',')
 for uniprot_id in uniprotIDs:
 	print(uniprot_id)
 	prism_file = os.path.join(output_dir, f'prism_uniprot_XXX_{uniprot_id}.txt')
-	make_uniprot_prism_files(uniprot_id, prism_file, version=1)
-	#try to reimport the file we just made to check for compatibility with the prism parser
-	meta_data, dataframe = read_from_prism(prism_file)
-	#print('\n\n')
-
-
+	
+	#if file exists, either exit or mkae new one anyway, depending on mode
+	if os.path.exists(prism_file):
+		if args.mode == 'leave':
+			print(prism_file, 'already exists. If you wish to overwrite it use -m overwrite.')
+		#there are only two modes, the other one is overwrite
+		else:	
+			make_uniprot_prism_files(uniprot_id, prism_file, version=1)
+			#try to reimport the file we just made to check for compatibility with the prism parser
+			meta_data, dataframe = read_from_prism(prism_file)
+	else:
+		make_uniprot_prism_files(uniprot_id, prism_file, version=1)
+		#try to reimport the file we just made to check for compatibility with the prism parser
+		meta_data, dataframe = read_from_prism(prism_file)
+		#print('\n\n')
 
