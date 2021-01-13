@@ -151,6 +151,8 @@ request_to_return_feature = {
     'feature(PEPTIDE)':'PEPTIDE',
     'feature(SIGNAL)': 'SIGNAL', 
     'feature(TRANSIT)':'TRANSIT',
+    'feature(CROSS%20LINK)':'CROSSLNK', 
+    'feature(DISULFIDE%20BOND)':'DISULFID',
     #I don't think we need these
     #'feature(PROPEPTIDE)', 'feature(CHAIN)', 
     #secondary structure
