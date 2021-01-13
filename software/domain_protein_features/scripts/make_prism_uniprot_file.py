@@ -91,6 +91,7 @@ else:
 ################################################################################
 parser = argparse.ArgumentParser()
 parser.add_argument('-uniprot', dest="uniprot", help="Comma separated list of uniprot IDs (no white space)")
+parser.add_argument('-fromfile', dest="fromfile", help="A file from which to read uniprot IDs (one per line)")
 parser.add_argument('-outdir', dest="outdir", help="Output directory for prism_uniprot files. Will be current working directory if not given.")
 parser.add_argument('-m', dest="mode", choices=['overwrite', 'leave'], default = 'leave', help="What do when the output file already exists. Leave (default) or overwrite")
 args = parser.parse_args()
@@ -328,8 +329,17 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 					'ZN_FING']
 	
 	#for later haha
-	DBs = ['disprot', 'mobidb']				 
-
+	DBs = ['disprot', 'mobidb']
+	
+	#some entries may have become obsolete like A0A087X1A0. The return then contains only the entry and entry name
+	if uniprot_info_df['sequence'].empty:
+		print("A0A087X1A0 is obsolete, can't obtain data.")
+		return()
+	
+	#print(uniprot_info_df['sequence'])
+	#print(uniprot_info_df['sequence'][0])
+	#print(len(uniprot_info_df['sequence'][0]))
+	
 	#As far as I can see the dataframe row names have to start at 0 for the write_prism method to work.
 	#So for assignements generally index = position-1 or the other way around, position = index+1
 	output_df = pd.DataFrame(data='None', index=range(0, len(uniprot_info_df['sequence'][0])), columns=variant_list+DBs)
@@ -519,7 +529,16 @@ output_dir = args.outdir if args.outdir else os.getcwd()
 #more examples
 #uniprotIDs = ['P07550','P04637', 'P35520']
 #uniprotIDs = ['P04637', 'Q9NTF0']
-uniprotIDs = args.uniprot.split(',')
+
+if args.uniprot:
+	uniprotIDs = args.uniprot.split(',')
+elif args.fromfile:
+	uniprotIDs = []
+	with open(args.fromfile) as IN:
+		for line in IN:
+			uniprotIDs.append(line.rstrip())
+else:
+	sys.exit('Please use either -uniprot to pass one or several comma separated IDs or -fromfile to read in a file with uniprot IDs.')	
 
 for uniprot_id in uniprotIDs:
 	print(uniprot_id)
