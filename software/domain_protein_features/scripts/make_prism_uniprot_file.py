@@ -478,6 +478,11 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 	#remember to reset the index after dropping rows so that it starts with 0 again, otherwise writing the prism file will fail
 	output_df = output_df.reset_index(drop=True)
 	
+	#in rare cases the dataframe can be empty now like for A0A075B6U7.
+	if output_df.empty:
+		print('No features are available for', uniprot_id)
+		return()
+	
 	# ~ print('df after omitting NA rows and cols:')
 	# ~ print(output_df.head())
 	# ~ print(output_df.size)
@@ -505,6 +510,7 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 	logger.info('Writing prism file')
 	write_prism(metadata, output_df, prism_file, comment=comment)
 	logger.info('uniprot prism files written!')
+	return('Success')
 
 #trying out the function make_uniprot_prism_files
 #output_dir = path_base + 'pos_spec_prism_files/results/'
@@ -525,12 +531,15 @@ for uniprot_id in uniprotIDs:
 			print(prism_file, 'already exists. If you wish to overwrite it use -m overwrite.')
 		#there are only two modes, the other one is overwrite
 		else:	
-			make_uniprot_prism_files(uniprot_id, prism_file, version=1)
+			ret = make_uniprot_prism_files(uniprot_id, prism_file, version=1)
 			#try to reimport the file we just made to check for compatibility with the prism parser
-			meta_data, dataframe = read_from_prism(prism_file)
+			if ret == 'Success':
+				meta_data, dataframe = read_from_prism(prism_file)
+				logger.info('Prism file passed check')
 	else:
-		make_uniprot_prism_files(uniprot_id, prism_file, version=1)
+		ret = make_uniprot_prism_files(uniprot_id, prism_file, version=1)
 		#try to reimport the file we just made to check for compatibility with the prism parser
-		meta_data, dataframe = read_from_prism(prism_file)
-		#print('\n\n')
+		if ret == 'Success':
+			meta_data, dataframe = read_from_prism(prism_file)
+			logger.info('Prism file passed check')
 
