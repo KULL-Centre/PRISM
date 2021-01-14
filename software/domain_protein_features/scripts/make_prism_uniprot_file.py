@@ -339,10 +339,12 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 	#print(uniprot_info_df['sequence'])
 	#print(uniprot_info_df['sequence'][0])
 	#print(len(uniprot_info_df['sequence'][0]))
+	#print(range(0, len(uniprot_info_df['sequence'][0])))
 	
 	#As far as I can see the dataframe row names have to start at 0 for the write_prism method to work.
 	#So for assignements generally index = position-1 or the other way around, position = index+1
 	output_df = pd.DataFrame(data='None', index=range(0, len(uniprot_info_df['sequence'][0])), columns=variant_list+DBs)
+	#print(output_df.shape)
 	
 	for index, res in enumerate(uniprot_info_df['sequence'][0]):
 		#need +1 here since enumerate starts at 0
@@ -474,10 +476,11 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 				output_df.loc[index-1,'mobidb'] = 'disordered'
 	
 	#for checking:
-	# ~ print('resulting df:')
-	# ~ print(output_df.head())
-	# ~ print(output_df.size)
-	# ~ print(output_df.shape)
+	#print('resulting df:')
+	#print(output_df.head())
+	#print(output_df)
+	#print(output_df.size)
+	#print(output_df.shape)
 	
 	#drop columns and rows that have only None
 	#first turn None into proper NAs 
@@ -485,6 +488,9 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 	output_df.dropna(axis='columns', how='all', inplace=True)
 	#when dropping rows with only NA ignore the first col which is the name of the var
 	output_df.dropna(axis='index', how='all', subset = list(output_df.columns.values[1:]), inplace=True)
+	#for some uniprot IDs like A0A0G2JQZ4 pfam and uniprot disagree on the length of the protein. So I will also remove any rows where the variant name is missing (those are created if pfam is longer than uniprot)
+	output_df.dropna(axis='index', how='all', subset = ['variant'], inplace=True)
+	
 	#remember to reset the index after dropping rows so that it starts with 0 again, otherwise writing the prism file will fail
 	output_df = output_df.reset_index(drop=True)
 	
@@ -493,10 +499,10 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 		print('No features are available for', uniprot_id)
 		return()
 	
-	# ~ print('df after omitting NA rows and cols:')
-	# ~ print(output_df.head())
-	# ~ print(output_df.size)
-	# ~ print(output_df.shape)
+	#print('df after omitting NA rows and cols:')
+	#print(output_df)
+	#print(output_df.size)
+	#print(output_df.shape)
 	
 	logger.info('Generate metadata')
 	#column descriptions for prism header
