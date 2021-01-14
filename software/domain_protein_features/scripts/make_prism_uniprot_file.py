@@ -25,6 +25,7 @@ import seaborn as sns
 from scipy import stats
 #import sklearn.model_selection
 import xmltodict
+from time import sleep
 
 log_message="verbose"
 
@@ -287,11 +288,13 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 	logger.info('Extract info from uniprot')
 
 	uniprot_info_df = extract_uniprot_info(uniprot_id)
+	sleep(1)
 	#for debugging
 	#print(uniprot_info_df.columns)
 
 	logger.info('Extract domain from pfam')
 	pfam_dict = extract_single_protein_pfam( uniprot_id, verbose=False )
+	sleep(1)
 
 	logger.info('Generate dataframe with info')
 	
@@ -454,6 +457,7 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 	#example is p35, P04637(uniprot), DP00086(disprot)
 	#actually for disprot as Johanna also wrote you can just directly use the uniprot ID without getting the disprot one
 	disp_list = get_disprot_disordered(uniprot_id)
+	sleep(1)
 	#print('Disprot:', disp_list)
 	if not disp_list == 'NA':
 		#returns a list of lists: (start, end, type),(start, end, type)
@@ -468,6 +472,7 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 	#r_mobi = requests.get('https://mobidb.bio.unipd.it/ws/P04637/consensus', headers={ "Content-Type" : "application/json"})
 	#however, the uniprot api doesn't return a crossref (it does for disprot though), so we always query. I have re-written the query to return NA if the entry does not exist or there are no predicted disordered regions
 	mobi_ls = get_mobidb_disordered(uniprot_id)
+	sleep(1)
 	#print('MobiDB', mobi_ls)
 	if not mobi_ls == 'NA':
 		#returns a list of lists but only with positions: (start,end),(start,end),...
