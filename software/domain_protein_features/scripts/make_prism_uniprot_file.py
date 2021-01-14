@@ -351,10 +351,12 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 		output_df.loc[index,'variant'] = res+str(index+1)+'='
 	
 	#pfam
-	for pfam in pfam_dict:
-		#all positions between pfam['start'] and pfam['end'] should inherit the pfam['id']
-		for index in range(int(pfam['start']), int(pfam['end'])+1):
-			output_df.loc[index-1,'pfam_name'] = pfam['id']
+	#return can be empty if this uniprot ID was not in pfam
+	if pfam_dict is not None:
+		for pfam in pfam_dict:
+			#all positions between pfam['start'] and pfam['end'] should inherit the pfam['id']
+			for index in range(int(pfam['start']), int(pfam['end'])+1):
+				output_df.loc[index-1,'pfam_name'] = pfam['id']
 		
 	#features from the uniprot API
 	for ft in variant_list:

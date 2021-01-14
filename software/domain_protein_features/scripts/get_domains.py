@@ -35,6 +35,14 @@ def extract_single_protein_pfam( uniprot_id, verbose=False ):
     dictString = xmltodict.parse(contents.decode("utf-8"), attr_prefix='', cdata_key='#text')
 
     result_ls=[]
+    #debug
+    #print(dictString.keys())
+    #print(dictString['error'])
+    #debug
+    if 'error' in dictString:
+        print('pfam error:', dictString['error'])
+        return()
+    
     if 'matches' in dictString['pfam']['entry'].keys():
         subdic = dictString['pfam']['entry']['matches']['match']
         for keys in subdic:
