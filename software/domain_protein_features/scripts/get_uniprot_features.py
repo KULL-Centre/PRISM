@@ -60,7 +60,7 @@ def extract_uniprot_info(uniprot_id, reviewed='*'):
     search_string = ('https://www.uniprot.org/uniprot/' +
         f'?query=reviewed:{reviewed}' +
         f'+AND+accession:{uniprot_id}' + 
-        '+&format=tab&columns=id,entry%20name,protein%20name,' +
+        '+&format=tab&columns=id,reviewed,entry%20name,protein%20name,' +
         ','.join(features)
         )
     
@@ -69,7 +69,7 @@ def extract_uniprot_info(uniprot_id, reviewed='*'):
        response2 = f.read()
     result = [i.split("\t") for i in response2.decode("utf-8").split("\n")]
     #retain the same terms for the column headers as were queried to reduce confusion
-    result = pd.DataFrame(data=result[1:], columns=['Entry','Entry name']+features)
+    result = pd.DataFrame(data=result[1:], columns=['Entry','reviewed','Entry name']+features)
     
     return result
 

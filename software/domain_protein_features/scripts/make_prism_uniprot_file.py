@@ -348,6 +348,8 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 	#So for assignements generally index = position-1 or the other way around, position = index+1
 	output_df = pd.DataFrame(data='None', index=range(0, len(uniprot_info_df['sequence'][0])), columns=variant_list+DBs)
 	#print(output_df.shape)
+	#list of features that had uncertain placements, indicated by a ? in front of either start, end or both
+	uncertain = [] 
 	
 	for index, res in enumerate(uniprot_info_df['sequence'][0]):
 		#need +1 here since enumerate starts at 0
@@ -377,11 +379,25 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 						if ls[i].startswith(' '+ft) or ls[i].startswith(ft):
 						#range or single position? Disulfid links can also be between chains, so there can be only a single position named (like position 30 links to position 30 in the duplicate of the chain)
 							if '..' in ls[i]:
-								f_start = int(ls[i].split()[1].split('..')[0])
-								f_end = int(ls[i].split()[1].split('..')[1])
+								#check for uncertain placement signified by a ? preceeding either of the locations
+								if '?' in ls[i]:
+									match_obj = re.search('\?*(\d+)[.]{2}\?*(\d+)',ls[i])
+									if match_obj:
+										f_start = int(match_obj.groups()[0])
+										f_end = int(match_obj.groups()[1])
+										uncertain.append(ft)
+									else:
+										print('Could not determine position in', ls[i])
+										sys.exit()	
+									
+								else:
+									f_start = int(ls[i].split()[1].split('..')[0])
+									f_end = int(ls[i].split()[1].split('..')[1])
+								
 								output_df.loc[f_start-1,ft] = ft
 								output_df.loc[f_end-1,ft] = ft
 							else:
+								#todo: add parsing ? if it ever occurs here
 								f_pos = int(ls[i].split()[-1])
 								output_df.loc[f_pos-1,ft] = ft
 					
@@ -391,8 +407,21 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 						if ls[i].startswith(' '+ft) or ls[i].startswith(ft):
 							#is range given or single position?
 							if '..' in ls[i]:
-								f_start = int(ls[i].split()[1].split('..')[0])
-								f_end = int(ls[i].split()[1].split('..')[1])
+								#check for uncertain placement signified by a ? preceeding either of the locations
+								if '?' in ls[i]:
+									match_obj = re.search('\?*(\d+)[.]{2}\?*(\d+)',ls[i])
+									if match_obj:
+										f_start = int(match_obj.groups()[0])
+										f_end = int(match_obj.groups()[1])
+										uncertain.append(ft)
+									else:
+										print('Could not determine position in', ls[i])
+										sys.exit()	
+									
+								else:
+									f_start = int(ls[i].split()[1].split('..')[0])
+									f_end = int(ls[i].split()[1].split('..')[1])
+								
 								for index in range(f_start, f_end+1):
 									output_df.loc[index-1,ft] = ft
 							else:
@@ -525,7 +554,10 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 			"uniprot": uniprot_info_df['Entry'][0],
 			"sequence": uniprot_info_df['sequence'][0],
 		},
-		"uniprot": {},
+		"uniprot": {
+		"reviewed": uniprot_info_df['reviewed'][0],
+		"uncertain_placement": ','.join(uncertain)
+		},
 		"columns": columns_dic,
 	}
 
