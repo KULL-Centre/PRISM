@@ -227,6 +227,10 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 	#OBS!
 	It turns out features that can have notes don't always do. I.e. p53 P04637 has this Dna binding feature without a note: DNA_BIND 102..292
 	
+	Feature that have several entries i.e. DISULFID 265..?274;  /evidence="ECO:0000255|PROSITE-ProRule:PRU00460"; DISULFID 267..295;  /evidence="ECO:0000255|PROSITE-ProRule:PRU00460"; DISULFID 297..306;  /evidence="ECO:0000255|PROSITE-ProRule:PRU00460"; DISULFID 309..329;  /evidence="ECO:0000255|PROSITE-ProRule:PRU00460"; DISULFID 332..341;  /evidence="ECO:0000255|PROSITE-ProRule:PRU00460"; DISULFID 334..359;  /evidence="ECO:0000255|PROSITE-ProRule:PRU00460"; DISULFID 362..371;  /evidence="ECO:0000255|PROSITE-ProRule:PRU00460" 
+	are usually distinct from each other and we should probably write something different for each entry. If feature entries have names we can use that, otherwise enumerate. Actually I asked Johanna and she said we should enumerate even if they have names, so name + number
+	
+	
 	#two conceptually different types of features:
 	#1. features where you need the other fields to usefully describe the feature:
 	#function
@@ -276,6 +280,18 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 	#ZN_FING - though they seem to have categories: /note="GATA-type" /note="NR C4-type"
 	'''
 	
+	#compile regex for later
+	left_missing = re.compile('\s\?[.]{2}\d+')
+	right_missing = re.compile('\d+[.]{2}\?$')
+	
+	left_open = re.compile('\?(\d+)[.]{2}(\d+)')
+	right_open = re.compile('(\d+)[.]{2}\?(\d+)')
+	both_open = re.compile('\?(\d+)[.]{2}\?(\d+)')
+	
+	read_note = re.compile('\s(\d+)(?:\.\.(\d+))?(?:;\s+/note="([^"]+?)"(?:[;]|$))*')
+	only_note = re.compile(';\s+/note="([^"]+?)"(?:[;]|$)')
+	
+	#self_features are features that explain themselves as listed above. We do not extract further info for these but we do enumerate them like TRANSMEM1, TRANSMEM2, ect
 	self_features = [
 		'TRANSMEM', 'INTRAMEM',
 		'INIT_MET', 'SIGNAL', 'DISULFID',
@@ -300,8 +316,6 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 	
 	#the order in this list imposes the order of columns in the resulting dataframe and prism_file. 
 	#NOTE: Except for 'variant' and 'pfam_name' which are not retrieved from the uniprot API you must use the terms specified in return_to_request_feature otherwise it can't find them!
-	# ~ variant_list = ['variant', 'pfam_name', 'TRANSMEM', 'TOPO_DOM', 
-					 # ~ 'MOTIF', 'REGION', 'DISULFID','BINDING']
 	variant_list = ['variant', 
 					'pfam_name',
 					'ACT_SITE',
@@ -350,6 +364,10 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 	#print(output_df.shape)
 	#list of features that had uncertain placements, indicated by a ? in front of either start, end or both
 	uncertain = [] 
+	missing_placement = []
+	#for features that are explained by their notes we want to count up per note to avoid confusion. I.e. if there are two active site with /note="Proton acceptor" the first one is Proton_acceptor|1 and the second one Proton_acceptor|2. To do that, we need to remember which notes exist per feature and count up
+	existing_notes = {}
+	
 	
 	for index, res in enumerate(uniprot_info_df['sequence'][0]):
 		#need +1 here since enumerate starts at 0
@@ -367,118 +385,299 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 	for ft in variant_list:
 		if ft == 'variant' or ft == 'pfam_name':
 			continue
-		#self explaining features just get their name as entries	
+		#self explaining features just get their name plus a number as entries	
 		elif ft in self_features:
+			#count for enumerating instances of the feature
+			count = 1
 			#we use the mapping between the return name and the request name of features to address the correct field in uniprot_info_df
 			if len(uniprot_info_df[return_to_request_feature[ft]][0]) > 0:
 				ls = uniprot_info_df[return_to_request_feature[ft]][0].split(';')
-				#is it a region ft or direct link feature?
-				#direct link features: the positions indicated are not a range but the two positions linked by the feature
-				if ft in dlf:
-					for i in range(len(ls)):
-						if ls[i].startswith(' '+ft) or ls[i].startswith(ft):
-						#range or single position? Disulfid links can also be between chains, so there can be only a single position named (like position 30 links to position 30 in the duplicate of the chain)
-							if '..' in ls[i]:
-								#check for uncertain placement signified by a ? preceeding either of the locations
-								if '?' in ls[i]:
-									match_obj = re.search('\?*(\d+)[.]{2}\?*(\d+)',ls[i])
-									if match_obj:
-										f_start = int(match_obj.groups()[0])
-										f_end = int(match_obj.groups()[1])
-										uncertain.append(ft)
-									else:
-										print('Could not determine position in', ls[i])
-										sys.exit()	
-									
-								else:
-									f_start = int(ls[i].split()[1].split('..')[0])
-									f_end = int(ls[i].split()[1].split('..')[1])
+				for i in range(len(ls)):
+					if ls[i].startswith(' '+ft) or ls[i].startswith(ft):
+						ls[i] = ls[i].split()[1]
+						#is the placement uncertain and if yes in which position? If either of the positions is replaced entirely by ? we do not write this feature into the df and instead make an entry in the missing_placement row of the header
+						
+						#uncertain:
+						if '?' in ls[i]:
+							#missing:
+							if left_missing.match(ls[i]) or right_missing.match(ls[i]):
+								missing_placement.append(ft+'_'+ls[i])
+								continue #skip to the next entry of this feature, i.e. the next ls[i]
+						
+							#left open:
+							elif left_open.match(ls[i]):
+								match_obj = left_open.match(ls[i])
+								f_start = int(match_obj.groups()[0])
+								f_end = int(match_obj.groups()[1])
+								uncertain.append(ft+'_'+ls[i])
 								
-								output_df.loc[f_start-1,ft] = ft
-								output_df.loc[f_end-1,ft] = ft
-							else:
-								#todo: add parsing ? if it ever occurs here
-								f_pos = int(ls[i].split()[-1])
-								output_df.loc[f_pos-1,ft] = ft
-					
-				#else it's not a direct link feature and all positions between Start..End including them will inherit the feature
-				else:
-					for i in range(len(ls)):
-						if ls[i].startswith(' '+ft) or ls[i].startswith(ft):
-							#is range given or single position?
-							if '..' in ls[i]:
-								#check for uncertain placement signified by a ? preceeding either of the locations
-								if '?' in ls[i]:
-									match_obj = re.search('\?*(\d+)[.]{2}\?*(\d+)',ls[i])
-									if match_obj:
-										f_start = int(match_obj.groups()[0])
-										f_end = int(match_obj.groups()[1])
-										uncertain.append(ft)
-									else:
-										print('Could not determine position in', ls[i])
-										sys.exit()	
-									
+								#direct link or range feature?
+								if ft in dlf:
+									output_df.loc[f_start-1,ft] = '?'+ft+'|'+str(count)
+									output_df.loc[f_end-1,ft] = ft+'|'+str(count)
 								else:
-									f_start = int(ls[i].split()[1].split('..')[0])
-									f_end = int(ls[i].split()[1].split('..')[1])
+									output_df.loc[f_start-1,ft] = '?'+ft+'|'+str(count)
+									for index in range(f_start+1, f_end+1):
+										output_df.loc[index-1,ft] = ft+'|'+str(count)
 								
-								for index in range(f_start, f_end+1):
-									output_df.loc[index-1,ft] = ft
-							else:
-								f_pos = int(ls[i].split()[-1])
-								output_df.loc[f_pos-1,ft] = ft
+								count += 1
+								
+							#right open:
+							elif right_open.match(ls[i]):
+								match_obj = right_open.match(ls[i])
+								f_start = int(match_obj.groups()[0])
+								f_end = int(match_obj.groups()[1])
+								uncertain.append(ft+'_'+ls[i])
+								
+								if ft in dlf:
+									output_df.loc[f_start-1,ft] = ft+'|'+str(count)
+									output_df.loc[f_end-1,ft] = '?'+ft+'|'+str(count)
+								else:
+									for index in range(f_start, f_end):
+										output_df.loc[index-1,ft] = ft+'|'+str(count)
+									output_df.loc[f_end-1,ft] = '?'+ft+'|'+str(count)	
+								
+								count += 1
+								
+							#both open
+							elif both_open.match(ls[i]):
+								match_obj = right_open.match(ls[i])
+								f_start = int(match_obj.groups()[0])
+								f_end = int(match_obj.groups()[1])
+								uncertain.append(ft+'_'+ls[i])
+								
+								if ft in dlf:
+									output_df.loc[f_start-1,ft] = '?'+ft+'|'+str(count)
+									output_df.loc[f_end-1,ft] = '?'+ft+'|'+str(count)
+								else:
+									output_df.loc[f_start-1,ft] = '?'+ft+'|'+str(count)
+									for index in range(f_start+1, f_end):
+										output_df.loc[index-1,ft] = ft+'|'+str(count)
+									output_df.loc[f_end-1,ft] = '?'+ft+'|'+str(count)
+									
+								count += 1	
 
-		#explained features get what is in their notes as entry
+							else:
+								print('Could not determine position in', ls[i])
+								sys.exit()
+								
+						#else the pos is certain. 
+						#do we have two or one positions? Disulfid links can also be between chains, so there can be only a single position named (like position 30 links somewhere in another chain)
+						else:
+							if ft in dlf:
+								if '..' in ls[i]:
+									f_start = int(ls[i].split('..')[0])
+									f_end = int(ls[i].split('..')[1])
+									output_df.loc[f_start-1,ft] = ft+'|'+str(count)
+									output_df.loc[f_end-1,ft] = ft+'|'+str(count)
+									
+									count += 1
+								
+								else:
+									#actually we should read the note in this case because it describes where the link goes
+									f_pos = int(ls[i])
+									output_df.loc[f_pos-1,ft] = ft+'|'+str(count)
+									
+									count += 1
+						
+							else:
+								if '..' in ls[i]:
+									f_start = int(ls[i].split('..')[0])
+									f_end = int(ls[i].split('..')[1])
+								
+									for index in range(f_start, f_end+1):
+										output_df.loc[index-1,ft] = ft+'|'+str(count)
+										
+									count += 1
+										
+								else:
+									f_pos = int(ls[i].split()[-1])
+									output_df.loc[f_pos-1,ft] = ft+'|'+str(count)
+									
+									count += 1	
+						
+						
+		#else it's an explained feature. explained features get what is in their notes as entry
+		#we also want to enumerate these. The issue is we need to know how many i.e. Proton_acceptor there have been already so we cannot just use the iterator i.
 		else:
+			#init a subdict for this feature in notes dict
+			existing_notes[ft] = {}
+			#some of these features lack a note and for those we will use the no_note_count
+			no_note_count = 1
+			
 			if len(uniprot_info_df[return_to_request_feature[ft]][0]) > 0:
 				string_entry = uniprot_info_df[return_to_request_feature[ft]][0]
 				ls = string_entry.split(ft)[1:] #the first item of the split will always be empty because the string starts with the feature name
 				
 				for item in ls:
-					#a feature that has a note field and a location 
-					match_obj = re.search('\s(\d+)(?:\.\.(\d+))?(?:;\s+/note="([^"]+?)"(?:[;]|$))*', item)
-
-					#though features in this group may have a note, they don't necessarily do. I.e. p53 P04637 has this DNA binding feature without a note: 
-					#DNA_BIND 102..292 
-					#and those Metal binding features with notes: 
-					#METAL 176;  /note="Zinc"; METAL 179;  /note="Zinc"; METAL 238;  /note="Zinc"; METAL 242;  /note="Zinc" 
+					#might need separate case for uncertain placements becaues I need to know which case it is missing or open and which side
+					if left_missing.match(item) or right_missing.match(item):
+						missing_placement.append(ft+'_'+item.split(';'))
+						continue #skip to the next entry of this feature, i.e. the next ls[i]
 					
-					if match_obj:
+					#left open:
+					elif left_open.match(item):
+						match_obj = left_open.match(item)
 						f_start = int(match_obj.groups()[0])
+						f_end = int(match_obj.groups()[1])
 						
-						#check if there was a note found:
-						#in any case, you should not allow the note to have white space otherwise it will make problems with writing the whitespace separated prism files
-						if match_obj.groups()[2] is None:
-							#if there was no note to clarify, we will just save the feature's name instead as we do with features that don't have notes/do not require an explanation
-							note = ft
-						else:
-							note = re.sub(' ', '_', match_obj.groups()[2])
-						
-						#there are either one or two positions named: If it's one, the features applies to that position. If it's two, the feature applies to the range between them.
-						#if the second match group is empty there was only one position
-						if match_obj.groups()[1] is None:
-							#assign the note to the single named position
-							output_df.loc[f_start-1,ft] = note
-						
-						else:
-							f_end = int(match_obj.groups()[1])
-							#if the feature is both one that needs explaining and a direct link feature (right now that's only crosslink but let's keep it general), only assign the note to the two named positions
-							if ft in dlf:
-								output_df.loc[f_start-1,ft] = note
-								output_df.loc[f_end-1,ft] = note
-						
-							#else it's a range, fill every position between the two named including them with the note
+						#need to read out note if it exists
+						if '/note=' in item:
+							match_obj = only_note.search(item)
+							if match_obj:
+								note = match_obj.groups()[1]
+								if note in existing_notes[ft]:
+									count = existing_notes[ft][note]+1
+									existing_notes[ft][note] += 1
+								else:
+									count = 1
+									existing_notes[ft][note] = 1
+							
 							else:
-								for index in range(f_start, f_end+1):
-									output_df.loc[index-1,ft] = note
+								print('Could not extract note from', item)
+								sys.exit()	
+						else:
+							note = ft
+							count = no_note_count
+							no_note_count += 1
+						
+						uncertain.append(ft+'_'+item.split(';'))
+						
+						#direct link or range feature?
+						if ft in dlf:
+							output_df.loc[f_start-1,ft] = '?'+note+'|'+str(count)
+							output_df.loc[f_end-1,ft] = note+'|'+str(count)
+						else:
+							output_df.loc[f_start-1,ft] = '?'+note+'|'+str(count)
+							for index in range(f_start+1, f_end+1):
+								output_df.loc[index-1,ft] = note+'|'+str(count)
+						
+					#right open:
+					elif right_open.match(item):
+						match_obj = right_open.match(item)
+						f_start = int(match_obj.groups()[0])
+						f_end = int(match_obj.groups()[1])
+						
+						#need to read out note if it exists
+						if '/note=' in item:
+							match_obj = only_note.search(item)
+							if match_obj:
+								note = match_obj.groups()[1]
+								if note in existing_notes[ft]:
+									count = existing_notes[ft][note]+1
+									existing_notes[ft][note] += 1
+								else:
+									count = 1
+									existing_notes[ft][note] = 1
+							
+							else:
+								print('Could not extract note from', item)
+								sys.exit()	
+						else:
+							note = ft
+							count = no_note_count
+							no_note_count += 1
+						
+						uncertain.append(ft+'_'+ls[i])
+						
+						if ft in dlf:
+							output_df.loc[f_start-1,ft] = note+'|'+str(count)
+							output_df.loc[f_end-1,ft] = '?'+note+'|'+str(count)
+						else:
+							for index in range(f_start, f_end):
+								output_df.loc[index-1,ft] = note+'|'+str(count)
+							output_df.loc[f_end-1,ft] = '?'+note+'|'+str(count)	
 					
-					#can't process info with the current setup, print it to see what's up
+					#both open
+					elif both_open.match(item):
+						match_obj = right_open.match(item)
+						f_start = int(match_obj.groups()[0])
+						f_end = int(match_obj.groups()[1])
+						
+						#need to read out note if it exists
+						if '/note=' in item:
+							match_obj = only_note.search(item)
+							if match_obj:
+								note = match_obj.groups()[1]
+								if note in existing_notes[ft]:
+									count = existing_notes[ft][note]+1
+									existing_notes[ft][note] += 1
+								else:
+									count = 1
+									existing_notes[ft][note] = 1
+							
+							else:
+								print('Could not extract note from', item)
+								sys.exit()	
+						else:
+							note = ft
+							count = no_note_count
+							no_note_count += 1
+						
+						uncertain.append(ft+'_'+item)
+						
+						if ft in dlf:
+							output_df.loc[f_start-1,ft] = '?'+note+'|'+str(count)
+							output_df.loc[f_end-1,ft] = '?'+note+'|'+str(count)
+						else:
+							output_df.loc[f_start-1,ft] = '?'+note+'|'+str(count)
+							for index in range(f_start+1, f_end):
+								output_df.loc[index-1,ft] = note+'|'+str(count)
+							output_df.loc[f_end-1,ft] = '?'+note+'|'+str(count) 
+					
+					#else the placement is not uncertain. Perform the 'normal' extraction except also getting a count added to the note
 					else:
-						print("Couldn't process:")
-						print(item)
-						print('of', ft)
-						print('whole string:', string_entry)
-	
+						#a feature that has a note field and a location 
+						match_obj = read_note.search(item)
+
+						#though features in this group may have a note, they don't necessarily do. I.e. p53 P04637 has this DNA binding feature without a note: 
+						#DNA_BIND 102..292 
+						#and those Metal binding features with notes: 
+						#METAL 176;  /note="Zinc"; METAL 179;  /note="Zinc"; METAL 238;  /note="Zinc"; METAL 242;  /note="Zinc" 
+						
+						if match_obj:
+							f_start = int(match_obj.groups()[0])
+							
+							#check if there was a note found:
+							#in any case, you should not allow the note to have white space otherwise it will make problems with writing the whitespace separated prism files
+							if match_obj.groups()[2] is None:
+								#if there was no note to clarify, we will just save the feature's name instead as we do with features that don't have notes/do not require an explanation
+								note = ft
+								count = no_note_count
+								no_note_count += 1
+							else:
+								note = re.sub(' ', '_', match_obj.groups()[2])
+								if note in existing_notes[ft]:
+									count = existing_notes[ft][note]+1
+									existing_notes[ft][note] += 1
+								else:
+									count = 1
+									existing_notes[ft][note] = 1
+							
+							#there are either one or two positions named: If it's one, the features applies to that position. If it's two, the feature applies to the range between them.
+							#if the second match group is empty there was only one position
+							if match_obj.groups()[1] is None:
+								#assign the note to the single named position
+								output_df.loc[f_start-1,ft] = note+'|'+str(count)
+							
+							else:
+								f_end = int(match_obj.groups()[1])
+								#if the feature is both one that needs explaining and a direct link feature (right now that's only crosslink but let's keep it general), only assign the note to the two named positions
+								if ft in dlf:
+									output_df.loc[f_start-1,ft] = note+'|'+str(count)
+									output_df.loc[f_end-1,ft] = note+'|'+str(count)
+							
+								#else it's a range, fill every position between the two named including them with the note
+								else:
+									for index in range(f_start, f_end+1):
+										output_df.loc[index-1,ft] = note+'|'+str(count)
+						
+						#can't process info with the current setup, print it to see what's up
+						else:
+							print("Couldn't process:")
+							print(item)
+							print('of', ft)
+							print('whole string:', string_entry)
 
 	#database references
 	#the request to uniprot API returns the identifier of this protein in another DB and then you can go look it up there
@@ -556,7 +755,8 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 		},
 		"uniprot": {
 		"reviewed": uniprot_info_df['reviewed'][0],
-		"uncertain_placement": ','.join(uncertain)
+		"uncertain_placement": ','.join(uncertain),
+		"missing_placement": ','.join(missing_placement)
 		},
 		"columns": columns_dic,
 	}
