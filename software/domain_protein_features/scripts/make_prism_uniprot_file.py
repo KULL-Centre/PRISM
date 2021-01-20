@@ -688,12 +688,14 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 	sleep(1)
 	#print('Disprot:', disp_list)
 	if not disp_list == 'NA':
+		count = 1
 		#returns a list of lists: (start, end, type),(start, end, type)
 		for sublist in disp_list:
 			f_start = int(sublist[0])
 			f_end = int(sublist[1])
 			for index in range(f_start, f_end+1):
-				output_df.loc[index-1,'disprot'] = sublist[2]
+				output_df.loc[index-1,'disprot'] = sublist[2] + '|' + str(count)
+			count += 1
 	
 	#mobi
 	#mobi DB actually has an entry for p53/P04637 which you can get with:
@@ -703,12 +705,14 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 	sleep(1)
 	#print('MobiDB', mobi_ls)
 	if not mobi_ls == 'NA':
+		count = 1
 		#returns a list of lists but only with positions: (start,end),(start,end),...
 		for sublist in mobi_ls:
 			f_start = int(sublist[0])
 			f_end = int(sublist[1])
 			for index in range(f_start, f_end+1):
-				output_df.loc[index-1,'mobidb'] = 'disordered'
+				output_df.loc[index-1,'mobidb'] = 'disordered' + '|' + str(count)
+			count += 1	
 	
 	#for checking:
 	#print('resulting df:')
