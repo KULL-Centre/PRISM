@@ -298,6 +298,9 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1,fail_fh=''):
 	read_note = re.compile('\s(\d+)(?:\.\.(\d+))?(?:;\s+/note="([^"]+?)"(?:[;]|$))*')
 	only_note = re.compile(';\s+/note="([^"]+?)"(?:[;]|$)')
 	
+	#the feature location may optionally be preceded by an isoform ID indicating that this feature applies to that isoform. We will skip these for now.
+	isoform_id = re.compile('(?:\s|^)\w{6,10}-\d\:')
+	
 	#self_features are features that explain themselves as listed above. We do not extract further info for these but we do enumerate them like TRANSMEM1, TRANSMEM2, ect
 	self_features = [
 		'TRANSMEM', 'INTRAMEM',
@@ -408,8 +411,13 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1,fail_fh=''):
 						ls[i] = ls[i].split()[1]
 						#is the placement uncertain and if yes in which position? If either of the positions is replaced entirely by ? we do not write this feature into the df and instead make an entry in the missing_placement row of the header
 						
+						#add skipping isoform features:
+						if isoform_id.search(ls[i]):
+							print('Skipping feature', ft, ls[i], 'which pertains to a different isoform.')
+							continue
+						
 						#uncertain:
-						if '?' in ls[i]:
+						elif '?' in ls[i]:
 							#debug
 							#print('*',ls[i],'*', sep = '')
 							#debug
@@ -529,6 +537,10 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1,fail_fh=''):
 					if left_missing.match(item) or right_missing.match(item):
 						missing_placement.append(ft+'_'+item.split(';'))
 						continue #skip to the next entry of this feature, i.e. the next ls[i]
+					
+					elif isoform_id.search(item):
+						print('Skipping feature', item, 'which pertains to a different isoform.')
+						continue
 					
 					#left open:
 					elif left_open.match(item):
