@@ -93,6 +93,7 @@ else:
 parser = argparse.ArgumentParser()
 parser.add_argument('-uniprot', dest="uniprot", help="Comma separated list of uniprot IDs (no white space)")
 parser.add_argument('-fromfile', dest="fromfile", help="A file from which to read uniprot IDs (one per line)")
+parser.add_argument('-fail', dest="fail", help="A file listing uniprot IDs for which extraction failed before so we don't waste time querying for them.")
 parser.add_argument('-outdir', dest="outdir", help="Output directory for prism_uniprot files. Will be current working directory if not given.")
 parser.add_argument('-m', dest="mode", choices=['overwrite', 'leave'], default = 'leave', help="What do when the output file already exists. Leave (default) or overwrite")
 args = parser.parse_args()
@@ -220,7 +221,7 @@ direct_link_features = {
     'feature(DISULFIDE%20BOND)':'DISULFID', 
 }
 
-def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
+def make_uniprot_prism_files(uniprot_id, prism_file, version=1,fail_fh=''):
 	
 	'''
 	
@@ -280,8 +281,14 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 	#ZN_FING - though they seem to have categories: /note="GATA-type" /note="NR C4-type"
 	'''
 	
+	#added option to write a list of uniprot IDs for which extraction previously failed so we don't use time querying them again
+	if fail_fh:
+		#open file in append mode so you don't overwrite prev file
+		f_out = open(fail_fh, 'a')
+	
 	#compile regex for later
-	left_missing = re.compile('\s\?[.]{2}\d+')
+	#before the question mark, match either whitespace or beginning of string so we only match ?..5 and not 1?..5 (I don't think the second is possible since the ? should preceed but it's usually a good idea to be precise with regex)
+	left_missing = re.compile('(?:\s|^)\?[.]{2}\d+')
 	right_missing = re.compile('\d+[.]{2}\?$')
 	
 	left_open = re.compile('\?(\d+)[.]{2}(\d+)')
@@ -350,7 +357,11 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 	
 	#some entries may have become obsolete like A0A087X1A0. The return then contains only the entry and entry name
 	if uniprot_info_df['sequence'].empty:
-		print("A0A087X1A0 is obsolete, can't obtain data.")
+		print(uniprot_id," is obsolete, can't obtain data.")
+		if fail_fh:
+			if not uniprot_id in fail_list:
+				print(uniprot_id, file = f_out)
+				f_out.close()
 		return()
 	
 	#print(uniprot_info_df['sequence'])
@@ -399,6 +410,10 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 						
 						#uncertain:
 						if '?' in ls[i]:
+							#debug
+							#print('*',ls[i],'*', sep = '')
+							#debug
+							
 							#missing:
 							if left_missing.match(ls[i]) or right_missing.match(ls[i]):
 								missing_placement.append(ft+'_'+ls[i])
@@ -736,6 +751,10 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 	#in rare cases the dataframe can be empty now like for A0A075B6U7.
 	if output_df.empty:
 		print('No features are available for', uniprot_id)
+		if fail_fh:
+			if not uniprot_id in fail_list:
+				print(uniprot_id, file = f_out)
+				f_out.close()
 		return()
 	
 	#print('df after omitting NA rows and cols:')
@@ -769,6 +788,8 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1):
 	logger.info('Writing prism file')
 	write_prism(metadata, output_df, prism_file, comment=comment)
 	logger.info('uniprot prism files written!')
+	if fail_fh:
+		f_out.close()
 	return('Success')
 
 #trying out the function make_uniprot_prism_files
@@ -778,6 +799,19 @@ output_dir = args.outdir if args.outdir else os.getcwd()
 #more examples
 #uniprotIDs = ['P07550','P04637', 'P35520']
 #uniprotIDs = ['P04637', 'Q9NTF0']
+
+#fail list is a list of uniprot IDs that were tried before and didn't yield results, either because the entry is obsolete or no features could be extracted (the dataframe is empty)
+fail_list = set()
+if args.fail:
+	#if file doesn't exist yet because it's the first time, do not attempt to open
+	if os.path.exists(args.fail):	
+		with open(args.fail, 'r') as IN:
+			for line in IN:
+				fail_list.add(line.rstrip())
+
+#debug
+print('fail_list:', fail_list)
+#debug
 
 if args.uniprot:
 	uniprotIDs = args.uniprot.split(',')
@@ -804,8 +838,16 @@ for uniprot_id in uniprotIDs:
 			if ret == 'Success':
 				meta_data, dataframe = read_from_prism(prism_file)
 				logger.info('Prism file passed check')
+	
+	elif uniprot_id in fail_list:
+		print(prism_file, "was attempted previously and failed, so skipping. Run without -fail if you don't want that.")
+		continue
+	
 	else:
-		ret = make_uniprot_prism_files(uniprot_id, prism_file, version=1)
+		if args.fail:
+			ret = make_uniprot_prism_files(uniprot_id, prism_file, version=1, fail_fh = args.fail)
+		else:
+			ret = make_uniprot_prism_files(uniprot_id, prism_file, version=1)
 		#try to reimport the file we just made to check for compatibility with the prism parser
 		if ret == 'Success':
 			meta_data, dataframe = read_from_prism(prism_file)
