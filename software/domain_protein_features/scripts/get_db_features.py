@@ -51,7 +51,10 @@ def get_mobidb_disordered(uniprot_id, server = 'https://mobidb.bio.unipd.it/api/
 		r.raise_for_status()
 	except HTTPError as e:
 		status_code = r.status_code
-		print('While looking up', uniprot_id, 'on mobiDB the following error occured',status_code)
+		print('While looking up', uniprot_id, 'on mobiDB the following error occured:',status_code)
+		#P0DTE7 produced a code 500, internal server error. I checked and other uniprot IDs still work fine, so I'm not sure if it is a temporary issue. For now, I think we should return NA
+		if status_code == 500:
+			return('NA')
 		sys.exit()
 	
 	else:
