@@ -535,7 +535,7 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1,fail_fh=''):
 				for item in ls:
 					#might need separate case for uncertain placements becaues I need to know which case it is missing or open and which side
 					if left_missing.match(item) or right_missing.match(item):
-						missing_placement.append(ft+'_'+item.split(';'))
+						missing_placement.append(ft+'_'+item.split(';')[0])
 						continue #skip to the next entry of this feature, i.e. the next ls[i]
 					
 					elif isoform_id.search(item):
