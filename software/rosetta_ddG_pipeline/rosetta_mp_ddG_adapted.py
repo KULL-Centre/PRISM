@@ -236,13 +236,34 @@ def compute_ddG(pose, sfxn, resnum, aa, repack_radius, sc_file):
     # return scores
     return aa, round(mutant_score, 3), round(native_score, 3), round(mutant_score - native_score, 3)
 
+
+###############################################################################
+
+# @brief mutates and repacks (changed by Johanna - refference: Test Func 2)
+
+
+def mutate_residue(pose, mutant_position, mutant_aa, pack_radius, pack_scorefxn):
+
+    if pose.is_fullatom() == False:
+        IOError('mutate_residue only works with fullatom poses')
+
+    test_pose = Pose()
+    test_pose.assign(pose)
+
+    # repacking of sidechain atoms within the desired pack radius and mutation
+    # into the assigned amino acid
+    pyrosetta.toolbox.mutants.mutate_residue(test_pose, int(mutant_position), mutant_aa, pack_radius=pack_radius, pack_scorefxn=pack_scorefxn)
+
+    return test_pose
+
+
 ###############################################################################
 
 # @brief Replace the residue at <resid> in <pose> with <new_res> and allows
 # repacking within a given <pack_radius>
 
 
-def mutate_residue(pose, mutant_position, mutant_aa, pack_radius, pack_scorefxn):
+def mutate_residue_original(pose, mutant_position, mutant_aa, pack_radius, pack_scorefxn):
 
     if pose.is_fullatom() == False:
         IOError('mutate_residue only works with fullatom poses')
