@@ -299,7 +299,7 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1,fail_fh=''):
 	only_note = re.compile(';\s+/note="([^"]+?)"(?:[;]|$)')
 	
 	#the feature location may optionally be preceded by an isoform ID indicating that this feature applies to that isoform. We will skip these for now.
-	isoform_id = re.compile('(?:\s|^)\w{6,10}-\d\:')
+	isoform_id = re.compile('(?:\s|^)\w{6,10}-\d+\:')
 	
 	#self_features are features that explain themselves as listed above. We do not extract further info for these but we do enumerate them like TRANSMEM1, TRANSMEM2, ect
 	self_features = [
