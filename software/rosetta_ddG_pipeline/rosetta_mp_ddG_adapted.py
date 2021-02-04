@@ -28,6 +28,10 @@ import numpy as np
 from optparse import OptionParser, IndentedHelpFormatter
 _script_path_ = os.path.dirname(os.path.realpath(__file__))
 
+
+import logging as logger
+
+
 # Rosetta-specific imports
 from rosetta import *
 # pyrosetta.init()
@@ -132,7 +136,7 @@ def main(args):
     parser.add_option('--score_function',
                       action="store", default='franklin2019',
                       type=str,
-                      help="ddG score function. Default=franklin2019", )
+                      help="ddG score function. Default=franklin2019, other options are 'ref15', 'MP', 'ref15_memb' ", )
 
     # parse options
     (options, args) = parser.parse_args(args=args[1:])
@@ -201,12 +205,21 @@ def main(args):
         with open(Options.out, 'a') as f, open(Options.out_add, 'a') as fp2:
             result_ddG = []
             for rep in range(Options.repeats):
-                ddGs = compute_ddG(repacked_native, sfxn, int(
-                    Options.res), aa, Options.repack_radius, Options.output_breakdown)
-                res_str = str(native_res) + str(Options.res) + str(ddGs[0])
-                rescaled_ddG = ddGs[3]/Options.rescale
-                result_ddG.append(rescaled_ddG)
-                fp2.write(f"{res_str},{rescaled_ddG},{ddGs[3]},{ddGs[1]},{ddGs[2]}\n")
+                if list(repacked_native.sequence())[int(Options.res)-1] == aa:
+                    native_score = sfxn(repacked_native)
+                    print_ddG_breakdown(repacked_native, repacked_native, sfxn, int(Options.res), aa, Options.output_breakdown)
+                    ddGs = [aa, round(native_score, 3), round(native_score, 3), round(native_score - native_score, 3)]
+                    res_str = str(native_res) + str(Options.res) + str(ddGs[0])
+                    rescaled_ddG = ddGs[3]/Options.rescale
+                    result_ddG.append(rescaled_ddG)
+                    fp2.write(f"{res_str},{rescaled_ddG},{ddGs[3]},{ddGs[1]},{ddGs[2]}\n")
+                else:
+                    ddGs = compute_ddG(repacked_native, sfxn, int(
+                        Options.res), aa, Options.repack_radius, Options.output_breakdown)
+                    res_str = str(native_res) + str(Options.res) + str(ddGs[0])
+                    rescaled_ddG = ddGs[3]/Options.rescale
+                    result_ddG.append(rescaled_ddG)
+                    fp2.write(f"{res_str},{rescaled_ddG},{ddGs[3]},{ddGs[1]},{ddGs[2]}\n")
 
             result_ddG = np.array(result_ddG)
             small_k = int(Options.repeats/2)+1
@@ -237,12 +250,157 @@ def compute_ddG(pose, sfxn, resnum, aa, repack_radius, sc_file):
     return aa, round(mutant_score, 3), round(native_score, 3), round(mutant_score - native_score, 3)
 
 
+
+###############################################################################
+
+# @brief calls the specific function
+
+
+def mutate_residue(pose, mutant_position, mutant_aa, pack_radius, pack_scorefxn):
+
+    test_pose = mutate_residue_cart_algo(pose, mutant_position, mutant_aa, pack_radius, pack_scorefxn, ddg_bbnbrs=1, verbose=True)
+    #test_pose = mutate_residue_repack(pose, mutant_position, mutant_aa, pack_radius, pack_scorefxn)
+    #test_pose = mutate_residue_original(pose, mutant_position, mutant_aa, pack_radius, pack_scorefxn)
+
+    return test_pose
+
+###############################################################################
+
+# @brief mutates and repacks using the cartesian algorithm (changed by Johanna - refference: Test Func 4)
+
+
+def mutate_residue_cart_algo(pose, mutant_position, mutant_aa, pack_radius, pack_scorefxn, ddg_bbnbrs=1, verbose=False, cartesian=False, max_iter=None):
+    import time
+    from pyrosetta.rosetta.core.pack.task import operation
+    
+    if verbose:
+        start_time = time.time()
+    logger.warning("Interface mode not implemented (should be added!)")
+    
+    if cartesian:
+        pack_scorefxn.set_weight(pyrosetta.rosetta.core.scoring.ScoreTypeManager.score_type_from_name('cart_bonded'), 0.5)
+        #pack_scorefxn.set_weight(atom_pair_constraint, 1)#0.5
+        pack_scorefxn.set_weight(pyrosetta.rosetta.core.scoring.ScoreTypeManager.score_type_from_name('pro_close'), 0)
+        #logger.warning(pyrosetta.rosetta.basic.options.get_boolean_option('ex1'))#set_boolean_option( '-ex1', True )
+        #pyrosetta.rosetta.basic.options.set_boolean_option( 'ex2', True )
+    
+    if pose.is_fullatom() == False:
+        IOError('mutate_residue only works with fullatom poses')
+
+    #Cloning of the pose including all settings
+    working_pose = pose.clone()
+
+    #Select mutant residue
+    mutant_selector = pyrosetta.rosetta.core.select.residue_selector.ResidueIndexSelector(mutant_position)
+    
+    #Select all except mutant
+    all_nand_mutant_selector = pyrosetta.rosetta.core.select.residue_selector.NotResidueSelector()
+    all_nand_mutant_selector.set_residue_selector(mutant_selector)
+
+    #Select neighbors with mutant
+    nbr_or_mutant_selector = pyrosetta.rosetta.core.select.residue_selector.NeighborhoodResidueSelector()
+    nbr_or_mutant_selector.set_focus(str(mutant_position))
+    nbr_or_mutant_selector.set_distance(pack_radius)
+    nbr_or_mutant_selector.set_include_focus_in_subset(True)
+
+    #Select mutant and it's sequence neighbors
+    seq_nbr_or_mutant_selector = pyrosetta.rosetta.core.select.residue_selector.PrimarySequenceNeighborhoodSelector(ddg_bbnbrs, ddg_bbnbrs, mutant_selector, False)            
+
+    #Select mutant, it's seq neighbors and it's surrounding neighbors
+    seq_nbr_or_nbr_or_mutant_selector = pyrosetta.rosetta.core.select.residue_selector.OrResidueSelector()
+    seq_nbr_or_nbr_or_mutant_selector.add_residue_selector(seq_nbr_or_mutant_selector)
+    seq_nbr_or_nbr_or_mutant_selector.add_residue_selector(nbr_or_mutant_selector)    
+
+    if verbose:
+        logger.warning(f'mutant_selector: {pyrosetta.rosetta.core.select.residue_selector.selection_positions(mutant_selector.apply(working_pose))}')
+        logger.warning(f'all_nand_mutant_selector: {pyrosetta.rosetta.core.select.residue_selector.selection_positions(all_nand_mutant_selector.apply(working_pose))}')
+        logger.warning(f'nbr_or_mutant_selector: {pyrosetta.rosetta.core.select.residue_selector.selection_positions(nbr_or_mutant_selector.apply(working_pose))}')
+        logger.warning(f'seq_nbr_or_mutant_selector: {pyrosetta.rosetta.core.select.residue_selector.selection_positions(seq_nbr_or_mutant_selector.apply(working_pose))}')
+        logger.warning(f'seq_nbr_or_nbr_or_mutant_selector: {pyrosetta.rosetta.core.select.residue_selector.selection_positions(seq_nbr_or_nbr_or_mutant_selector.apply(working_pose))}')
+        
+
+    #Mutate residue and pack rotamers before relax
+    if list(pose.sequence())[mutant_position-1] != mutant_aa:
+        #generate packer task
+        tf = TaskFactory()
+        tf.push_back(operation.InitializeFromCommandline())
+        tf.push_back(operation.IncludeCurrent())
+        
+        #Set all residues except mutant to false for design and repacking
+        prevent_repacking_rlt = operation.PreventRepackingRLT()
+        prevent_subset_repacking = operation.OperateOnResidueSubset(prevent_repacking_rlt, all_nand_mutant_selector, False )
+        tf.push_back(prevent_subset_repacking)
+        
+        #Assign mutant residue to be designed and repacked
+        resfile_comm = pyrosetta.rosetta.protocols.task_operations.ResfileCommandOperation(mutant_selector, f"PIKAA {mutant_aa}")
+        resfile_comm.set_command(f"PIKAA {mutant_aa}")
+        tf.push_back(resfile_comm)
+
+        #Apply packing of rotamers of mutant
+        packer = pyrosetta.rosetta.protocols.minimization_packing.PackRotamersMover()
+        packer.score_function(pack_scorefxn)
+        packer.task_factory(tf)
+        logger.warning(tf.create_task_and_apply_taskoperations(working_pose))
+        packer.apply(working_pose)
+
+    #allow the movement for bb for the mutant + seq. neighbors, and sc for neigbor in range, seq. neighbor and mutant
+    movemap = pyrosetta.rosetta.core.select.movemap.MoveMapFactory()
+    movemap.all_jumps(False)
+    movemap.add_bb_action(pyrosetta.rosetta.core.select.movemap.mm_enable, seq_nbr_or_mutant_selector)
+    movemap.add_chi_action(pyrosetta.rosetta.core.select.movemap.mm_enable, seq_nbr_or_nbr_or_mutant_selector)
+    
+    #for checking if all has been selected correctly
+    if verbose:
+        mm  = movemap.create_movemap_from_pose(working_pose)
+        logger.warning(mm)
+
+    #Generate a TaskFactory
+    tf = TaskFactory()
+    tf.push_back(operation.InitializeFromCommandline())
+    tf.push_back(operation.IncludeCurrent())
+    #tf.push_back(operation.NoRepackDisulfides())
+
+    #prevent all residues except selected from design and repacking
+    prevent_repacking_rlt = operation.PreventRepackingRLT()
+    prevent_subset_repacking = operation.OperateOnResidueSubset(prevent_repacking_rlt, seq_nbr_or_nbr_or_mutant_selector, True )
+    tf.push_back(prevent_subset_repacking)
+
+    # allow selected residues only repacking (=switch off design)
+    restrict_repacking_rlt = operation.RestrictToRepackingRLT()
+    restrict_subset_repacking = operation.OperateOnResidueSubset(restrict_repacking_rlt , seq_nbr_or_nbr_or_mutant_selector, False)
+    tf.push_back(restrict_subset_repacking)
+
+
+    #Perform a FastRelax
+    fastrelax = pyrosetta.rosetta.protocols.relax.FastRelax()
+    fastrelax.set_scorefxn(pack_scorefxn)
+    
+    if cartesian:
+        fastrelax.cartesian(True)
+    if max_iter:
+        fastrelax.max_iter(relax_iter)
+        
+    fastrelax.set_task_factory(tf)
+    fastrelax.set_movemap_factory(movemap)
+    fastrelax.set_movemap_disables_packing_of_fixed_chi_positions(True)
+    
+    if verbose:
+        logger.warning(tf.create_task_and_apply_taskoperations(working_pose))
+        pre_time = time.time()
+    fastrelax.apply(working_pose)
+    if verbose:
+        post_time = time.time()
+        logger.warning(f'{post_time - start_time}, vs {pre_time - start_time}')
+    return working_pose
+
+
+
 ###############################################################################
 
 # @brief mutates and repacks (changed by Johanna - refference: Test Func 2)
 
 
-def mutate_residue(pose, mutant_position, mutant_aa, pack_radius, pack_scorefxn):
+def mutate_residue_repack(pose, mutant_position, mutant_aa, pack_radius, pack_scorefxn):
 
     if pose.is_fullatom() == False:
         IOError('mutate_residue only works with fullatom poses')
