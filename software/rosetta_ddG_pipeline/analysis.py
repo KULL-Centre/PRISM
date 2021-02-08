@@ -6,6 +6,7 @@ Date of last major changes: 2020-06-15
 
 """
 # Standard library imports
+import glob
 import logging as logger
 import os
 
@@ -84,8 +85,8 @@ def calc_all(folder, sys_name='', drop_outliers=True, drop_pro=True, lower_thres
     rosetta_prims_file = os.path.join(folder.output, f'prims_rosetta_XXX_{sys_name}.txt')
     rosetta_metadata, rosetta_dataframe = read_from_prism(rosetta_prims_file)
 
-    experimental_prims_file = os.path.join(
-        folder.input, 'prism_mave_input.txt')
+    experimental_prims_file = glob.glob(os.path.join(
+        folder.input, f'prism_*_input.txt'))[0]
     experimental_metadata, experimental_dataframe = read_from_prism(
         experimental_prims_file)
     experimental_dataframe = experimental_dataframe[~experimental_dataframe.variant.str.contains(r".\*", case=False, na=False)]

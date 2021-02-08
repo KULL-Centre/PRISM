@@ -56,8 +56,9 @@ def storeinputfuc(name, args, folder):
         input_dict['MUTATION_INPUT'] = None
 
     if args.PRISM_INPUT:
-        copyfile(args.PRISM_INPUT, join(folder.input, 'prism_mave_input.txt'))
-        input_dict['PRISM_INPUT'] = join(folder.input, 'prism_mave_input.txt')
+        prism_type = basename(args.PRISM_INPUT).split('_')[1]
+        copyfile(args.PRISM_INPUT, join(folder.input, f'prism_{prism_type}_input.txt'))
+        input_dict['PRISM_INPUT'] = join(folder.input, f'prism_{prism_type}_input.txt')
     else:
         input_dict['PRISM_INPUT'] = None
 
