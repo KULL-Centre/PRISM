@@ -30,12 +30,16 @@ def read_from_prism(primsfile):
     return meta_data, dataframe
 
 
-def prism_to_mut(primsfile, mutfile):
+def prism_to_mut(primsfile, mutfile, remove_multi_mut=True):
     # extracts the mutations from prims
     logger.info(
-        'Extract information from prismfile and converti it into dic & mutfile')
+        'Extract information from prismfile and converting it into dic & mutfile')
     parser = PrismParser()
     data = parser.read(primsfile)
+    if remove_multi_mut:
+        data.dataframe = data.dataframe[data.dataframe['n_mut']==1]
+    else:
+        logger.info('Multiple mutants from prism to mut not yet implemented')
     data_frame1 = data.dataframe
     with open(mutfile, 'w') as fp:
         searchlist = data_frame1["resi"].explode().unique()
