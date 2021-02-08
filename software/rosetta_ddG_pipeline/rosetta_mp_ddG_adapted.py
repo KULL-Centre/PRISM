@@ -136,7 +136,12 @@ def main(args):
     parser.add_option('--score_function',
                       action="store", default='franklin2019',
                       type=str,
-                      help="ddG score function. Default=franklin2019, other options are 'ref15', 'MP', 'ref15_memb' ", )
+                      help="ddG score function. Default=franklin2019, other options are 'ref15', 'mpframework_smooth_fa_2012', 'ref15_memb' ", )
+
+    parser.add_option('--repack_protocol',
+                      action="store", default='MP_repack',
+                      choices=['MP_repack', 'MP_flex_relax_ddG', 'MP_ori_design'],
+                      help="MP repacking algorithm (mainly for benchmarking). Default=MP_repack, other options are 'MP_flex_relax_ddG', 'MP_ori_design' ", )
 
     # parse options
     (options, args) = parser.parse_args(args=args[1:])
@@ -187,8 +192,17 @@ def main(args):
 
     # Repack the native rotamer and residues within the repack radius
     native_res = pose.residue(int(Options.res)).name1()
-    repacked_native = mutate_residue(
-        pose, int(Options.res), native_res, Options.repack_radius, sfxn)
+
+    logger.warning(f'repacking protocol: {Options.repack_protocol}')
+    if Options.repack_protocol == 'MP_flex_relax_ddG':
+      repacked_native = mutate_residue_flex_relax_algo(pose, int(Options.res), native_res, 
+          Options.repack_radius, sfxn, ddg_bbnbrs=1, verbose=True)
+    elif Options.repack_protocol == 'MP_ori_design':
+      repacked_native = mutate_residue_original(
+          pose, int(Options.res), native_res, Options.repack_radius, sfxn)
+    else:
+      repacked_native = mutate_residue_repack(
+          pose, int(Options.res), native_res, Options.repack_radius, sfxn)
 
     # to output score breakdown, start by printing the score labels in
     # the top of the file
@@ -215,7 +229,7 @@ def main(args):
                     fp2.write(f"{res_str},{rescaled_ddG},{ddGs[3]},{ddGs[1]},{ddGs[2]}\n")
                 else:
                     ddGs = compute_ddG(repacked_native, sfxn, int(
-                        Options.res), aa, Options.repack_radius, Options.output_breakdown)
+                        Options.res), aa, Options.repack_radius, Options.output_breakdown, repack_protocol=Options.repack_protocol)
                     res_str = str(native_res) + str(Options.res) + str(ddGs[0])
                     rescaled_ddG = ddGs[3]/Options.rescale
                     result_ddG.append(rescaled_ddG)
@@ -232,13 +246,21 @@ def main(args):
 # @brief Compute ddG of mutation in a protein at specified residue and AA position
 
 
-def compute_ddG(pose, sfxn, resnum, aa, repack_radius, sc_file):
+def compute_ddG(pose, sfxn, resnum, aa, repack_radius, sc_file, repack_protocol='repack'):
 
     # Score Native Pose
     native_score = sfxn(pose)
 
     # Perform Mutation at residue <resnum> to amino acid <aa>
-    mutated_pose = mutate_residue(pose, resnum, aa, repack_radius, sfxn)
+    if Options.repack_protocol == 'MP_flex_relax_ddG':
+      mutated_pose = mutate_residue_flex_relax_algo(
+          pose, resnum, aa, repack_radius, sfxn, ddg_bbnbrs=1, verbose=True)
+    elif Options.repack_protocol == 'MP_ori_design':
+      mutated_pose = mutate_residue_original(
+          pose, resnum, aa, repack_radius, sfxn)
+    else:
+      mutated_pose = mutate_residue_repack(
+          pose, resnum, aa, repack_radius, sfxn)
 
     # Score Mutated Pose
     mutant_score = sfxn(mutated_pose)
@@ -258,7 +280,7 @@ def compute_ddG(pose, sfxn, resnum, aa, repack_radius, sc_file):
 
 def mutate_residue(pose, mutant_position, mutant_aa, pack_radius, pack_scorefxn):
 
-    test_pose = mutate_residue_cart_algo(pose, mutant_position, mutant_aa, pack_radius, pack_scorefxn, ddg_bbnbrs=1, verbose=True)
+    test_pose = mutate_residue_flex_relax_algo(pose, mutant_position, mutant_aa, pack_radius, pack_scorefxn, ddg_bbnbrs=1, verbose=True)
     #test_pose = mutate_residue_repack(pose, mutant_position, mutant_aa, pack_radius, pack_scorefxn)
     #test_pose = mutate_residue_original(pose, mutant_position, mutant_aa, pack_radius, pack_scorefxn)
 
@@ -269,7 +291,7 @@ def mutate_residue(pose, mutant_position, mutant_aa, pack_radius, pack_scorefxn)
 # @brief mutates and repacks using the cartesian algorithm (changed by Johanna - refference: Test Func 4)
 
 
-def mutate_residue_cart_algo(pose, mutant_position, mutant_aa, pack_radius, pack_scorefxn, ddg_bbnbrs=1, verbose=False, cartesian=False, max_iter=None):
+def mutate_residue_flex_relax_algo(pose, mutant_position, mutant_aa, pack_radius, pack_scorefxn, ddg_bbnbrs=1, verbose=False, cartesian=False, max_iter=None):
     import time
     from pyrosetta.rosetta.core.pack.task import operation
     

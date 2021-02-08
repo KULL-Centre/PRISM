@@ -23,7 +23,7 @@ def rosetta_ddg_mp_pyrosetta(folder, mut_dict, SLURM=True, sys_name='',
                              add_output_name='ddG_additional.out', repack_radius=0,
                              lipids='DLPC', temperature=37.0, repeats=5,
                              score_file_name='scores', is_pH=0, pH_value=7, 
-                             score_function='franklin2019', lipacc_dic={}):
+                             score_function='franklin2019', repack_protocol='MP_repack', lipacc_dic={}):
     ddg_script_exec = os.path.join(
         rosetta_paths.path_to_stability_pipeline, 'rosetta_mp_ddG_adapted.py')
     input_struc = os.path.join(folder.ddG_input, 'input.pdb')
@@ -47,6 +47,7 @@ def rosetta_ddg_mp_pyrosetta(folder, mut_dict, SLURM=True, sys_name='',
                    f' --lipids {lipids}'
                    f' --temperature {temperature}'
                    f' --score_function {score_function}'
+                   f' --repack_protocol {repack_protocol}'
                    '')
 
     lipacc_array = []

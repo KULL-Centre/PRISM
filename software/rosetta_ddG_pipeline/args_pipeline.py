@@ -271,8 +271,15 @@ def parse_args2():
     parser.add_argument('--mp_energy_func',
                         default='franklin2019',
                         dest='MP_ENERGY_FUNC',
-                        help='MP Energy function (mainly for benchmarking).'
+                        help='MP Energy function (mainly for benchmarking). Examples: franklin2019, mpframework_smooth_fa_2012, ref2015_memb.'
                         )
+    parser.add_argument('--mp_repack_protocol',
+                        default='MP_repack',
+                        dest='MP_REPACK_PROTOCOL',
+                        choices=['MP_repack', 'MP_flex_relax_ddG', 'MP_ori_design'],
+                        help="MP repacking algorithm (mainly for benchmarking). Default=MP_repack, other options are 'MP_flex_relax_ddG', 'MP_ori_design' "
+                        )
+    
 
     args = parser.parse_args()
 
