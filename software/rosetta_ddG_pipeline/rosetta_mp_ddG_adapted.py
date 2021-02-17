@@ -174,7 +174,11 @@ def main(args):
     sfxn = pyrosetta.rosetta.core.scoring.ScoreFunction()
     # Create a smoothed membrane full atom energy function (pH 7 calculations)
     sfxn = create_score_function(Options.score_function)
-
+    if Options.score_function == 'franklin2019':
+        logger.info(f'get nonzero_weighted scoretypes: {sfxn.get_nonzero_weighted_scoretypes()}')
+        logger.info(f'{sfxn.get_weight(pyrosetta.rosetta.core.scoring.ScoreType.fa_water_to_bilayer)}')
+        sfxn.set_weight(pyrosetta.rosetta.core.scoring.ScoreType.fa_water_to_bilayer,1.5) 
+        logger.info(f'{sfxn.get_weight(pyrosetta.rosetta.core.scoring.ScoreType.fa_water_to_bilayer)}')
 
     # Load Pose, & turn on the membrane
     pose = pyrosetta.rosetta.core.import_pose.pose_from_file(Options.in_pdb)
