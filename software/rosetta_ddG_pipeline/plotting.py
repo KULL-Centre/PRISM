@@ -273,9 +273,9 @@ def regression_plot3(pd_dataframe, out_folder, variant_col='variant', exp_score_
 
 def plot_all(folder, sys_name='', drop_outliers=True):
 
-    rosetta_prims_file = os.path.join(folder.output, f'prims_rosetta_XXX_{sys_name}.txt')
+    rosetta_prism_file = os.path.join(folder.output, f'prism_rosetta_XXX_{sys_name}.txt')
 
-    merged_prism_file = os.path.join(folder.analysis, f'prims_merged_XXX_{sys_name}_merged.txt')
+    merged_prism_file = os.path.join(folder.analysis, f'prism_merged_XXX_{sys_name}_merged.txt')
     merged_metadata, merged_dataframe = read_from_prism(merged_prism_file)
     merged_dataframe_no_nan = merged_dataframe.dropna()
 

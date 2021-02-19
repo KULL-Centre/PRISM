@@ -88,18 +88,18 @@ def ddgs_from_dg(dictionary_of_dGs):
     return ddgs, ddgs_array
 
 
-def postprocess_rosetta_ddg_prism_copy(folder, output_name='ddG.out', sys_name='', uniprot='', version=1, prims_nr='XXX'):
+def postprocess_rosetta_ddg_prism_copy(folder, output_name='ddG.out', sys_name='', uniprot='', version=1, prism_nr='XXX'):
     # The ddg_file should only contain the data, looking like this:
     # M1T,-0.52452 # first value=variant, second=mean([var1-WT1,var2-WT2, ...]) - comma separated
     # M1Y,0.2352,0.2342,.... # it may contain more values like the var-mut of
     # each run
     ddg_file = os.path.join(folder.ddG_run, output_name)
-    prims_file = os.path.join(folder.ddG_output, f'prims_rosetta_{prims_nr}_{sys_name}.txt')
+    prism_file = os.path.join(folder.ddG_output, f'prism_rosetta_{prism_nr}_{sys_name}.txt')
     with open(os.path.join(folder.prepare_checking, 'fasta_file.fasta'), 'r') as fp:
         fp.readline()
         sequence = fp.readline().strip()
-    rosetta_to_prism(ddg_file, prims_file, sequence, rosetta_info=None,
+    rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None,
                      version=version, uniprot=uniprot, sys_name=sys_name)
     create_copy(os.path.join(folder.ddG_input, 'input.pdb'), folder.output, name=f'{sys_name}_final.pdb')
     create_copy(os.path.join(folder.prepare_checking, 'fasta_file.fasta'), folder.output, name=f'{sys_name}_seq.fasta')
-    create_copy(prims_file, folder.output)
+    create_copy(prism_file, folder.output)

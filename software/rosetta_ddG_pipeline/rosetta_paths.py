@@ -9,7 +9,7 @@ default_path = {
     'Rosetta_tools_path': '/sbinlab/software/Rosetta_tools/tools/',
     'Rosetta_database_path': '/sbinlab/software/Rosetta_2020_July_dc83fa/database/',
     'Rosetta_extension': 'linuxgccrelease',
-    'prims_parser': '/sbinlab/tiemann/repos/PRISM/prism/scripts',
+    'prism_parser': '/sbinlab/tiemann/repos/PRISM/prism/scripts',
 }
 
 
@@ -29,10 +29,10 @@ Rosetta_main_path = load_env('Rosetta_main_path')
 Rosetta_tools_path = load_env('Rosetta_tools_path')
 Rosetta_database_path = load_env('Rosetta_database_path')
 Rosetta_extension = load_env('Rosetta_extension')
-prims_parser = load_env('prims_parser')
+prism_parser = load_env('prism_parser')
 
 print('current env paths & exec:', TMalign_exec, muscle_exec, ddG_pipeline, Rosetta_main_path,
-      Rosetta_tools_path, Rosetta_database_path, Rosetta_extension, prims_parser)
+      Rosetta_tools_path, Rosetta_database_path, Rosetta_extension, prism_parser)
 
 # Rosetta paths
 path_to_rosetta = Rosetta_main_path

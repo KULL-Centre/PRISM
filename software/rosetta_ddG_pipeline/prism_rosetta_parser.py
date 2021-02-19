@@ -1,4 +1,4 @@
-"""prims_rosetta_parser.py contains functions to convert prism to mut & ddG to prims
+"""prism_rosetta_parser.py contains functions to convert prism to mut & ddG to prism
 
 Author: Johanna K.S. Tiemann
 Date of last major changes: 2020-05-01
@@ -18,24 +18,24 @@ import pandas as pd
 
 # Local application imports
 import rosetta_paths
-sys.path.insert(1, rosetta_paths.prims_parser)
+sys.path.insert(1, rosetta_paths.prism_parser)
 from PrismData import PrismParser, VariantData
 
 
-def read_from_prism(primsfile):
+def read_from_prism(prismfile):
     logger.info('Reads the prism file')
     parser = PrismParser()
-    dataframe = parser.read(primsfile).dataframe
-    meta_data = parser.read_header(primsfile)
+    dataframe = parser.read(prismfile).dataframe
+    meta_data = parser.read_header(prismfile)
     return meta_data, dataframe
 
 
-def prism_to_mut(primsfile, mutfile, remove_multi_mut=True):
-    # extracts the mutations from prims
+def prism_to_mut(prismfile, mutfile, remove_multi_mut=True):
+    # extracts the mutations from prism
     logger.info(
         'Extract information from prismfile and converting it into dic & mutfile')
     parser = PrismParser()
-    data = parser.read(primsfile)
+    data = parser.read(prismfile)
     if remove_multi_mut:
         data.dataframe = data.dataframe[data.dataframe['n_mut']==1]
     else:

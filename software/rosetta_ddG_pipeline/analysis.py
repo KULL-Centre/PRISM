@@ -82,19 +82,19 @@ def calc_cc(prismfile):
 
 def calc_all(folder, sys_name='', drop_outliers=True, drop_pro=True, lower_thres=True, threshold=10, fitted_exp=True, fitted_exp_10=True):
 
-    rosetta_prims_file = os.path.join(folder.output, f'prims_rosetta_XXX_{sys_name}.txt')
-    rosetta_metadata, rosetta_dataframe = read_from_prism(rosetta_prims_file)
+    rosetta_prism_file = os.path.join(folder.output, f'prism_rosetta_XXX_{sys_name}.txt')
+    rosetta_metadata, rosetta_dataframe = read_from_prism(rosetta_prism_file)
 
-    experimental_prims_file = glob.glob(os.path.join(
+    experimental_prism_file = glob.glob(os.path.join(
         folder.input, f'prism_*_input.txt'))[0]
     experimental_metadata, experimental_dataframe = read_from_prism(
-        experimental_prims_file)
+        experimental_prism_file)
     experimental_dataframe = experimental_dataframe[~experimental_dataframe.variant.str.contains(r".\*", case=False, na=False)]
     experimental_dataframe = experimental_dataframe[~experimental_dataframe.variant.str.contains(r".\=", case=False, na=False)]
-    merged_prism_file_raw = os.path.join(folder.analysis, f'prims_merged_XXX_{sys_name}_merged_raw.txt')
+    merged_prism_file_raw = os.path.join(folder.analysis, f'prism_merged_XXX_{sys_name}_merged_raw.txt')
 
-    shell_command = (f'python {os.path.join(rosetta_paths.prims_parser, "PrismData.py")} '
-                     f'{rosetta_prims_file} {experimental_prims_file} '
+    shell_command = (f'python {os.path.join(rosetta_paths.prism_parser, "PrismData.py")} '
+                     f'{rosetta_prism_file} {experimental_prism_file} '
                      f'--merge {merged_prism_file_raw}')
     subprocess.call(shell_command, shell=True)
     merged_metadata, merged_dataframe = read_from_prism(merged_prism_file_raw)
@@ -116,7 +116,7 @@ def calc_all(folder, sys_name='', drop_outliers=True, drop_pro=True, lower_thres
     }
 
     comment = ['Automatically generated file from stability_pipeline']
-    merged_prism_file = os.path.join(folder.analysis, f'prims_merged_XXX_{sys_name}_merged.txt')
+    merged_prism_file = os.path.join(folder.analysis, f'prism_merged_XXX_{sys_name}_merged.txt')
 
     write_prism(merged_metadata, merged_dataframe,
                 merged_prism_file, comment=comment)
@@ -128,7 +128,7 @@ def calc_all(folder, sys_name='', drop_outliers=True, drop_pro=True, lower_thres
         merged_dataframe_pro = merged_dataframe.copy()
         merged_dataframe_pro = merged_dataframe_pro[~merged_dataframe_pro.variant.str.contains(r".P", case=False, na=False, regex=True)]
         merged_dataframe_pro.reset_index(drop=True, inplace=True)
-        merged_prism_file3 = os.path.join(folder.analysis, f'prims_merged_XXX_{sys_name}_merged_no-pro.txt')
+        merged_prism_file3 = os.path.join(folder.analysis, f'prism_merged_XXX_{sys_name}_merged_no-pro.txt')
         write_prism(merged_metadata, merged_dataframe_pro,
                     merged_prism_file3, comment=comment)
 
@@ -139,7 +139,7 @@ def calc_all(folder, sys_name='', drop_outliers=True, drop_pro=True, lower_thres
     if drop_outliers:
         merged_dataframe_no_outlier = drop_numerical_outliers(
             merged_dataframe, variant_col="variant", score_col="predicted_ddG", z_thresh=3)
-        merged_prism_file2 = os.path.join(folder.analysis, f'prims_merged_XXX_{sys_name}_merged_no-outlier.txt')
+        merged_prism_file2 = os.path.join(folder.analysis, f'prism_merged_XXX_{sys_name}_merged_no-outlier.txt')
         write_prism(merged_metadata, merged_dataframe_no_outlier,
                     merged_prism_file2, comment=comment)
 
@@ -151,7 +151,7 @@ def calc_all(folder, sys_name='', drop_outliers=True, drop_pro=True, lower_thres
         merged_dataframe4 = merged_dataframe[merged_dataframe['predicted_ddG'] < threshold] 
         merged_dataframe_no_outlier = drop_numerical_outliers(
             merged_dataframe4, variant_col="variant", score_col="predicted_ddG", z_thresh=3)
-        merged_prism_file4 = os.path.join(folder.analysis, f'prims_merged_XXX_{sys_name}_merged_lower_thres.txt')
+        merged_prism_file4 = os.path.join(folder.analysis, f'prism_merged_XXX_{sys_name}_merged_lower_thres.txt')
         write_prism(merged_metadata, merged_dataframe_no_outlier,
                     merged_prism_file4, comment=comment)
 
@@ -167,7 +167,7 @@ def calc_all(folder, sys_name='', drop_outliers=True, drop_pro=True, lower_thres
         merged_dataframe5 = merged_dataframe5[merged_dataframe5['predicted_ddG'] > ranges[0]] 
         merged_dataframe_no_outlier = drop_numerical_outliers(
             merged_dataframe5, variant_col="variant", score_col="predicted_ddG", z_thresh=3)
-        merged_prism_file5 = os.path.join(folder.analysis, f'prims_merged_XXX_{sys_name}_merged_cut_exp_10.txt')
+        merged_prism_file5 = os.path.join(folder.analysis, f'prism_merged_XXX_{sys_name}_merged_cut_exp_10.txt')
         write_prism(merged_metadata, merged_dataframe_no_outlier,
                     merged_prism_file5, comment=comment)
 
@@ -182,7 +182,7 @@ def calc_all(folder, sys_name='', drop_outliers=True, drop_pro=True, lower_thres
         merged_dataframe5 = merged_dataframe5[merged_dataframe5['predicted_ddG'] > ranges[0]] 
         merged_dataframe_no_outlier = drop_numerical_outliers(
             merged_dataframe5, variant_col="variant", score_col="predicted_ddG", z_thresh=3)
-        merged_prism_file5 = os.path.join(folder.analysis, f'prims_merged_XXX_{sys_name}_merged_cut_exp.txt')
+        merged_prism_file5 = os.path.join(folder.analysis, f'prism_merged_XXX_{sys_name}_merged_cut_exp.txt')
         write_prism(merged_metadata, merged_dataframe_no_outlier,
                     merged_prism_file5, comment=comment)
 
