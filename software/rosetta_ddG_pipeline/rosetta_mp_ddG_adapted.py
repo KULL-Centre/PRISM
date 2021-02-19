@@ -316,6 +316,9 @@ def mutate_residue_flex_relax_algo(pose, mutant_position, mutant_aa, pack_radius
     #Cloning of the pose including all settings
     working_pose = pose.clone()
 
+    #Update residue neighbors for optimal performance
+    working_pose.update_residue_neighbors()
+
     #Select mutant residue
     mutant_selector = pyrosetta.rosetta.core.select.residue_selector.ResidueIndexSelector(mutant_position)
     
