@@ -141,7 +141,7 @@ def make_dssp_df(pdb_file, pdbID=None, chain='all'):
                 variant_list.append(arr)
     dssp_df = pd.DataFrame(data = variant_list[1:], columns=variant_list[0])
 
-    variant_dic = { 'SS': 'Secondary structure: H=alpha helix (4-12), B=isolated beta-bridge residue, E=Strand, G=3-10 helix, i=Pi helix, T=Turn, S=Bend, -=None', 
+    variant_dic = { 'SS': 'Secondary structure with H=alpha helix (4-12), B=isolated beta-bridge residue, E=Strand, G=3-10 helix, i=Pi helix, T=Turn, S=Bend, -=None', 
                     'ASA':'Accessible surface area',}
 
     return dssp_df, variant_dic
