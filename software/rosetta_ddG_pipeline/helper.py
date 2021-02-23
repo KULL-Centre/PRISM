@@ -347,6 +347,12 @@ def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism
         seqdic = sec_all['resdata']
         minkey = min(sec_all['resdata_reverse'], key=sec_all['resdata_reverse'].get)
         first_residue_number = int(minkey)
+#        first_residue_number = 1
+#        for elem in sec_all['strucdata'][chain_id][2]:
+#            if elem =='-':
+#                first_residue_number = first_residue_number+1
+#            else:
+#                break
 
     ddg_sorted_file = os.path.join(folder.ddG_run, f'{output_name[:-4]}_sorted_continuous{output_name[-4:]}')
     ddG_postprocessing(ddg_file, ddg_sorted_file, sec_all=None, startnr=1)
