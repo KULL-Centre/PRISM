@@ -54,6 +54,7 @@ try:
 
     sys.path.insert(1, os.path.join(base_script_path, 'prism/scripts/'))
     from PrismData import PrismParser, VariantData
+    from FillVariants import copy_wt_variants
 
     from prism_parser_helper import write_prism
 
@@ -91,12 +92,18 @@ def parse_args():
         default='all',
         help="Select specific chains. Default is 'all'. Multiple chains are separated by a comma: A,B"
         )
+    parser.add_argument('--fill', '-f',
+        type=str,
+        default='False',
+        help="Fill all variants according to WT. Default is 'False'."
+        )
+    
     
     args = parser.parse_args()
 
     if args.pdb_file == 'None':
         args.pdb_file = None
-
+    args.fill = bool(args.fill)
     try:
         os.makedirs(args.output_dir, exist_ok = True)
         logger.info(f"Directory {args.output_dir} created successfully")
@@ -185,7 +192,7 @@ def dfs_to_prism(df, meta, pdbID, output_dir='.', organism=None, uniprot_id=None
             add = -1
             first_residue_number = 1
 
-        seq_array = ['-']*(tmp_df['resnum'].max() + add + 1)
+        seq_array = ['X']*(tmp_df['resnum'].max() + add + 1)
         for i, row in tmp_df.iterrows():
             seq_array[row['resnum']+add] = row['var']
         sequence = "".join(seq_array)
@@ -193,7 +200,7 @@ def dfs_to_prism(df, meta, pdbID, output_dir='.', organism=None, uniprot_id=None
         if first_residue_number == 1:
             for ind, elem in enumerate(sequence):
                 first_residue_number = ind+1
-                if elem != '-':
+                if elem != 'X':
                     sequence=sequence[ind:]
                     break
 
@@ -226,7 +233,7 @@ def dfs_to_prism(df, meta, pdbID, output_dir='.', organism=None, uniprot_id=None
 
     return prism_file_list
 
-def pdb_to_prism(pdbID, pdb_file=None, output_dir='.', chain='all'):
+def pdb_to_prism(pdbID, pdb_file=None, output_dir='.', chain='all', fill=False):
 
     if not pdb_file:
         logger.info(f'PDB {pdbID} will be downloaded')
@@ -241,11 +248,78 @@ def pdb_to_prism(pdbID, pdb_file=None, output_dir='.', chain='all'):
     merged_dic = merge_dics([dssp_meta_dict])
     merged_df = merge_dfs([dssp_df])
 
+    if fill:
+        logger.info('Filling the dataframes')
+        merged_df = copy_wt_variants(merged_df)
+    
     logger.info('Generate prism file')
     file_list = dfs_to_prism(merged_df, merged_dic, pdbID, output_dir=output_dir, chain=chain)
 
     return file_list
 
+
+def pdb_renumb(pdb_input, output_dir=None, keepchain='all', chainorder=None, keep_ligand=None):
+    def run_through_lines(pdb_input, keepchain, fp2, resnum=1, lastresstring="", keep_ligand=None, atom_num=1):
+        with open(pdb_input, 'r') as fp:
+            if keep_ligand:
+                for line in fp:
+                    if (line[17:20] == keep_ligand) and (line[:6] in ['HETATM', 'ATOM  ']):
+                        resstring = line[22:27]
+                        if lastresstring == "" or resstring != lastresstring :
+                            if lastresstring != "" : 
+                                resnum += 1
+                            resnum = resnum
+                            lastresstring = resstring
+                        newresstring = str(resnum) + " "
+                        if len(newresstring) == 2: 
+                            newresstring = "   " + newresstring
+                        elif len(newresstring) == 3: 
+                            newresstring = "  " + newresstring
+                        elif len(newresstring) == 4: 
+                            newresstring = " " + newresstring
+                        new_line = 'HETATM' + ' '*(5-len(str(atom_num))) + str(atom_num) +line[11:22] + newresstring + line[27:]
+                        atom_num += 1
+                        fp2.write(new_line)
+            else:
+                for line in fp:
+                    if line[0:4] == "ATOM":
+                        chain = line[21]
+                        if chain == keepchain:
+                            resstring = line[22:27]
+                            if lastresstring == "" or resstring != lastresstring :
+                                if lastresstring != "" : 
+                                    resnum += 1
+                                resnum = resnum
+                                lastresstring = resstring
+                            newresstring = str(resnum) + " "
+                            if len(newresstring) == 2: 
+                                newresstring = "   " + newresstring
+                            elif len(newresstring) == 3: 
+                                newresstring = "  " + newresstring
+                            elif len(newresstring) == 4: 
+                                newresstring = " " + newresstring
+                            new_line = 'ATOM  ' + ' '*(5-len(str(atom_num))) + str(atom_num) +line[11:22] + newresstring + line[27:]
+                            atom_num += 1
+                            fp2.write(new_line)
+        return resnum, lastresstring, atom_num
+    
+    resnum = 1
+    lastresstring = ""
+    atom_num = 1
+    if output_dir:
+        out_pdb = os.path.join(output_dir, f'{os.path.basename(pdb_input)[:-4]}_renum.pdb')
+    else:
+        out_pdb = os.path.join(os.path.dirname(pdb_input), f'{os.path.basename(pdb_input)[:-4]}_renum.pdb')
+    with open(out_pdb, 'w') as fp2:
+        if chainorder:
+            for ref_chain in chainorder.split(','):
+                if (ref_chain in keepchain) or (keepchain == 'all'):
+                    resnum, lastresstring, atom_num = run_through_lines(pdb_input, ref_chain, fp2, resnum=resnum, lastresstring=lastresstring)
+        else:
+            resnum, lastresstring, atom_num = run_through_lines(pdb_input, keepchain, fp2, resnum=resnum, lastresstring=lastresstring, atom_num=atom_num)
+        if keep_ligand:
+            resnum, lastresstring, atom_num = run_through_lines(pdb_input, keepchain, fp2, resnum=resnum, lastresstring=lastresstring, atom_num=atom_num, keep_ligand=keep_ligand)
+    return out_pdb
 
 
 def main():
@@ -256,7 +330,7 @@ def main():
     args = parse_args()
     
     # generate pdb prism files
-    file_list = pdb_to_prism(args.pdbID, pdb_file=args.pdb_file, output_dir=args.output_dir, chain=args.chain)
+    file_list = pdb_to_prism(args.pdbID, pdb_file=args.pdb_file, output_dir=args.output_dir, chain=args.chain, fill=args.fill)
 
 
 

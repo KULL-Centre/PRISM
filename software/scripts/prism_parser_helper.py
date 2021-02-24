@@ -70,7 +70,7 @@ def read_from_prism(primsfile):
     return meta_data, dataframe
 
 
-def merge_prism(filenames, output_dir=None, threshold=0.9):
+def merge_prism(filenames, output_dir=None, identity=0.9, merge='outer', verbose=False):
     parser = PrismParser()
     data_list = []
     first_resn = 1
@@ -81,9 +81,9 @@ def merge_prism(filenames, output_dir=None, threshold=0.9):
     if 'first_residue_number' in (data_list[0]).metadata['protein']:
         first_resn = int((data_list[0]).metadata['protein']['first_residue_number'])
         
-    merged_data = data_list[0].merge(data_list[1:], target_seq, first_resn, merge='outer', 
-                                     min_identity=threshold, min_coverage=.01, mismatch="remove", 
-                                     allow_inserts=True, allow_deletions=True)
+    merged_data = data_list[0].merge(data_list[1:], target_seq, first_resn, merge=merge, 
+                                     min_identity=identity, min_coverage=.01, mismatch="remove", 
+                                     allow_inserts=True, allow_deletions=True, verbose=verbose)
 
     if output_dir:
         prism_file = os.path.join(output_dir, 'prism_merged.txt')
