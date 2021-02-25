@@ -56,6 +56,8 @@ def prism_to_mut(prismfile, mutfile, remove_multi_mut=True):
 
 
 def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=1, sys_name='', first_residue_number=1):
+    
+    sequence = sequence.replace('-', 'X')
     # create prism file with rosetta values
     logger.info('Create prism file with rosetta ddG values')
     variant = []

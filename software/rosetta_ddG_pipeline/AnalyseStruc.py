@@ -45,6 +45,7 @@ def get_structure_parameters(outpath,structure_id,printing=True):
     }
     resdata={};strucdata={};count=0;exceptions = 0
     resdata_reverse={}
+    resdata_reverse2={}
     model = structure[0]
     
     #Making resdata
@@ -56,11 +57,13 @@ def get_structure_parameters(outpath,structure_id,printing=True):
                     residue_letter = aminocodes[residue.get_resname()]
                     resdata[count] = residue_letter,residue.get_id()[1],chain.get_id()
                     resdata_reverse[residue.get_id()[1]] = count
+                    resdata_reverse2[f'{residue.get_id()[1]};{chain.get_id()}'] = count
                 except: 
                     residue_letter = str(residue.get_resname())
                     exceptions += 1
                     resdata[count] = residue_letter,str(residue.get_id()[1]),chain.get_id()
                     resdata_reverse[residue.get_id()[1]] = count
+                    resdata_reverse2[f'{residue.get_id()[1]};{chain.get_id()}'] = count
     #Counts special residues such as DNA 
     if printing == True:
         print("Special residues in structure = ",exceptions)
@@ -138,7 +141,7 @@ def get_structure_parameters(outpath,structure_id,printing=True):
         align[str(chain)] = alignments
 
     #Saving in a dictionary
-    structure_dic = {"resdata": resdata, "resdata_reverse":resdata_reverse, "strucdata": strucdata, "DBREF":dbref, "alignment":align}
+    structure_dic = {"resdata": resdata, "resdata_reverse":resdata_reverse, "resdata_reverse2":resdata_reverse2, "strucdata": strucdata, "DBREF":dbref, "alignment":align}
 
     ##Creating overview txt file
     #with open(outpath +"/structure_{}.txt".format(name),'w') as strucfile:
