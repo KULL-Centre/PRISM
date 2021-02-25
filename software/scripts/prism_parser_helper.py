@@ -44,7 +44,7 @@ try:
     if os.uname()[1].startswith('fend'):
         base_script_path = '/groups/sbinlab/tiemann/repos/PRISM/'
     else:
-        base_script_path = '/groups/sbinlab/tiemann/repos/PRISM/'
+        base_script_path = '/storage1/tiemann/dev/repos/'
 
     sys.path.insert(1, os.path.join(base_script_path, 'prism/scripts/'))
     from PrismData import PrismParser, VariantData
@@ -85,12 +85,38 @@ def merge_prism(filenames, output_dir=None, identity=0.9, merge='outer', verbose
                                      min_identity=identity, min_coverage=.01, mismatch="remove", 
                                      allow_inserts=True, allow_deletions=True, verbose=verbose)
 
+    prism_file = None
     if output_dir:
-        prism_file = os.path.join(output_dir, 'prism_merged.txt')
+        prism_file = os.path.join(output_dir, 'prism_merged_files.txt')
         write_prism(merged_data.metadata, merged_data.dataframe, prism_file, comment='')
 
-    return merged_data
+    return merged_data, prism_file
 
+
+def merge_prism_right(filenames, output_dir=None, identity=0.9, verbose=False):
+    parser = PrismParser()
+    data_list = []
+    first_resn = 1
+    for file in filenames:
+        data = parser.read(file)
+        data_list.append(data)
+    data_list[0].dataframe = data_list[0].dataframe[['variant', 'aa_ref', 'resi', 'aa_var', 'n_mut']]#[0:0]
+    data_list[0].metadata['columns'] = {}
+    target_seq = (data_list[0]).metadata['protein']['sequence']
+    if 'first_residue_number' in (data_list[0]).metadata['protein']:
+        first_resn = int((data_list[0]).metadata['protein']['first_residue_number'])
+
+    merged_data = data_list[0].merge(data_list[1:], target_seq, first_resn, merge='outer', 
+                                     min_identity=identity, min_coverage=.01, mismatch="remove", 
+                                     allow_inserts=True, allow_deletions=True, verbose=verbose)
+    merged_data.dataframe = merged_data.dataframe.dropna(subset=merged_data.metadata['columns'].keys(), how='all').reset_index(drop=True)    
+    prism_file = None
+    if output_dir:
+        prism_file = os.path.join(output_dir, 'prism_merged_files.txt')
+        write_prism(merged_data.metadata, merged_data.dataframe, prism_file, comment='')
+        
+    return merged_data, prism_file
+        
 
 def merge_prism_df(data_list):
     target_seq = (data_list[0]).metadata['protein']['sequence']

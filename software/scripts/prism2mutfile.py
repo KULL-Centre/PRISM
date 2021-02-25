@@ -7,13 +7,14 @@
 """
 
 # Standard library imports
+from argparse import ArgumentParser
 import logging as log
 import os
-import pandas as pd
 import sys
 
 
 # Third party imports
+import pandas as pd
 
 
 # Local application imports
@@ -44,11 +45,11 @@ try:
     if os.uname()[1].startswith('fend'):
         base_script_path = '/groups/sbinlab/tiemann/repos/PRISM/'
     else:
-        base_script_path = '/groups/sbinlab/tiemann/repos/PRISM/'
+        base_script_path = '/storage1/tiemann/dev/repos'
 
     sys.path.insert(1, os.path.join(base_script_path, 'prism/scripts/'))
-    from pdb_to_prism import pdb_to_prism, download_pdb, dfs_to_prism, pdb_renumb
-    from prism_parser_helper import merge_prism, read_from_prism
+    from pdb_to_prism import pdb_to_prism, pdb_renumb
+    from prism_parser_helper import merge_prism, read_from_prism, merge_prism_right
 
 except (ModuleNotFoundError, ImportError) as e:
     logger.error("{} fileure".format(type(e)))
@@ -56,6 +57,73 @@ except (ModuleNotFoundError, ImportError) as e:
 else:
     logger.info("Import succeeded")
 
+    
+def parse_args():
+    """
+    Argument parser function
+    """
+
+    parser = ArgumentParser( description="" )
+
+    # Initiating/setup command line arguments
+    parser.add_argument( 'prism',
+        type=str,
+        help="Input prism file"
+        )
+    parser.add_argument( '--pdb_file', '-i',
+        type=str,
+        default='None',
+        help="Optional input pdb file. If provided, the input prism file will be aligned and only overlapping AA are selected. Multi mutants are only kept if all residues are present in pdb. First chain will be used for alignment."
+        )
+    parser.add_argument('--pdb2rosetta', '-r',
+        default=False,
+        type=lambda s: s.lower() in ['true', 't', 'yes', '1'],
+        help="Converts the provided PDB to Rosetta numbering before alignment"
+        )
+    parser.add_argument('--output_dir', '-o',
+        type=str,
+        default='.',
+        help="Directory where files will be written. Default is the execution directory."
+        )
+    parser.add_argument('--drop_multi_mut', '-d',
+        default=False,
+        type=lambda s: s.lower() in ['true', 't', 'yes', '1'],
+        help="Removes all multi mutants"
+        )
+    parser.add_argument('--inclWT', '-w',
+        default=True,
+        type=lambda s: s.lower() in ['false', 'f', 'no', '0'],
+        help="Includes/adds WT variants"
+        )
+    parser.add_argument('--mut_output', '-m',
+        choices=['all', 'pipeline_combined_mut', 'combined_mut',
+                 'residue_files'],
+        default='all',
+        help=('Define what mutfile output should be created:\n'
+              '\tall: all 3 options are created \n'
+              '\tpipeline_combined_mut: combined mutation input file (no Rosetta input) for current stability pipeline \n'
+              '\tcombined_mut: one single Rosetta mutfile including all mutations \n'
+              '\tresidue_files: one Rosetta mutfile for each residue saved in a single file in a created directory \n'
+              'Default value: all'
+              )
+        )
+    
+    args = parser.parse_args()
+
+    if args.pdb_file == 'None':
+        args.pdb_file = None
+    args.inclWT = bool(args.inclWT)
+    args.drop_multi_mut = bool(args.drop_multi_mut)
+    args.pdb2rosetta = bool(args.pdb2rosetta)
+    if args.pdb2rosetta==True and args.pdb_file==None:
+        logger.warning(f'pdb2rosetta set to True but no PDB provided. This step will be skiped')
+        args.pdb2rosetta = False
+    try:
+        os.makedirs(args.output_dir, exist_ok = True)
+        logger.info(f"Directory {args.output_dir} created successfully")
+    except OSError as error:
+        logger.warning(f"Directory {args.output_dir} can not be created")
+    return args
 
 
 def prism2mut(input_file, output_dir='.', pipeline_combined_mut=True, combined_mut=True, residue_files=False, inclWT=True, drop_multi_mut=False):
@@ -179,3 +247,45 @@ def prism2mut(input_file, output_dir='.', pipeline_combined_mut=True, combined_m
 
                 
                 
+def main():
+    """
+    Main function called as default at the end.
+    """
+    # get user input arguments
+    args = parse_args()
+    
+    
+    if args.pdb_file:
+        if args.pdb2rosetta:
+            args.pdb_file = pdb_renumb(args.pdb_file, output_dir=args.output_dir)
+        # generate pdb prism files
+        pdb_prism = pdb_to_prism('infile', pdb_file=args.pdb_file, output_dir=args.output_dir, fill=True)[0]
+        
+        meta_data, dataframe = read_from_prism(args.prism)
+        if meta_data['variants']['width'] == 'single mutants':
+            variantdata, args.prism = merge_prism([pdb_prism, args.prism], output_dir=args.output_dir, 
+                                   identity=0.5, merge='inner', verbose=True)
+        else:
+            variantdata, args.prism = merge_prism_right([pdb_prism, args.prism], output_dir=args.output_dir, 
+                                   identity=0.5, verbose=True)
+    
+    residue_files = False
+    pipeline_combined_mut = False
+    combined_mut = False
+    if args.mut_output == 'pipeline_combined_mut':
+        pipeline_combined_mut = True
+    elif args.mut_output == 'combined_mut':
+        combined_mut = True
+    elif args.mut_output == 'residue_files':
+        residue_files = True
+    elif args.mut_output == 'all':
+        residue_files = True
+        pipeline_combined_mut = True
+        combined_mut = True
+
+    prism2mut(args.prism, output_dir=args.output_dir, pipeline_combined_mut=pipeline_combined_mut, 
+              combined_mut=combined_mut, residue_files=residue_files, inclWT=args.inclWT, drop_multi_mut=args.drop_multi_mut)
+    logger.info('Conversion sucessful!')
+
+if __name__ == '__main__':
+    main()

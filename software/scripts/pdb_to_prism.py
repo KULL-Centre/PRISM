@@ -284,7 +284,7 @@ def pdb_renumb(pdb_input, output_dir=None, keepchain='all', chainorder=None, kee
                 for line in fp:
                     if line[0:4] == "ATOM":
                         chain = line[21]
-                        if chain == keepchain:
+                        if chain == keepchain or keepchain=='all':
                             resstring = line[22:27]
                             if lastresstring == "" or resstring != lastresstring :
                                 if lastresstring != "" : 
