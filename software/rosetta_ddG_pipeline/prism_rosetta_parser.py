@@ -22,39 +22,6 @@ sys.path.insert(1, rosetta_paths.prism_parser)
 from PrismData import PrismParser, VariantData
 
 
-def read_from_prism(prismfile):
-    logger.info('Reads the prism file')
-    parser = PrismParser()
-    dataframe = parser.read(prismfile).dataframe
-    meta_data = parser.read_header(prismfile)
-    return meta_data, dataframe
-
-
-def prism_to_mut(prismfile, mutfile, remove_multi_mut=True):
-    # extracts the mutations from prism
-    logger.info(
-        'Extract information from prismfile and converting it into dic & mutfile')
-    parser = PrismParser()
-    data = parser.read(prismfile)
-    if remove_multi_mut:
-        data.dataframe = data.dataframe[data.dataframe['n_mut']==1]
-    else:
-        logger.info('Multiple mutants from prism to mut not yet implemented')
-    data_frame1 = data.dataframe
-    with open(mutfile, 'w') as fp:
-        searchlist = data_frame1["resi"].explode().unique()
-        cleanedList = [x for x in searchlist if str(x) != 'nan']
-        for resid in cleanedList:
-            data_frame2 = data.get_var_at_pos(resid)
-            native = data_frame2['aa_ref'].explode().unique()[0]
-            variants = ''.join([''.join(map(str, l))
-                                for l in data_frame2['aa_var']]) + native
-            regex = re.compile('[^a-zA-Z]')
-            final_variants = ''.join(set(regex.sub('', variants)))
-            fp.write(f'{native} {resid} {final_variants} \n')
-    return 
-
-
 def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=1, sys_name='', first_residue_number=1):
     
     sequence = sequence.replace('-', 'X')

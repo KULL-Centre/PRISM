@@ -28,7 +28,6 @@ import mp_prepare
 import mp_ddG
 from pdb_to_fasta_seq import pdb_to_fasta_seq
 from plotting import plot_all
-from prism_rosetta_parser import read_from_prism
 import rosetta_paths
 import run_modes
 import storeinputs
@@ -156,9 +155,7 @@ def predict_stability(args):
             lipacc_dic = mp_prepare.mp_lipid_acc_resi(structure_instance.path_to_cleaned_pdb, folder.prepare_mp_lipacc, folder.prepare_mp_span, thickness=args.MP_THICKNESS, SLURM=False)
 
         # Making mutfiles and checks
-        if args.MUT_MODE == 'prism':
-            new_mut_input = os.path.join(folder.prepare_input, 'input_mutfile')
-        elif args.MUT_MODE == 'mut_file':
+        if args.MUT_MODE == 'mut_file':
             new_mut_input = input_dict['MUTATION_INPUT']
         else:
             new_mut_input = None
@@ -276,11 +273,7 @@ def predict_stability(args):
 #            folder.ddG_run, '.sc', folder.ddG_output, 'output.sc')
 
     if mode == 'analysis':
-        if args.PRISM_INPUT:
-            calc_all(folder, sys_name=name)
-            plot_all(folder, sys_name=name)
-        else:
-            logger.warning('No reference prism file provided. No analysis performed.')
+        logger.warning('No reference prism file provided. No analysis performed.')
 
     # Full SLURM execution
     if mode == 'proceed' or mode == 'fullrun':

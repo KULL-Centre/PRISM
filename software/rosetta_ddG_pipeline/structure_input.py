@@ -22,7 +22,6 @@ import pdb_to_fasta_seq
 import rosetta_paths
 from AnalyseStruc import get_structure_parameters
 from helper import read_fasta
-from prism_rosetta_parser import prism_to_mut
 
 class structure:
     
@@ -187,12 +186,7 @@ class structure:
 
         if mutation_input != "proceed":
 
-            if mutation_mode == 'prism':
-                self.logger.info(f'Convert prism file: {self.input_dict["PRISM_INPUT"]}')
-                path_to_mutation_input = self.folder.prepare_input    
-                mutation_input=os.path.join(path_to_mutation_input,'mutation_input.txt') 
-                prism_to_mut(self.input_dict['PRISM_INPUT'], mutation_input)
-            elif mutation_mode == 'all':
+            if mutation_mode == 'all':
                 self.make_mut_input()
                 path_to_mutation_input = self.folder.prepare_input    
                 mutation_input=os.path.join(path_to_mutation_input,'mutation_input.txt') 
@@ -217,7 +211,7 @@ class structure:
                         try:
                             residue_number_ros = self.struc_dic['resdata_reverse'][residue_number] 
                         except:
-                            self.logger.warning(f"Residue {residue_number} present in the mutation/prism file is not resolved in the structure. No output generated for it.")
+                            self.logger.warning(f"Residue {residue_number} present in the mutation file is not resolved in the structure. No output generated for it.")
                             continue
                     self.logger.debug(f"{residue_number_ros}  {residue_number}")
                     #This checks that the position in the mutfile is the correct one in the fasta sequence
