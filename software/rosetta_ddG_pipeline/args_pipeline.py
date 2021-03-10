@@ -81,7 +81,7 @@ def parse_args2():
                         )
     parser.add_argument('--mode', '-i',
                         choices=['print', 'create', 'proceed',
-                                 'fullrun', 'relax', 'ddg_calculation', 'analysis'],
+                                 'fullrun', 'relax', 'ddg_calculation'],
                         default='create',
                         dest='MODE',
                         help=('Mode to run:\n'
@@ -90,7 +90,6 @@ def parse_args2():
                               '\tproceed: Starts calculations with created run files (incl. relax and ddG calculation) \n'
                               '\trelax: Starts relax calculations with created run files\n'
                               '\tddg_calculation: Starts ddg_calculation calculations with created run files\n'
-                              '\tanalysis: Does standard analysis like heatmap plotting\n'
                               '\tfullrun: runs full pipeline\n'
                               'Default value: create'
                               )

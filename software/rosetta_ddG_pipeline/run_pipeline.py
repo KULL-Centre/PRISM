@@ -272,9 +272,6 @@ def predict_stability(args):
 #        ddg_output_score = find_copy(
 #            folder.ddG_run, '.sc', folder.ddG_output, 'output.sc')
 
-    if mode == 'analysis':
-        logger.warning('No reference prism file provided. No analysis performed.')
-
     # Full SLURM execution
     if mode == 'proceed' or mode == 'fullrun':
         # Start relax calculation
