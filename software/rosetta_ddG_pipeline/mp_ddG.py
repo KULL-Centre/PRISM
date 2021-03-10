@@ -23,7 +23,72 @@ def rosetta_ddg_mp_pyrosetta(folder, mut_dict, SLURM=True, sys_name='',
                              add_output_name='ddG_additional.out', repack_radius=0,
                              lipids='DLPC', temperature=37.0, repeats=5,
                              score_file_name='scores', is_pH=0, pH_value=7, 
-                             score_function='franklin2019', repack_protocol='MP_repack', lipacc_dic={}):
+                             score_function='franklin2019', repack_protocol='MP_repack', lipacc_dic='mp_lipid_acc_dic.json', mutfiles='mutfiles'):
+    ddg_script_exec = os.path.join(
+        rosetta_paths.path_to_stability_pipeline, 'rosetta_mp_ddG_mutfile.py')
+    input_struc = os.path.join(folder.ddG_input, 'input.pdb')
+    output_file = os.path.join(folder.ddG_run, output_name)
+    score_file = os.path.join(folder.ddG_run, f'{score_file_name}.sc')
+    for root, dirs, files in os.walk(folder.ddG_input):
+        for file in files:
+            if file.endswith('.span'):
+                input_span = os.path.join(root, file)
+
+    ddG_command = (f'python3 {ddg_script_exec}'
+                   f' --in_pdb {input_struc}'
+                   f' --in_span {input_span}'
+                   f' --out {output_file}'
+                   f' --out_add {add_output_name}'
+                   f' --repack_radius {repack_radius}'
+                   f' --output_breakdown {score_file}'
+                   f' --include_pH {is_pH}'
+                   f' --pH_value {pH_value}'
+                   f' --repeats {repeats}'
+                   f' --lipids {lipids}'
+                   f' --temperature {temperature}'
+                   f' --score_function {score_function}'
+                   f' --repack_protocol {repack_protocol}'
+                   f' --lip_has_pore {lipacc_dic}'
+                   '')
+
+
+    if SLURM:
+        path_to_sbatch = os.path.join(folder.ddG_input, 'rosetta_ddg.sbatch')
+        if mutfiles == '':
+            mutfiles = os.path.join(folder.ddG_input, 'mutfiles')
+        muts = os.listdir(mutfiles)
+
+        with open(path_to_sbatch, 'w') as fp:
+            fp.write(f'''#!/bin/sh 
+#SBATCH --job-name={sys_name}_MPddg
+#SBATCH --array=0-{len(muts)-1}
+#SBATCH --time=48:00:00
+#SBATCH --mem 5000
+#SBATCH --partition={partition}
+#SBATCH --nice 
+LST=(`ls {mutfiles}/mutfile*`)
+OFFSET=0 
+INDEX=$((OFFSET+SLURM_ARRAY_TASK_ID))
+echo $INDEX
+
+# launching rosetta 
+''')
+            new_ddG_command = ddG_command + \
+                ' --mutfile ${LST[$INDEX]} '
+            fp.write(new_ddG_command)
+        logger.info(path_to_sbatch)
+    else:
+        logger.warn("need to write the script!")
+        sys.exit()
+
+
+
+def rosetta_ddg_mp_pyrosetta_old(folder, mut_dict, SLURM=True, sys_name='',
+                             partition='sbinlab', output_name='ddG.out', 
+                             add_output_name='ddG_additional.out', repack_radius=0,
+                             lipids='DLPC', temperature=37.0, repeats=5,
+                             score_file_name='scores', is_pH=0, pH_value=7, 
+                             score_function='franklin2019', repack_protocol='MP_repack', lipacc_dic={}, mutfiles='mutfiles'):
     ddg_script_exec = os.path.join(
         rosetta_paths.path_to_stability_pipeline, 'rosetta_mp_ddG_adapted.py')
     input_struc = os.path.join(folder.ddG_input, 'input.pdb')
@@ -52,7 +117,10 @@ def rosetta_ddg_mp_pyrosetta(folder, mut_dict, SLURM=True, sys_name='',
 
     lipacc_array = []
     for elem in mut_dict.keys():
-      lipacc_array.append(lipacc_dic[int(elem)])
+        lip_arry = []
+        for resi in elem.split('_'):
+            lip_arry.append(lipacc_dic[int(resi)])
+        lipacc_array.append("_".join(lip_arry))
 
     if SLURM:
         path_to_sbatch = os.path.join(folder.ddG_input, 'rosetta_ddg.sbatch')
