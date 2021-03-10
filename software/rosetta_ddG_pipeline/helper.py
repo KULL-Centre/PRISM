@@ -258,12 +258,18 @@ def ddG_postprocessing(in_ddg, out_ddg, sec_all=None, startnr=1, chain_id='A'):
         for line in fp2:
             line_str = line.split(',')
             if sec_all:
-                new_number = str(seqdic[line_str[0][1:-1]][1]-start_resi)
-                new_variant = f'{line_str[0][0]}{new_number}{line_str[0][-1]},{line_str[1]},{line_str[2]}'
-                result_list.append([new_number, line_str[0][-1], new_variant])
+                new_number = []
+                new_variant = []
+                for resi in line_str[0].split(':'):
+                    new_numb = str(seqdic[resi[1:-1]][1]-start_resi)
+                    new_number.append(new_numb)
+                    new_variant.append(f'{resi[0]}{new_numb}{resi[-1]}')
+                new_variants = f'{":".join(new_variant)},{line_str[1]},{line_str[2]}'
+                result_list.append([new_number[-1], line_str[0][-1], new_variants])
             else:
-                result_list.append([line_str[0][1:-1], line_str[0][-1], line])
-                
+                resinumber = line_str[0].split(':')[0][1:-1]
+                resivari = line_str[0].split(':')[0][-1]
+                result_list.append([resinumber, resivari, line])
         sorted_list = sorted(result_list, key=lambda x: (int(x[0]), x[1]))
         for elem in sorted_list:
             fp3.write(f'{elem[-1]}')
@@ -383,7 +389,7 @@ def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism
             shift_pdb_numbering(pdb_file, pdb_gap_shifted_file, sec_all, startnr=first_residue_number)
             create_copy(pdb_gap_shifted_file, folder.output, name=f'{sys_name}_final_gap_shifted.pdb')
         else:
-            logger.warn(f'original pdb-numbering starts with residue-nr <=0 ({first_residue_number}) - no fitting file generated')
+            logger.warn(f'original pdb-numbering starts with residue-nr <=1 ({first_residue_number}) - no fitting file generated')
         ddg_gap_file = os.path.join(folder.ddG_run, f'{output_name[:-4]}_gap{output_name[-4:]}')
         ddG_postprocessing(ddg_file, ddg_gap_file, sec_all=sec_all, startnr=1, chain_id=chain_id)
         prism_gap_file = os.path.join(folder.ddG_output, f'prism_rosetta_{prism_nr}_{sys_name}-gap.txt')
