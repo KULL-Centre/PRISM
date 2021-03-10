@@ -19,7 +19,6 @@ import sys
 
 # Local application imports
 from AnalyseStruc import get_structure_parameters
-from analysis import calc_all
 from args_pipeline import parse_args2
 from checks import compare_mutfile, pdbxmut
 from folders import folder2
@@ -27,7 +26,6 @@ from helper import create_symlinks, create_copy, find_copy, get_mut_dict, read_f
 import mp_prepare
 import mp_ddG
 from pdb_to_fasta_seq import pdb_to_fasta_seq
-from plotting import plot_all
 import rosetta_paths
 import run_modes
 import storeinputs

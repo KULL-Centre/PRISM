@@ -50,7 +50,6 @@ Run modes directs the actions of the pipeline
     proceed: Starts calculations with created run files (incl. relax and ddG calculation) 
     relax: Starts relax calculations with created run files 
     ddg_calculation: Starts ddg_calculation calculations with created run files
-    analysis: Does standard analysis like heatmap plotting 
     fullrun: runs full pipeline                              
 'Default value: create'
 ```

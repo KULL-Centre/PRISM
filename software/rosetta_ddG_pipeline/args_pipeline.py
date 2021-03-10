@@ -277,7 +277,7 @@ def parse_args2():
     args = parser.parse_args()
 
     # Handle user input errors
-    elif args.MUT_MODE == 'mut_file' and args.MUTATION_INPUT == None:
+    if args.MUT_MODE == 'mut_file' and args.MUTATION_INPUT == None:
       parser.error("Please specify a mutation input file or change the mutation mode.")
     if args.MUTATION_INPUT != None:
       print('Mutation mode changed to mut_file')
