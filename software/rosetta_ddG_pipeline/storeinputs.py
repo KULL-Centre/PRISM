@@ -10,8 +10,8 @@ Date of last major changes: 2020-04-15
 # Standard library imports
 from json import dump
 import logging as logger
-from os.path import join, basename
-from shutil import copyfile
+from os.path import join, basename, isdir
+from shutil import copyfile, copytree, rmtree
 
 
 def storeinputfuc(name, args, folder):
@@ -50,7 +50,12 @@ def storeinputfuc(name, args, folder):
         folder.input, basename(args.STRUC_FILE))
 
     if args.MUTATION_INPUT:
-        copyfile(args.MUTATION_INPUT, join(folder.input, 'mutations'))
+        if isdir(args.MUTATION_INPUT):
+            if isdir(join(folder.input, 'mutations')):
+                rmtree(join(folder.input, 'mutations'))
+            copytree(args.MUTATION_INPUT, join(folder.input, 'mutations'))
+        else:
+            copyfile(args.MUTATION_INPUT, join(folder.input, 'mutations'))
         input_dict['MUTATION_INPUT'] = join(folder.input, 'mutations')
     else:
         input_dict['MUTATION_INPUT'] = None

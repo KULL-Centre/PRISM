@@ -8,7 +8,7 @@ Date of last major changes: 2020-04-15
 """
 
 # Standard library imports
-
+import glob
 import logging 
 import os
 import subprocess
@@ -193,32 +193,56 @@ class structure:
 
             mutate = {}
             self.logger.debug("Printing point mutations [WT, ResID, Mutations]")
-            with open(mutation_input) as f:
-                for line in f:
-                    lines = line.split()
-                    if len(lines) == 3:
-                        (wt, key, val) = line.split()
-                        mutate[int(key)] = wt, val
-                        c = mutate[int(key)][0] in list(mutate[int(key)][1])
-                        if c == True:
-                            mutate[int(key)] = wt, val
-                        else:
-                            val = wt + val
-                            mutate[int(key)] = wt, val
-                    else:
-                        key=[]
+            if os.path.isdir(mutation_input):
+                for file in glob.glob(os.path.join(mutation_input, '*')):
+                    with open(file, 'r') as f:
+                        total_muts = int(next(f).split()[1].split('\\n')[0])
+                        lines = f.readlines()
+                        key = file.split('/')[-1].split("mutfile")[1].split('_')
+                        res_nums = len(key)
+                        mutsNum = int(total_muts/res_nums)
                         wt=[]
                         val=[]
-                        for multi_muts in range(int(len(lines)/3)):
-                            wt_single = lines[0+(3*multi_muts)]
-                            var_single = lines[2+(3*multi_muts)]
-                            if not wt_single in var_single:
-                                var_single += wt_single
-                            #var_single = ''.join(set(var_single))
-                            wt.append(wt_single)
-                            key.append(lines[1+(3*multi_muts)])
-                            val.append(var_single)
+                        key2 = []
+            
+                        for resii in range(res_nums):
+                            single_var = []
+                            for singlemuts in range(mutsNum):
+                                target = lines[(1+1*singlemuts)+(resii+(singlemuts*res_nums))].split()
+                                single_keys = target[1]
+                                single_var.append(target[2])
+                                single_wt = target[0]
+                            val.append("".join(single_var))
+                            key2.append(single_keys)
+                            wt.append(single_wt)
                         mutate["_".join(key)] = "_".join(wt), "_".join(val)
+            else:
+                with open(mutation_input) as f:
+                    for line in f:
+                        lines = line.split()
+                        if len(lines) == 3:
+                            (wt, key, val) = line.split()
+                            mutate[int(key)] = wt, val
+                            c = mutate[int(key)][0] in list(mutate[int(key)][1])
+                            if c == True:
+                                mutate[int(key)] = wt, val
+                            else:
+                                val = wt + val
+                                mutate[int(key)] = wt, val
+                        else:
+                            key=[]
+                            wt=[]
+                            val=[]
+                            for multi_muts in range(int(len(lines)/3)):
+                                wt_single = lines[0+(3*multi_muts)]
+                                var_single = lines[2+(3*multi_muts)]
+                                if not wt_single in var_single:
+                                    var_single += wt_single
+                                #var_single = ''.join(set(var_single))
+                                wt.append(wt_single)
+                                key.append(lines[1+(3*multi_muts)])
+                                val.append(var_single)
+                            mutate["_".join(key)] = "_".join(wt), "_".join(val)
             with open(os.path.join(self.folder.prepare_cleaning, 'mutation_clean.txt'), 'w') as fp:
                 i = 10000
                 for residue_number in mutate:
