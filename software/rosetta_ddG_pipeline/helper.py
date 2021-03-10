@@ -245,25 +245,31 @@ def read_slurms(path, printing=False):
                     cancelfile.write(n+'\n')
 
 
-def ddG_postprocessing(in_ddg, out_ddg, sec_all=None, startnr=1):
+def ddG_postprocessing(in_ddg, out_ddg, sec_all=None, startnr=1, chain_id='A'):
     """does sort the variants and optionally shifts the numbering, depending on the sequence"""
     result_list = []
     start_resi = 0
     if sec_all:
         seqdic = sec_all['resdata']
         if startnr ==1:
-            minkey = min(sec_all['resdata_reverse'], key=sec_all['resdata_reverse'].get)
-            start_resi = int(minkey)-1
+            resis = [ int(key.split(';')[0]) for key in sec_all['resdata_reverse2'].keys() if key.split(';')[1] == chain_id]
+            start_resi = min(resis)-1
     with open(in_ddg, 'r') as fp2, open(out_ddg, 'w') as fp3:
         for line in fp2:
             line_str = line.split(',')
             if sec_all:
-                new_number = str(seqdic[line_str[0][1:-1]][1]-start_resi)
-                new_variant = f'{line_str[0][0]}{new_number}{line_str[0][-1]},{line_str[1]},{line_str[2]}'
-                result_list.append([new_number, line_str[0][-1], new_variant])
+                new_number = []
+                new_variant = []
+                for resi in line_str[0].split(':'):
+                    new_numb = str(seqdic[resi[1:-1]][1]-start_resi)
+                    new_number.append(new_numb)
+                    new_variant.append(f'{resi[0]}{new_numb}{resi[-1]}')
+                new_variants = f'{":".join(new_variant)},{line_str[1]},{line_str[2]}'
+                result_list.append([new_number[-1], line_str[0][-1], new_variants])
             else:
-                result_list.append([line_str[0][1:-1], line_str[0][-1], line])
-                
+                resinumber = line_str[0].split(':')[0][1:-1]
+                resivari = line_str[0].split(':')[0][-1]
+                result_list.append([resinumber, resivari, line])
         sorted_list = sorted(result_list, key=lambda x: (int(x[0]), x[1]))
         for elem in sorted_list:
             fp3.write(f'{elem[-1]}')
@@ -331,7 +337,7 @@ def add_ddG_to_bfactor(in_pdb, in_ddg, out_pdb, threshold=0.0):
                 fp3.write(line)
 
 
-def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prims_nr='XXX', chain_id='A', output_gaps=False, bfac=True):
+def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism_nr='XXX', chain_id='A', output_gaps=False, bfac=True):
     ddg_file = os.path.join(folder.ddG_run, output_name)
     pdb_file_raw = os.path.join(folder.ddG_input, 'input.pdb')
     if bfac:
@@ -347,44 +353,49 @@ def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prims
         seqdic = sec_all['resdata']
         minkey = min(sec_all['resdata_reverse'], key=sec_all['resdata_reverse'].get)
         first_residue_number = int(minkey)
+        first_residue_number = 1
+        for elem in sec_all['strucdata'][chain_id][2]:
+            if elem in ['-', 'x', 'X']:
+                first_residue_number = first_residue_number+1
+            else:
+                break
 
     ddg_sorted_file = os.path.join(folder.ddG_run, f'{output_name[:-4]}_sorted_continuous{output_name[-4:]}')
-    ddG_postprocessing(ddg_file, ddg_sorted_file, sec_all=None, startnr=1)
-    prims_file = os.path.join(folder.ddG_output, f'prims_rosetta_{prims_nr}_{sys_name}.txt')
-    rosetta_to_prism(ddg_sorted_file, prims_file, rosetta_seq, rosetta_info=None,
+    ddG_postprocessing(ddg_file, ddg_sorted_file, sec_all=None, startnr=1, chain_id=chain_id)
+    prism_file = os.path.join(folder.ddG_output, f'prism_rosetta_{prism_nr}_{sys_name}.txt')
+    rosetta_to_prism(ddg_sorted_file, prism_file, rosetta_seq, rosetta_info=None,
                      version=version, sys_name=sys_name, first_residue_number=1)
-    create_copy(prims_file, folder.output)
+    create_copy(prism_file, folder.output)
     create_copy(pdb_file, folder.output, name=f'{sys_name}_final.pdb')
 
     if output_gaps:
         ini_d = True
         sequence = ''
         for elem in sequence_pdbnbr:
-          if elem == '-' and ini_d:
+          if elem in ['-', 'X', 'x'] and ini_d:
             pass
           else:
             ini_d = False
             sequence += elem
         if first_residue_number >1:
             ddg_shifted_gap_file = os.path.join(folder.ddG_run, f'{output_name[:-4]}_gap-shifted{output_name[-4:]}')
-            prims_gap_shifted_file = os.path.join(folder.ddG_output, f'prims_rosetta_{prims_nr}_{sys_name}_gap-shifted.txt')
-            ddG_postprocessing(ddg_file, ddg_shifted_gap_file, sec_all=sec_all, startnr=first_residue_number)
-            rosetta_to_prism(ddg_shifted_gap_file, prims_gap_shifted_file, sequence, rosetta_info=None,
+            prism_gap_shifted_file = os.path.join(folder.ddG_output, f'prism_rosetta_{prism_nr}_{sys_name}_gap-shifted.txt')
+            ddG_postprocessing(ddg_file, ddg_shifted_gap_file, sec_all=sec_all, startnr=first_residue_number, chain_id=chain_id)
+            rosetta_to_prism(ddg_shifted_gap_file, prism_gap_shifted_file, sequence, rosetta_info=None,
                              version=version, sys_name=sys_name, first_residue_number=first_residue_number)
-            create_copy(prims_gap_shifted_file, folder.output)
+            create_copy(prism_gap_shifted_file, folder.output)
 
             pdb_gap_shifted_file = os.path.join(folder.ddG_output, 'relaxed_gap_shifted.pdb')
             shift_pdb_numbering(pdb_file, pdb_gap_shifted_file, sec_all, startnr=first_residue_number)
             create_copy(pdb_gap_shifted_file, folder.output, name=f'{sys_name}_final_gap_shifted.pdb')
         else:
-            logger.warn(f'original pdb-numbering starts with residue-nr <=0 ({first_residue_number}) - no fitting file generated')
+            logger.warn(f'original pdb-numbering starts with residue-nr <=1 ({first_residue_number}) - no fitting file generated')
         ddg_gap_file = os.path.join(folder.ddG_run, f'{output_name[:-4]}_gap{output_name[-4:]}')
-        print(sequence)
-        ddG_postprocessing(ddg_file, ddg_gap_file, sec_all=sec_all, startnr=1)
-        prims_gap_file = os.path.join(folder.ddG_output, f'prims_rosetta_{prims_nr}_{sys_name}-gap.txt')
-        rosetta_to_prism(ddg_gap_file, prims_gap_file, sequence, rosetta_info=None,
+        ddG_postprocessing(ddg_file, ddg_gap_file, sec_all=sec_all, startnr=1, chain_id=chain_id)
+        prism_gap_file = os.path.join(folder.ddG_output, f'prism_rosetta_{prism_nr}_{sys_name}-gap.txt')
+        rosetta_to_prism(ddg_gap_file, prism_gap_file, sequence, rosetta_info=None,
                          version=version, sys_name=sys_name, first_residue_number=1)
-        create_copy(prims_gap_file, folder.output)
+        create_copy(prism_gap_file, folder.output)
 
         pdb_gap_file = os.path.join(folder.ddG_output, 'relaxed_gap.pdb')
         shift_pdb_numbering(pdb_file, pdb_gap_file, sec_all, startnr=1)

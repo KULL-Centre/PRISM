@@ -53,20 +53,14 @@ def parse_args2():
                         help='mutation input file'
                         )
     parser.add_argument('--mutate_mode', '-mm',
-                        choices=['all', 'prism', 'mut_file'],
+                        choices=['all', 'mut_file'],
                         default='all',
                         dest='MUT_MODE',
                         help=('Mutation modes:\n'
                               '\tall: mutate residues in pdb \n'
-                              '\tprism: mutate variants present in prism file \n'
-                              '\tmut_file: mutate variants present in mutation file \n'
+                              '\tmut_file: mutate variants present in pipeline mutation file, rosetta mut-file or directory with rosetta mut-files \n'
                               'Default value: all'
                               )
-                        )
-    parser.add_argument('--prism', '-p',
-                        default=None,
-                        dest='PRISM_INPUT',
-                        help='Prism input file to extract mutations'
                         )
     parser.add_argument('--outputpath', '-o',
                         default=os.path.join(os.getcwd(), 'Run'),
@@ -87,7 +81,7 @@ def parse_args2():
                         )
     parser.add_argument('--mode', '-i',
                         choices=['print', 'create', 'proceed',
-                                 'fullrun', 'relax', 'ddg_calculation', 'analysis'],
+                                 'fullrun', 'relax', 'ddg_calculation'],
                         default='create',
                         dest='MODE',
                         help=('Mode to run:\n'
@@ -96,7 +90,6 @@ def parse_args2():
                               '\tproceed: Starts calculations with created run files (incl. relax and ddG calculation) \n'
                               '\trelax: Starts relax calculations with created run files\n'
                               '\tddg_calculation: Starts ddg_calculation calculations with created run files\n'
-                              '\tanalysis: Does standard analysis like heatmap plotting\n'
                               '\tfullrun: runs full pipeline\n'
                               'Default value: create'
                               )
@@ -271,15 +264,20 @@ def parse_args2():
     parser.add_argument('--mp_energy_func',
                         default='franklin2019',
                         dest='MP_ENERGY_FUNC',
-                        help='MP Energy function (mainly for benchmarking).'
+                        help='MP Energy function (mainly for benchmarking). Examples: franklin2019, mpframework_smooth_fa_2012, ref2015_memb.'
                         )
+    parser.add_argument('--mp_repack_protocol',
+                        default='MP_repack',
+                        dest='MP_REPACK_PROTOCOL',
+                        choices=['MP_repack', 'MP_flex_relax_ddG', 'MP_ori_design'],
+                        help="MP repacking algorithm (mainly for benchmarking). Default=MP_repack, other options are 'MP_flex_relax_ddG', 'MP_ori_design' "
+                        )
+    
 
     args = parser.parse_args()
 
     # Handle user input errors
-    if args.MUT_MODE == 'prism' and args.PRISM_INPUT == None:
-      parser.error("Please specify a prism input file or change the mutation mode.")
-    elif args.MUT_MODE == 'mut_file' and args.MUTATION_INPUT == None:
+    if args.MUT_MODE == 'mut_file' and args.MUTATION_INPUT == None:
       parser.error("Please specify a mutation input file or change the mutation mode.")
     if args.MUTATION_INPUT != None:
       print('Mutation mode changed to mut_file')

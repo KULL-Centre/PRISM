@@ -36,20 +36,20 @@ def rosetta_cartesian_read(pathtofile, protein_seq='abcd'):
     cartesian_scores = {}
     for line in score_data:
         score_fields = line.split()
-        description = score_fields[2]
-        three_letter_code = description[-4:-1]
-        one_letter = aminocodes[three_letter_code]
-        res_number = description[4:-4]
-        dg = float(score_fields[3])
-
-        key = protein_seq[int(res_number) - 1] + res_number + one_letter
-
+        descriptions = score_fields[2][4:-1]
+        key = []
+        for description in descriptions.split('_'):
+            three_letter_code = description[-3:]
+            one_letter = aminocodes[three_letter_code]
+            res_number = description[:-3]
+            dg = float(score_fields[3])
+            key.append(protein_seq[int(res_number) - 1] + res_number + one_letter)
+        key = ":".join(key)
         if key in cartesian_scores:
             cartesian_scores[key].append(dg)
 
         else:
-            cartesian_scores[protein_seq[int(res_number) - 1 ] + res_number
-                             + one_letter] = [dg]
+            cartesian_scores[key] = [dg]
     return cartesian_scores
 
 
@@ -58,27 +58,36 @@ def ddgs_from_dg(dictionary_of_dGs):
     
     #Creating dictionary of WT dGs
     wt_dGs = {}
-    for entry in dictionary_of_dGs:
-        if entry[0] == entry[-1]:
-            residue_number = entry[1:-1]
-            for item in dictionary_of_dGs[entry]:
+    for entrys in dictionary_of_dGs:
+        residue_numbers = []
+        for entry in entrys.split(':'):
+            if entry[0] == entry[-1]:
+                residue_numbers.append(entry[1:-1])
+            else:
+                residue_numbers = []
+        if len(residue_numbers) > 0:
+            residue_number = ":".join(residue_numbers)
+            for item in dictionary_of_dGs[entrys]:
                 if residue_number in wt_dGs:
                     wt_dGs[residue_number].append(float(item))
                 else:
                     wt_dGs[residue_number] = [float(item)]
     
     #Creating dictionary of variant dGs
-    ddgs = {}
-    ddgs_array = []
     dgs_as_floats = {}
     for mutation in dictionary_of_dGs:
         dgs_as_floats[mutation] = []
         for value in dictionary_of_dGs[mutation]:
             dgs_as_floats[mutation].append(float(value))
-    
+
+    ddgs = {}
+    ddgs_array = []
     # (variant - WT) / 2.9
     for mutation in dictionary_of_dGs:
-        residue_number = mutation[1:-1]
+        residue_numbers = []
+        for mutations in mutation.split(':'):
+            residue_numbers.append(mutations[1:-1])
+        residue_number = ":".join(residue_numbers)
         ddg = []
         for indi in range(len(dgs_as_floats[mutation])):
             ddg.append((dgs_as_floats[mutation][indi]-np.mean(wt_dGs[residue_number]))/2.9)
@@ -88,18 +97,18 @@ def ddgs_from_dg(dictionary_of_dGs):
     return ddgs, ddgs_array
 
 
-def postprocess_rosetta_ddg_prism_copy(folder, output_name='ddG.out', sys_name='', uniprot='', version=1, prims_nr='XXX'):
+def postprocess_rosetta_ddg_prism_copy(folder, output_name='ddG.out', sys_name='', uniprot='', version=1, prism_nr='XXX'):
     # The ddg_file should only contain the data, looking like this:
     # M1T,-0.52452 # first value=variant, second=mean([var1-WT1,var2-WT2, ...]) - comma separated
     # M1Y,0.2352,0.2342,.... # it may contain more values like the var-mut of
     # each run
     ddg_file = os.path.join(folder.ddG_run, output_name)
-    prims_file = os.path.join(folder.ddG_output, f'prims_rosetta_{prims_nr}_{sys_name}.txt')
+    prism_file = os.path.join(folder.ddG_output, f'prism_rosetta_{prism_nr}_{sys_name}.txt')
     with open(os.path.join(folder.prepare_checking, 'fasta_file.fasta'), 'r') as fp:
         fp.readline()
         sequence = fp.readline().strip()
-    rosetta_to_prism(ddg_file, prims_file, sequence, rosetta_info=None,
+    rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None,
                      version=version, uniprot=uniprot, sys_name=sys_name)
     create_copy(os.path.join(folder.ddG_input, 'input.pdb'), folder.output, name=f'{sys_name}_final.pdb')
     create_copy(os.path.join(folder.prepare_checking, 'fasta_file.fasta'), folder.output, name=f'{sys_name}_seq.fasta')
-    create_copy(prims_file, folder.output)
+    create_copy(prism_file, folder.output)

@@ -19,7 +19,6 @@ import sys
 
 # Local application imports
 from AnalyseStruc import get_structure_parameters
-from analysis import calc_all
 from args_pipeline import parse_args2
 from checks import compare_mutfile, pdbxmut
 from folders import folder2
@@ -27,8 +26,6 @@ from helper import create_symlinks, create_copy, find_copy, get_mut_dict, read_f
 import mp_prepare
 import mp_ddG
 from pdb_to_fasta_seq import pdb_to_fasta_seq
-from plotting import plot_all
-from prism_rosetta_parser import read_from_prism
 import rosetta_paths
 import run_modes
 import storeinputs
@@ -156,9 +153,7 @@ def predict_stability(args):
             lipacc_dic = mp_prepare.mp_lipid_acc_resi(structure_instance.path_to_cleaned_pdb, folder.prepare_mp_lipacc, folder.prepare_mp_span, thickness=args.MP_THICKNESS, SLURM=False)
 
         # Making mutfiles and checks
-        if args.MUT_MODE == 'prism':
-            new_mut_input = os.path.join(folder.prepare_input, 'input_mutfile')
-        elif args.MUT_MODE == 'mut_file':
+        if args.MUT_MODE == 'mut_file':
             new_mut_input = input_dict['MUTATION_INPUT']
         else:
             new_mut_input = None
@@ -233,7 +228,8 @@ def predict_stability(args):
                 folder, mut_dic, SLURM=True, sys_name=name, partition=args.SLURM_PARTITION,
                 repack_radius=args.BENCH_MP_REPACK, lipids=args.MP_LIPIDS,
                 temperature=args.MP_TEMPERATURE, repeats=args.BENCH_MP_REPEAT,
-                is_pH=is_pH, pH_value=pH_value, lipacc_dic=lipacc_dic, score_function=args.MP_ENERGY_FUNC)
+                is_pH=is_pH, pH_value=pH_value, lipacc_dic=lipacc_dic, score_function=args.MP_ENERGY_FUNC,
+                repack_protocol=args.MP_REPACK_PROTOCOL)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
                 folder, chain_id=args.CHAIN, sys_name=name, output_name='ddG.out', partition=partition, output_gaps=args.GAPS_OUTPUT)
@@ -273,13 +269,6 @@ def predict_stability(args):
         run_modes.ddg_calculation(folder,parse_relax_process_id=None)
 #        ddg_output_score = find_copy(
 #            folder.ddG_run, '.sc', folder.ddG_output, 'output.sc')
-
-    if mode == 'analysis':
-        if args.PRISM_INPUT:
-            calc_all(folder, sys_name=name)
-            plot_all(folder, sys_name=name)
-        else:
-            logger.warning('No reference prism file provided. No analysis performed.')
 
     # Full SLURM execution
     if mode == 'proceed' or mode == 'fullrun':

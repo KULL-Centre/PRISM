@@ -47,7 +47,6 @@ class folder2:
         self.relax = check_paths(join(self.output_path, 'relax'))
         self.ddG = check_paths(join(self.output_path, 'ddG'))
         self.output = check_paths(join(self.output_path, 'output'))
-        self.analysis = check_paths(join(self.output_path, 'analysis'))
 
         # Subfolders
         self.prepare_input = check_paths(join(self.prepare, 'input'))

@@ -1,4 +1,4 @@
-"""prims_rosetta_parser.py contains functions to convert prism to mut & ddG to prims
+"""prism_rosetta_parser.py contains functions to convert prism to mut & ddG to prism
 
 Author: Johanna K.S. Tiemann
 Date of last major changes: 2020-05-01
@@ -18,40 +18,13 @@ import pandas as pd
 
 # Local application imports
 import rosetta_paths
-sys.path.insert(1, rosetta_paths.prims_parser)
+sys.path.insert(1, rosetta_paths.prism_parser)
 from PrismData import PrismParser, VariantData
 
 
-def read_from_prism(primsfile):
-    logger.info('Reads the prism file')
-    parser = PrismParser()
-    dataframe = parser.read(primsfile).dataframe
-    meta_data = parser.read_header(primsfile)
-    return meta_data, dataframe
-
-
-def prism_to_mut(primsfile, mutfile):
-    # extracts the mutations from prims
-    logger.info(
-        'Extract information from prismfile and converti it into dic & mutfile')
-    parser = PrismParser()
-    data = parser.read(primsfile)
-    data_frame1 = data.dataframe
-    with open(mutfile, 'w') as fp:
-        searchlist = data_frame1["resi"].explode().unique()
-        cleanedList = [x for x in searchlist if str(x) != 'nan']
-        for resid in cleanedList:
-            data_frame2 = data.get_var_at_pos(resid)
-            native = data_frame2['aa_ref'].explode().unique()[0]
-            variants = ''.join([''.join(map(str, l))
-                                for l in data_frame2['aa_var']]) + native
-            regex = re.compile('[^a-zA-Z]')
-            final_variants = ''.join(set(regex.sub('', variants)))
-            fp.write(f'{native} {resid} {final_variants} \n')
-    return 
-
-
 def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=1, sys_name='', first_residue_number=1):
+    
+    sequence = sequence.replace('-', 'X')
     # create prism file with rosetta values
     logger.info('Create prism file with rosetta ddG values')
     variant = []
@@ -68,7 +41,7 @@ def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=
 
     data = {
         'variant': pd.Series(variant),
-        'norm_ddG': pd.Series(norm_ddG_value),
+        'mean_ddG': pd.Series(norm_ddG_value),
         'std_ddG': pd.Series(std_ddG_value),
         #      'ddG': pd.Series(ddG_value),
         'n_mut': 1,  # pd.Series([1 for x in range(len(variant))]),
@@ -107,8 +80,8 @@ def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=
         # columns is dependent on the data. different conditions go into
         # different PRISM_files
         "columns": {
-            "norm_ddG": "mean Rosetta ddG values normalized to WT",
-            "std_ddG": "std Rosetta ddG values normalized to WT",
+            "mean_ddG": "mean Rosetta ddG values (mean((MUT-mean(WT))/2.9)); division only for soluble proteins",
+            "std_ddG": "std Rosetta ddG values (std((MUT-mean(WT))/2.9))",
             #            "ddG": "Rosetta ddG values",
         },
     }
