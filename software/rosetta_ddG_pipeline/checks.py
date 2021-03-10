@@ -53,11 +53,16 @@ def compare_mutfile(fasta_seq, path_to_run_folder,prepare_checking,mutation_inpu
             res = a[residue_number+1]
             if len(res.split("_")) == 1:
                 residue_number_ros = alignment_dic[int(res)]
-                mutfile = open(os.path.join(mutfiles_folder,f'mutfile{str(residue_number_ros):0>5}'), 'r')
+                mut_file = os.path.join(mutfiles_folder,f'mutfile{str(residue_number_ros):0>5}')
             else:
 
-                mutfile = open(os.path.join(mutfiles_folder,f'mutfile{res}'), 'r')
-            
+                mut_file = os.path.join(mutfiles_folder,f'mutfile{res}')
+            try:
+                mutfile = open(mut_file, 'r')
+            except Exception as e:
+                print("ERROR: input mutfile does not follow PDB numbering. Change before adding applying the pipeline")
+                error=True
+                break
             f= mutfile.readlines()
             fasta_seq_list=list(fasta_seq)
             for indi, resi in enumerate(res.split("_")):
