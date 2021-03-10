@@ -78,7 +78,6 @@ def pdbxmut(input_mutfiles,structure_dic):
         with open(os.path.join(input_mutfiles,files),'r') as mutfiles:
             mutfile_lines = mutfiles.readlines()
             mutations = (mutfile_lines[2:40:2])
-
         while decs > 2:
             try:
                 mut_res=(mutations[1])
