@@ -41,7 +41,7 @@ def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=
 
     data = {
         'variant': pd.Series(variant),
-        'norm_ddG': pd.Series(norm_ddG_value),
+        'mean_ddG': pd.Series(norm_ddG_value),
         'std_ddG': pd.Series(std_ddG_value),
         #      'ddG': pd.Series(ddG_value),
         'n_mut': 1,  # pd.Series([1 for x in range(len(variant))]),
@@ -80,8 +80,8 @@ def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=
         # columns is dependent on the data. different conditions go into
         # different PRISM_files
         "columns": {
-            "norm_ddG": "mean Rosetta ddG values normalized to WT",
-            "std_ddG": "std Rosetta ddG values normalized to WT",
+            "mean_ddG": "mean Rosetta ddG values (mean((MUT-mean(WT))/2.9)); division only for soluble proteins",
+            "std_ddG": "std Rosetta ddG values (std((MUT-mean(WT))/2.9))",
             #            "ddG": "Rosetta ddG values",
         },
     }
