@@ -195,45 +195,87 @@ class structure:
             self.logger.debug("Printing point mutations [WT, ResID, Mutations]")
             with open(mutation_input) as f:
                 for line in f:
-                    (wt, key, val) = line.split()
-                    mutate[int(key)] = wt, val
-                    c = mutate[int(key)][0] in list(mutate[int(key)][1])
-                    if c == True:
+                    lines = line.split()
+                    if len(lines) == 3:
+                        (wt, key, val) = line.split()
                         mutate[int(key)] = wt, val
+                        c = mutate[int(key)][0] in list(mutate[int(key)][1])
+                        if c == True:
+                            mutate[int(key)] = wt, val
+                        else:
+                            val = wt + val
+                            mutate[int(key)] = wt, val
                     else:
-                        val = wt + val
-                        mutate[int(key)] = wt, val
+                        key=[]
+                        wt=[]
+                        val=[]
+                        for multi_muts in range(int(len(lines)/3)):
+                            wt_single = lines[0+(3*multi_muts)]
+                            var_single = lines[2+(3*multi_muts)]
+                            if not wt_single in var_single:
+                                var_single += wt_single
+                            #var_single = ''.join(set(var_single))
+                            wt.append(wt_single)
+                            key.append(lines[1+(3*multi_muts)])
+                            val.append(var_single)
+                        mutate["_".join(key)] = "_".join(wt), "_".join(val)
             with open(os.path.join(self.folder.prepare_cleaning, 'mutation_clean.txt'), 'w') as fp:
+                i = 10000
                 for residue_number in mutate:
                     if mutation_mode == 'all':
                         residue_number_ros = alignment_dic[residue_number]
                     else:
                         try:
-                            residue_number_ros = self.struc_dic['resdata_reverse'][residue_number] 
-                        except:
+                            residue_number_ros = []
+                            for res_num in str(residue_number).split('_'):
+                                residue_number_ros.append(self.struc_dic['resdata_reverse'][int(res_num)])
+                        except Exception as e:
                             self.logger.warning(f"Residue {residue_number} present in the mutation file is not resolved in the structure. No output generated for it.")
                             continue
                     self.logger.debug(f"{residue_number_ros}  {residue_number}")
                     #This checks that the position in the mutfile is the correct one in the fasta sequence
-                    check = self.fasta_seq[residue_number_ros-1] in list(
-                        mutate[residue_number][0])
-                    if check == False:
-                        check2 = True
-                        self.logger.warning(f'Missmatch{self.fasta_seq[residue_number_ros-1]}, {residue_number},{mutate[residue_number][0]}')
-                    final_list = []
-                    for num in mutate[residue_number][1]:                    
-                        if num not in final_list:
-                            final_list.append(num)                
-                    self.logger.debug(f"{mutate[residue_number][0]} {residue_number}  {''.join(final_list)}")
+                    if len(residue_number_ros)==1:
+                        residue_number_ros = int(residue_number_ros[0])
+                        check = self.fasta_seq[residue_number_ros-1] in list(
+                            mutate[residue_number][0])
+                        if check == False:
+                            check2 = True
+                            self.logger.warning(f'Missmatch{self.fasta_seq[residue_number_ros-1]}, {residue_number},{mutate[residue_number][0]}')
+                        final_list = []
+                        for num in mutate[residue_number][1]:                    
+                            if num not in final_list:
+                                final_list.append(num)                
+                        self.logger.debug(f"{mutate[residue_number][0]} {residue_number}  {''.join(final_list)}")
 
-                    with open(os.path.join(self.folder.prepare_mutfiles, f'mutfile{str(residue_number_ros):0>5}'), 'w') as mutfile:
-                        mutfile.write('total ' + str(len(final_list)))
-                        mut_dic[str(residue_number_ros)] = "".join(final_list)
-                        fp.write(f'{self.fasta_seq[residue_number_ros - 1]} {residue_number_ros} {"".join(final_list)}\n')
-                        for AAtype in final_list:
-                            mutfile.write('\n1\n')
-                            mutfile.write(self.fasta_seq[
-                                          residue_number_ros - 1] + ' ' + str(residue_number_ros) + ' ' + AAtype)
+                        with open(os.path.join(self.folder.prepare_mutfiles, f'mutfile{str(residue_number_ros):0>5}'), 'w') as mutfile:
+                            mutfile.write('total ' + str(len(final_list)))
+                            mut_dic[str(residue_number_ros)] = "".join(final_list)
+                            fp.write(f'{self.fasta_seq[residue_number_ros - 1]} {residue_number_ros} {"".join(final_list)}\n')
+                            for AAtype in final_list:
+                                mutfile.write('\n1\n')
+                                mutfile.write(self.fasta_seq[
+                                              residue_number_ros - 1] + ' ' + str(residue_number_ros) + ' ' + AAtype)
+                    else:
+                        for res_index, residue in enumerate(residue_number_ros):
+                            check = self.fasta_seq[int(residue)-1] in list(
+                                mutate[residue_number][0].split("_")[res_index])
+                            if check == False:
+                                check2 = True
+                                self.logger.warning(f'Missmatch{self.fasta_seq[int(residue)-1]}, {residue},{mutate[int(residue)][0]}')
+                            fp.write(f'{self.fasta_seq[int(residue) - 1]} {int(residue)} {mutate[residue_number][1].split("_")[res_index]} ')
+                        fp.write('\n')
+
+                        with open(os.path.join(self.folder.prepare_mutfiles, f'mutfile{str(residue_number)}'), 'w') as mutfile:#f'mutfile{str(i)}'), 'w') as mutfile:
+                            mutfile.write('total ' + str(len(residue_number_ros)*len(mutate[residue_number][1].split('_')[0]))+'\n')
+                            mut_dic[residue_number] = "".join(mutate[residue_number][1])
+                            for res_rounds in range(len(mutate[residue_number][1].split('_')[0])):
+                                mutfile.write(f'{len(residue_number_ros)}\n')
+                                
+                                for indi, res in enumerate(residue_number_ros):
+                                    towrite = self.fasta_seq[int(res) - 1] + ' ' + str(res) + ' ' + mutate[residue_number][1].split("_")[indi].split()[0][res_rounds]+ '\n'
+                                    mutfile.write(towrite)
+                        i += 1
+
         return(check2, mut_dic)
 
 
