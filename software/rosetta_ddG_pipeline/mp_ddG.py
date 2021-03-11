@@ -21,14 +21,12 @@ import rosetta_paths
 def rosetta_ddg_mp_pyrosetta(folder, mut_dict, SLURM=True, sys_name='',
                              partition='sbinlab', output_name='ddG.out', 
                              add_output_name='ddG_additional.out', repack_radius=0,
-                             lipids='DLPC', temperature=37.0, repeats=5,
+                             lipids='DLPC', temperature=37.0, repeats=5, lowest=1,
                              score_file_name='scores', is_pH=0, pH_value=7, 
                              score_function='franklin2019', repack_protocol='MP_repack', lipacc_dic='mp_lipid_acc_dic.json', mutfiles='mutfiles'):
     ddg_script_exec = os.path.join(
-        rosetta_paths.path_to_stability_pipeline, 'rosetta_mp_ddG_mutfile.py')
+        rosetta_paths.path_to_stability_pipeline, 'pyrosetta_ddG.py')
     input_struc = os.path.join(folder.ddG_input, 'input.pdb')
-    output_file = os.path.join(folder.ddG_run, output_name)
-    score_file = os.path.join(folder.ddG_run, f'{score_file_name}.sc')
     for root, dirs, files in os.walk(folder.ddG_input):
         for file in files:
             if file.endswith('.span'):
@@ -37,13 +35,14 @@ def rosetta_ddg_mp_pyrosetta(folder, mut_dict, SLURM=True, sys_name='',
     ddG_command = (f'python3 {ddg_script_exec}'
                    f' --in_pdb {input_struc}'
                    f' --in_span {input_span}'
-                   f' --out {output_file}'
+                   f' --outdir {folder.ddG_run}'
+                   f' --outfile {output_name}'
                    f' --out_add {add_output_name}'
                    f' --repack_radius {repack_radius}'
-                   f' --output_breakdown {score_file}'
                    f' --include_pH {is_pH}'
                    f' --pH_value {pH_value}'
                    f' --repeats {repeats}'
+                   f' --lowest {lowest}'
                    f' --lipids {lipids}'
                    f' --temperature {temperature}'
                    f' --score_function {score_function}'
