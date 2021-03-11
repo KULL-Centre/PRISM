@@ -138,10 +138,16 @@ def parse_args():
         type=str,
         help="ddG score function. Default=franklin2019, other options are 'ref15', 'mpframework_smooth_fa_2012', 'ref15_memb' ", )
 
+    parser.add_argument('--dump_pdb',
+        default=0,
+        type=int,
+        choices=[1,0],
+        help="dumps out the mutated pdb files", )
+
     parser.add_argument('--repack_protocol',
         default='MP_repack',
-        choices=['MP_repack', 'MP_flex_relax_ddG', 'MP_ori_design'],
-        help="MP repacking algorithm (mainly for benchmarking). Default=MP_repack, other options are 'MP_flex_relax_ddG', 'MP_ori_design' ", )
+        choices=['MP_repack', 'MP_flex_relax_ddG'],
+        help="MP repacking algorithm (mainly for benchmarking). Default=MP_repack, other options are 'MP_flex_relax_ddG' ", )
 
     # parse options
     args = parser.parse_args()
@@ -157,10 +163,16 @@ def parse_args():
     os.makedirs(args.outdir, exist_ok=True)
     args.outfile = os.path.join(args.outdir, os.path.basename(args.outfile))
     args.out_add = os.path.join(args.outdir, os.path.basename(args.out_add))
-    if args.lowest ==1:
+    if args.lowest == 1:
         args.lowest = True
     else:
         args.lowest = False
+    if args.dump_pdb == 1:
+        args.dump_pdb = True
+        args.dump_dir = os.path.join(args.outdir, 'pdbs')
+        os.makedirs(args.dump_dir, exist_ok=True)
+    else:
+        args.dump_pdb = False
 
     return args
 
@@ -376,8 +388,7 @@ def mutate_residue_flex_relax_algo(pose, mutant_position, mutant_aa, pack_radius
     return working_pose
 
 
-def compute_ddG(pose, sfxn, resnum, aa, repack_radius, repack_protocol='MP_repack', add_file=None, flag=''):
-
+def compute_ddG(pose, sfxn, resnum, aa, repack_radius, repack_protocol='MP_repack', add_file=None, flag='', dump_pdb=False, output_dir='.'):
     # Perform Mutation at residue <resnum> to amino acid <aa>
     if repack_protocol == 'MP_flex_relax_ddG':
         mutated_pose = mutate_residue_flex_relax_algo(
@@ -401,11 +412,18 @@ def compute_ddG(pose, sfxn, resnum, aa, repack_radius, repack_protocol='MP_repac
         with open(add_file, 'a') as fp:
             variant_name = []
             for indi, var in enumerate(resnum.split('_')):
-                variant_name.append(f"{list(mutated_pose.sequence())[int(resnum.split('_')[indi])-1]}{resnum.split('_')[indi]}{aa.split('_')[indi]}")
+                variant_name.append(f"{list(pose.sequence())[int(resnum.split('_')[indi])-1]}{resnum.split('_')[indi]}{aa.split('_')[indi]}")
             variant_name = ":".join(variant_name)
             
             score_weights = mutated_pose.energies().total_energies().weighted_string_of(sfxn.weights())
             fp.write(f"{flag}_{variant_name},{round(mutant_score,5)},{rmsd},{score_weights}\n")
+
+    if dump_pdb:
+        variant_name = []
+        for indi, var in enumerate(resnum.split('_')):
+            variant_name.append(f"{list(pose.sequence())[int(resnum.split('_')[indi])-1]}{resnum.split('_')[indi]}{aa.split('_')[indi]}")
+        variant_name = "_".join(variant_name)
+        mutated_pose.dump_pdb(os.path.join(output_dir, f"{flag}_{variant_name}.pdb"))
 
     return [aa, mutant_score, rmsd]
 
@@ -463,7 +481,7 @@ def main():
         for repeat in range(args.repeats):
             logger.warning(f'repacking protocol: {args.repack_protocol}')
             repacked_wt_list.append(compute_ddG(pose, sfxn, residue, native_aa, args.repack_radius, 
-                repack_protocol=args.repack_protocol, add_file=args.out_add, flag='WT'))
+                repack_protocol=args.repack_protocol, add_file=args.out_add, flag='WT', dump_pdb=args.dump_pdb, output_dir=args.dump_dir))
         logger.info(repacked_wt_list)
         
 
@@ -475,7 +493,7 @@ def main():
                 for repeat in range(args.repeats):
                     logger.warning(f'repacking protocol: {args.repack_protocol}')
                     repacked_mut_list.append(compute_ddG(pose, sfxn, residue, mutant, args.repack_radius, 
-                        repack_protocol=args.repack_protocol, add_file=args.out_add, flag='MUT'))
+                        repack_protocol=args.repack_protocol, add_file=args.out_add, flag='MUT', dump_pdb=args.dump_pdb, output_dir=args.dump_dir))
                 repacked_mut_list_all.append([mutant, repacked_mut_list])
                 
                 # get variant name

@@ -228,7 +228,7 @@ def predict_stability(args):
             path_to_ddg_calc_sbatch = mp_ddG.rosetta_ddg_mp_pyrosetta(
                 folder, mut_dic, SLURM=True, sys_name=name, partition=args.SLURM_PARTITION,
                 repack_radius=args.BENCH_MP_REPACK, lipids=args.MP_LIPIDS,
-                temperature=args.MP_TEMPERATURE, repeats=args.BENCH_MP_REPEAT,
+                temperature=args.MP_TEMPERATURE, repeats=args.BENCH_MP_REPEAT, dump_pdb = args.DUMP_PDB,
                 is_pH=is_pH, pH_value=pH_value, lipacc_dic=lipacc_file, score_function=args.MP_ENERGY_FUNC,
                 repack_protocol=args.MP_REPACK_PROTOCOL, mutfiles=ddg_input_mutfile_dir)
             # Parse sbatch ddg parser
