@@ -139,6 +139,12 @@ def parse_args2():
                               'Default value: False'
                               )
                         )
+    parser.add_argument('--dump_pdb', '-dp',
+                        default=0,
+                        type=lambda s: s.lower() in ['true', 't', 'yes', '1'],
+                        dest='DUMP_PDB',
+                        help='Dumps all mutant pdbs, default False.'
+                        )
     parser.add_argument('--mp_thickness',
                         default=15,
                         type=int,
@@ -269,8 +275,8 @@ def parse_args2():
     parser.add_argument('--mp_repack_protocol',
                         default='MP_repack',
                         dest='MP_REPACK_PROTOCOL',
-                        choices=['MP_repack', 'MP_flex_relax_ddG', 'MP_ori_design'],
-                        help="MP repacking algorithm (mainly for benchmarking). Default=MP_repack, other options are 'MP_flex_relax_ddG', 'MP_ori_design' "
+                        choices=['MP_repack', 'MP_flex_relax_ddG'],
+                        help="MP repacking algorithm (mainly for benchmarking). Default=MP_repack, other options are 'MP_flex_relax_ddG' "
                         )
     
 
@@ -278,9 +284,10 @@ def parse_args2():
 
     # Handle user input errors
     if args.MUT_MODE == 'mut_file' and args.MUTATION_INPUT == None:
-      parser.error("Please specify a mutation input file or change the mutation mode.")
+        parser.error("Please specify a mutation input file or change the mutation mode.")
     if args.MUTATION_INPUT != None:
-      print('Mutation mode changed to mut_file')
-      args.MUT_MODE = 'mut_file'
-
+        print('Mutation mode changed to mut_file')
+        args.MUT_MODE = 'mut_file'
+    if args.DUMP_PDB != 0:
+        args.DUMP_PDB = 1
     return args

@@ -150,7 +150,7 @@ def predict_stability(args):
                     input_dict['MP_SPAN_INPUT'], folder.prepare_mp_span, name='input.span')
 
             logger.info(f'Calculate lipid accessible residues')
-            lipacc_dic = mp_prepare.mp_lipid_acc_resi(structure_instance.path_to_cleaned_pdb, folder.prepare_mp_lipacc, folder.prepare_mp_span, thickness=args.MP_THICKNESS, SLURM=False)
+            lipacc_dic, lipacc_file = mp_prepare.mp_lipid_acc_resi(structure_instance.path_to_cleaned_pdb, folder.prepare_mp_lipacc, folder.prepare_mp_span, thickness=args.MP_THICKNESS, SLURM=False)
 
         # Making mutfiles and checks
         if args.MUT_MODE == 'mut_file':
@@ -182,9 +182,8 @@ def predict_stability(args):
             structure_instance.path_to_cleaned_pdb, folder.prepare_output, name='output.pdb'))
         if args.IS_MP == True:
             prepare_output_span_dir = create_copy(folder.prepare_mp_span, f'{folder.prepare_output}', name='spanfiles', directory=True)
-        else:
-            prepare_output_ddg_mutfile_dir = create_copy(
-                folder.prepare_mutfiles, folder.prepare_output, name='mutfiles', directory=True)
+        prepare_output_ddg_mutfile_dir = create_copy(
+            folder.prepare_mutfiles, folder.prepare_output, name='mutfiles', directory=True)
 
         # Copy files for relax & run
         relax_input_struc = check_path(create_copy(
@@ -224,12 +223,14 @@ def predict_stability(args):
             else:
                 is_pH = 1
                 pH_value = args.MP_PH
+            ddg_input_mutfile_dir = create_copy(
+                prepare_output_ddg_mutfile_dir, folder.ddG_input, name='mutfiles', directory=True)
             path_to_ddg_calc_sbatch = mp_ddG.rosetta_ddg_mp_pyrosetta(
                 folder, mut_dic, SLURM=True, sys_name=name, partition=args.SLURM_PARTITION,
                 repack_radius=args.BENCH_MP_REPACK, lipids=args.MP_LIPIDS,
-                temperature=args.MP_TEMPERATURE, repeats=args.BENCH_MP_REPEAT,
-                is_pH=is_pH, pH_value=pH_value, lipacc_dic=lipacc_dic, score_function=args.MP_ENERGY_FUNC,
-                repack_protocol=args.MP_REPACK_PROTOCOL)
+                temperature=args.MP_TEMPERATURE, repeats=args.BENCH_MP_REPEAT, dump_pdb = args.DUMP_PDB,
+                is_pH=is_pH, pH_value=pH_value, lipacc_dic=lipacc_file, score_function=args.MP_ENERGY_FUNC,
+                repack_protocol=args.MP_REPACK_PROTOCOL, mutfiles=ddg_input_mutfile_dir)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
                 folder, chain_id=args.CHAIN, sys_name=name, output_name='ddG.out', partition=partition, output_gaps=args.GAPS_OUTPUT)

@@ -191,7 +191,8 @@ def mp_lipid_acc_resi(pdbinput, outdir_path, folder_spanfile, thickness=15, SLUR
     
     lipacc_dic = {}
     out_pdb_file = glob.glob(os.path.join(outdir_path, '*.pdb'))[0]
-    with open (out_pdb_file, 'r') as fp, open(os.path.join(outdir_path, "mp_lipid_acc_dic.json"), 'w') as fp2:
+    output_json_file = os.path.join(outdir_path, "mp_lipid_acc_dic.json")
+    with open (out_pdb_file, 'r') as fp, open(output_json_file, 'w') as fp2:
         for line in fp:
             if line.startswith('ATOM'):
                 resid = int(line[22:26])
@@ -200,7 +201,7 @@ def mp_lipid_acc_resi(pdbinput, outdir_path, folder_spanfile, thickness=15, SLUR
                 else:
                     lipacc_dic[resid] = 'false'
         json.dump(lipacc_dic, fp2, indent=4) 
-    return lipacc_dic
+    return lipacc_dic, output_json_file
 
 
 def mp_span_from_pdb_dssp(pdbinput, outdir_path, thickness=15, SLURM=False):
