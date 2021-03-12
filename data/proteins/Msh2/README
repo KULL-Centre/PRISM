@@ -1,3 +1,3 @@
 gremlin.dat contains "raw" ddE scores for each single amino acid substitution, generated using Gremlin (Balakrishnan 2010). To simplify comparison between ddEs from different proteins, they are rank-normalised to a [0,1] range, inspired by Feinauer & Weigt (2017).
 
-ddGs for the Msh2 monomer are available in the supplementary of our earlier publication (Nielsen 2017, https://doi.org/10.1371/journal.pgen.1006739)
+Msh2_monomer_ddGs_FoldX.csv contains ddGs for the Msh2 monomer, which were previously made available in the supplementary of Nielsen 2017, https://doi.org/10.1371/journal.pgen.1006739
