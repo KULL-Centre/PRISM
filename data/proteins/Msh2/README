@@ -1,1 +1,1 @@
-gremlin.dat contains ddE scores for each single amino acid substitution, generated using Gremlin (Balakrishnan 2010)
+gremlin.dat contains "raw" ddE scores for each single amino acid substitution, generated using Gremlin (Balakrishnan 2010). To simplify comparison between ddEs from different proteins, they are rank-normalised to a [0,1] range, inspired by Feinauer & Weigt (2017).
