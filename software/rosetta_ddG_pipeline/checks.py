@@ -85,7 +85,7 @@ def pdbxmut(input_mutfiles,structure_dic):
             mutations = (mutfile_lines[2:40:2])
         while decs > 2:
             try:
-                mut_res=(mutations[1])
+                mut_res=(mutations[0])
                 m_id=int((mut_res[2:decs]))
                 x,y,z=resdata[m_id]
                 decs=0
