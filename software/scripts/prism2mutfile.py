@@ -173,7 +173,7 @@ def prepare_df(in_df, inclWT=True, drop_multi_mut=False):
     return df, drops
 
 
-def residue_files(output_dir, in_df, inclWT=True, drop_multi_mut=False):
+def residue_files_func(output_dir, in_df, inclWT=True, drop_multi_mut=False):
 
     df, drops = prepare_df(in_df, inclWT=inclWT, drop_multi_mut=drop_multi_mut)
 
@@ -211,7 +211,7 @@ def residue_files(output_dir, in_df, inclWT=True, drop_multi_mut=False):
                             fp.write(mutant_line)
 
 
-def combined_mut(output_dir, in_df, inclWT=True, drop_multi_mut=False):
+def combined_mut_func(output_dir, in_df, inclWT=True, drop_multi_mut=False):
 
     df, drops = prepare_df(in_df, inclWT=inclWT, drop_multi_mut=drop_multi_mut)
 
@@ -238,7 +238,7 @@ def combined_mut(output_dir, in_df, inclWT=True, drop_multi_mut=False):
                     fp.write("".join(mutant_line))
 
 
-def pipeline_combined_mut(output_dir, in_df, inclWT=True, drop_multi_mut=False):
+def pipeline_combined_mut_func(output_dir, in_df, inclWT=True, drop_multi_mut=False):
 
     df, drops = prepare_df(in_df, inclWT=inclWT, drop_multi_mut=drop_multi_mut)
     
@@ -265,11 +265,11 @@ def prism2mut(input_file, output_dir='.', pipeline_combined_mut=True, combined_m
     df = df[['variant', 'aa_ref', 'resi', 'aa_var', 'n_mut']]
 
     if residue_files:
-        residue_files(output_dir, df, drops, inclWT=True, drop_multi_mut=False)
+        residue_files_func(output_dir, df, inclWT=True, drop_multi_mut=False)
     if combined_mut:
-        combined_mut(output_dir, df, inclWT=True, drop_multi_mut=False)
+        combined_mut_func(output_dir, df, inclWT=True, drop_multi_mut=False)
     if pipeline_combined_mut:
-        pipeline_combined_mut(output_dir, df, inclWT=True, drop_multi_mut=False)
+        pipeline_combined_mut_func(output_dir, df, inclWT=True, drop_multi_mut=False)
         
                 
 def main():
