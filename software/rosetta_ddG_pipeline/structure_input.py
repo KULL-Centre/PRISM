@@ -356,12 +356,11 @@ class structure:
         return(path_to_sbatch)
 
 
-    def parse_relax_sbatch(self, folder, sys_name='', partition='sbinlab', sc_name='score_bn15_calibrated'):
+    def parse_relax_sbatch(self, folder, sys_name='', partition='sbinlab', sc_name='score_bn15_calibrated', mp_multistruc=0):
         """This script creates the parse_relax.sbatch script"""
                                   
         path_to_parse_relax_script = os.path.join(
         rosetta_paths.path_to_stability_pipeline, 'relax_parse_results.py')
-
         path_to_sbatch = os.path.join(self.folder.relax_input, 'parse_relax.sbatch')
         with open(path_to_sbatch, 'w') as fp:
             fp.write(f'''#!/bin/sh
@@ -372,7 +371,13 @@ class structure:
 
 # launching parsing script 
 ''')
-            fp.write(f'python {path_to_parse_relax_script} {folder.relax_run} {folder.relax_output} {folder.ddG_input} {sc_name}')
+            if mp_multistruc == 0:
+                fp.write(f'python {path_to_parse_relax_script} {folder.relax_run} {folder.relax_output} {folder.ddG_input} {sc_name}')
+            else:
+                fp.write(f'python {path_to_parse_relax_script} {folder.relax_run} {folder.relax_output}' )
+                for ddg_subfolder in folder.ddG_input:
+                    fp.write(f' {ddg_subfolder}')
+                fp.write(f' {sc_name} {mp_multistruc}')
         self.logger.info(path_to_sbatch)
         return path_to_sbatch
 

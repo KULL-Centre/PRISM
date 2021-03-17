@@ -278,6 +278,12 @@ def parse_args2():
                         choices=['MP_repack', 'MP_flex_relax_ddG'],
                         help="MP repacking algorithm (mainly for benchmarking). Default=MP_repack, other options are 'MP_flex_relax_ddG' "
                         )
+    parser.add_argument('--mp_multistruc_protocol',
+                        default=0,
+                        type=int,
+                        dest='MP_MULTISTRUC_PROTOCOL',
+                        help="MP generates x relaxed structures and calculates exactly 1 ddG from each structure  (mainly for benchmarking). Default=False "
+                        )
     
 
     args = parser.parse_args()

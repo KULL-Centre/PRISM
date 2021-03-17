@@ -20,7 +20,7 @@ import subprocess
 from helper import AttrDict, create_symlinks, create_copy, find_copy
 from get_memory_stats import check_memory
 
-def parse_relax_results(folder, sc_name='score_bn15_calibrated', logger_mode='info'):
+def parse_relax_results(folder, sc_name='score_bn15_calibrated', logger_mode='info', keep=1):
     '''This function parses the scorefile from a rosetta
     pre-relaxation, and selects the lowest scoring one'''
     
@@ -57,38 +57,43 @@ def parse_relax_results(folder, sc_name='score_bn15_calibrated', logger_mode='in
             name = score_fields[-1].strip()
             if score_fields[0].strip() == 'SCORE:' and name != 'description':
                 score = float(score_fields[1])
-                relax_scores[name] = score
+                relax_scores[score] = name
     print(relax_scores)
-    most_relaxed = name
-    for key in relax_scores:
-        # it the key is more relaxed than the previous best, update the best.
-        if relax_scores[key] < relax_scores[most_relaxed]:
-            most_relaxed = key
-            print(most_relaxed)
-
+    most_relaxed_array = sorted(list(relax_scores.keys()), reverse=False)[:keep]
+    most_relaxed = relax_scores[most_relaxed_array[0]]
     logger.info(f'most relaxed structure is {most_relaxed}.')
-    logger.info('deleting the rest')
-    #Deleting all the structures that are not the best scoring one.
     for key in relax_scores:
-        if key != most_relaxed:
-            path_to_tense = os.path.join(folder.relax_run, f'{key}.pdb')
+        if not key in most_relaxed_array:
+            path_to_tense = os.path.join(folder.relax_run, f'{relax_scores[key]}.pdb')
             print('deleting', path_to_tense)
             os.remove(path_to_tense)
-    relax_output_strucfile = find_copy(
-        folder.relax_run, f'{most_relaxed}.pdb', folder.relax_output, 'output.pdb')
-
-    create_copy(
-        os.path.join(folder.relax_output, 'output.pdb'), folder.ddG_input, name='input.pdb')
+    if keep > 1:
+        for indi, ddg_subfolder in enumerate(folder.ddG_input):
+            relax_output_strucfile = find_copy(
+                folder.relax_run, f'{relax_scores[most_relaxed_array[indi]]}.pdb', folder.relax_output, f'output_{ind}.pdb')
+            create_copy(
+                os.path.join(folder.relax_output, f'output_{ind}.pdb'), ddg_subfolder, name=f'input.pdb')
+    else:
+        relax_output_strucfile = find_copy(
+            folder.relax_run, f'{most_relaxed}.pdb', folder.relax_output, 'output.pdb')
+        create_copy(
+            os.path.join(folder.relax_output, 'output.pdb'), folder.ddG_input, name='input.pdb')
 
     return os.path.join(folder.relax_output, f'{most_relaxed}.pdb')
 
 
 if __name__ == '__main__':
     folder = AttrDict()
-    folder.update({'relax_run': sys.argv[1], 'relax_output': sys.argv[
-                  2], 'ddG_input': sys.argv[3]})
+    if len(sys.argv) <= 4:
+        folder.update({'relax_run': sys.argv[1], 'relax_output': sys.argv[2], 
+            'ddG_input': sys.argv[3]})
+    else:
+        folder.update({'relax_run': sys.argv[1], 'relax_output': sys.argv[2], 
+            'ddG_input': [sys.argv[x] for x in range(4, len(sys.argv)-1)]})
     print(sys.argv)
-    if len(sys.argv) > 4:
+    if len(sys.argv) == 5:
         parse_relax_results(folder, sc_name=sys.argv[4])
+    elif len(sys.argv) > 5:
+        parse_relax_results(folder, sc_name=sys.argv[-2], keep=sys.argv[-1])
     else:
         parse_relax_results(folder)

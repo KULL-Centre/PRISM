@@ -36,7 +36,7 @@ def relaxation(folder):
     return parse_relax_process_id
 
 
-def ddg_calculation(folder, parse_relax_process_id=None):
+def ddg_calculation(folder, parse_relax_process_id=None, mp_multistruc=0):
     """Runs cartesian_ddg script and parsing of the ddg results"""                                         
                                              
     if parse_relax_process_id == None:
@@ -45,18 +45,38 @@ def ddg_calculation(folder, parse_relax_process_id=None):
     else:
         dependency = '--dependency=afterany:'
     
-    #Launching Rosetta_ddg.sbatch
-    ddg_call = subprocess.Popen(f'sbatch {dependency}{parse_relax_process_id} {join(folder.ddG_input, "rosetta_ddg.sbatch")}', stdout=subprocess.PIPE, shell=True, cwd=folder.ddG_run)
+    if  mp_multistruc==0:
+        #Launching Rosetta_ddg.sbatch
+        ddg_call = subprocess.Popen(f'sbatch {dependency}{parse_relax_process_id} {join(folder.ddG_input, "rosetta_ddg.sbatch")}', stdout=subprocess.PIPE, shell=True, cwd=folder.ddG_run)
 
-    #Gettin process ID                                
-    ddg_process_id_info = ddg_call.communicate()
-    logger.info(f'ddG process ID info: {ddg_process_id_info}')
-    ddg_process_id = str(ddg_process_id_info[0]).split()[3][0:-3]
-     
-    with open(join(folder.ddG_run, f'job_id_ddg.txt'), 'w') as job_id_file:     
-        job_id_file.write(ddg_process_id)                                                            
-                                
-    #Launching parse_ddgs.sbatch
-    parse_results_call = subprocess.Popen(f'sbatch --dependency=afterany:{ddg_process_id} {join(folder.ddG_input, "parse_ddgs.sbatch")}', stdout=subprocess.PIPE, shell=True, cwd=folder.ddG_run)
+        #Gettin process ID                                
+        ddg_process_id_info = ddg_call.communicate()
+        logger.info(f'ddG process ID info: {ddg_process_id_info}')
+        ddg_process_id = str(ddg_process_id_info[0]).split()[3][0:-3]
+         
+        with open(join(folder.ddG_run, f'job_id_ddg.txt'), 'w') as job_id_file:     
+            job_id_file.write(ddg_process_id)                                                            
+                                    
+        #Launching parse_ddgs.sbatch
+        parse_results_call = subprocess.Popen(f'sbatch --dependency=afterany:{ddg_process_id} {join(folder.ddG_input, "parse_ddgs.sbatch")}', stdout=subprocess.PIPE, shell=True, cwd=folder.ddG_run)
+    else:
+        ddg_process_ids = []
+        for index, sub_ddg_folder in enumerate(folder.ddG_input):
+            #Launching Rosetta_ddg.sbatch
+            ddg_call = subprocess.Popen(f'sbatch {dependency}{parse_relax_process_id} {join(folder.ddG_input[index], "rosetta_ddg.sbatch")}', 
+                stdout=subprocess.PIPE, shell=True, cwd=folder.ddG_run[index])
+
+            #Gettin process ID                                
+            ddg_process_id_info = ddg_call.communicate()
+            logger.info(f'ddG process ID info: {ddg_process_id_info}')
+            ddg_process_id = str(ddg_process_id_info[0]).split()[3][0:-3]
+             
+            with open(join(folder.ddG_run[index], f'job_id_ddg.txt'), 'w') as job_id_file:     
+                job_id_file.write(ddg_process_id)                                                            
+                                        
+        #Launching post_parse_ddgs.sbatch
+        ddg_process_ids = ':'.join(ddg_process_ids)
+        parse_results_call = subprocess.Popen(f'sbatch --dependency=afterany:{ddg_process_ids} {join(folder.ddG_postparse_input, "parse_ddgs.sbatch")}', 
+                stdout=subprocess.PIPE, shell=True, cwd=folder.ddG_postparse_run)
 
     return
