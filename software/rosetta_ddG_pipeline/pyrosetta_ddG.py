@@ -173,6 +173,7 @@ def parse_args():
         os.makedirs(args.dump_dir, exist_ok=True)
     else:
         args.dump_pdb = False
+        args.dump_dir = False
 
     return args
 
