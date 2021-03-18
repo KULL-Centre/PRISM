@@ -32,6 +32,8 @@ def relaxation(folder):
     #Gettin process ID                                          
     parse_relax_process_id_info = parse_relaxation_call.communicate()
     parse_relax_process_id = str(parse_relax_process_id_info[0]).split()[3][0:-3]
+    logger.info(f'ddG process ID info: {parse_relax_process_id}')
+    
 
     return parse_relax_process_id
 
@@ -70,7 +72,8 @@ def ddg_calculation(folder, parse_relax_process_id=None, mp_multistruc=0):
             ddg_process_id_info = ddg_call.communicate()
             logger.info(f'ddG process ID info: {ddg_process_id_info}')
             ddg_process_id = str(ddg_process_id_info[0]).split()[3][0:-3]
-             
+            ddg_process_ids.append(ddg_process_id)
+
             with open(join(folder.ddG_run[index], f'job_id_ddg.txt'), 'w') as job_id_file:     
                 job_id_file.write(ddg_process_id)                                                            
                                         

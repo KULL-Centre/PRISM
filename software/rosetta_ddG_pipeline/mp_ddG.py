@@ -12,6 +12,8 @@ import json
 import os
 import sys
 
+import pandas as pd
+
 
 # Local application imports
 from helper import AttrDict, create_copy, generate_output, runtime_memory_stats
@@ -84,15 +86,21 @@ echo $INDEX
 
 
 def postprocess_rosetta_ddg_mp_pyrosetta(folder, output_name='ddG.out', sys_name='', version=1, prism_nr='XXX', chain_id='A', output_gaps=False, mp_multistruc=0):
+    print(mp_multistruc, folder)
     if mp_multistruc == 0:
         runtime_memory_stats(folder.ddG_run)
         generate_output(folder, output_name=output_name, sys_name=sys_name, version=version, prism_nr=prism_nr, chain_id=chain_id, output_gaps=output_gaps)
     else:
-        with open(os.path.join(folder.ddG_postparse_run, output_name), 'w') as fp:
-            for sub_ddG_folder in folder.ddG_run.split(":"):
-                with open(os.path.join(sub_ddG_folder, output_name), 'r') as fp2:
-                    for line in fp2:
-                        fp.write(line)
+        dfs = [['variant', 'ddG', 'std']]
+        for sub_ddG_folder in folder.ddG_run.split(":"):
+            with open(os.path.join(sub_ddG_folder, output_name), 'r') as fp2:
+                for line in fp2:
+                    dfs.append(line.split(','))
+        dfs = pd.DataFrame(data=dfs[1:], columns=dfs[0])
+        dfs = dfs[['variant', 'ddG']]
+        dfs['ddG'] = dfs['ddG'].astype(float)
+        dfs = dfs.groupby('variant').agg({'ddG': ['mean', 'std']}) 
+        dfs.to_csv(os.path.join(folder.ddG_postparse_run, output_name), sep=',', na_rep='', header=False, index=True)
         folder.ddG_run = folder.ddG_postparse_run
         folder.ddG_output = folder.ddG_postparse_output
 
@@ -111,7 +119,8 @@ def postprocess_rosetta_ddg_mp_pyrosetta(folder, output_name='ddG.out', sys_name
 
 
 
-def write_parse_rosetta_ddg_mp_pyrosetta_sbatch(folder, chain_id='A', sys_name='input', output_name='ddG.out', partition='sbinlab', output_gaps=False, mp_multistruc=0):
+def write_parse_rosetta_ddg_mp_pyrosetta_sbatch(folder, chain_id='A', sys_name='input', output_name='ddG.out', 
+        partition='sbinlab', output_gaps=False, mp_multistruc=0):
     if mp_multistruc != 0:
         ddG_run = ":".join(folder.ddG_run)
         ddG_output = ":".join(folder.ddG_output )
@@ -144,12 +153,14 @@ def write_parse_rosetta_ddg_mp_pyrosetta_sbatch(folder, chain_id='A', sys_name='
 
 
 if __name__ == '__main__':
+    print(sys.argv)
     folder = AttrDict()
     folder.update({'prepare_checking': sys.argv[1], 'ddG_run': sys.argv[2],
                    'ddG_output': sys.argv[3], 'ddG_input': sys.argv[4], 'output': sys.argv[5]})
 
     if len(sys.argv) > 9:
         folder.update({'ddG_postparse_run': sys.argv[11], 'ddG_postparse_output': sys.argv[12]})
+        print(folder)
         postprocess_rosetta_ddg_mp_pyrosetta(
             folder, chain_id=sys.argv[6], sys_name=sys.argv[7], output_name=sys.argv[8], output_gaps=sys.argv[9], mp_multistruc=sys.argv[10] )
     elif len(sys.argv) > 8:

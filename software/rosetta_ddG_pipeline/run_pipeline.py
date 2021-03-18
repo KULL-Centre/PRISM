@@ -249,7 +249,7 @@ def predict_stability(args):
 
                     path_to_ddg_calc_sbatch = mp_ddG.rosetta_ddg_mp_pyrosetta(
                         folder.ddG_input[indi], folder.ddG_run[indi], mut_dic, SLURM=True, sys_name=name, partition=args.SLURM_PARTITION,
-                        repack_radius=args.BENCH_MP_REPACK, lipids=args.MP_LIPIDS,
+                        repack_radius=args.BENCH_MP_REPACK, lipids=args.MP_LIPIDS, lowest=0,
                         temperature=args.MP_TEMPERATURE, repeats=1, dump_pdb = args.DUMP_PDB,
                         is_pH=is_pH, pH_value=pH_value, lipacc_dic=lipacc_file, score_function=args.MP_ENERGY_FUNC,
                         repack_protocol=args.MP_REPACK_PROTOCOL, mutfiles=ddg_input_mutfile_dir)
@@ -300,7 +300,7 @@ def predict_stability(args):
     if mode == 'proceed' or mode == 'fullrun':
         # Start relax calculation
         parse_relax_process_id = run_modes.relaxation(folder)
-        run_modes.ddg_calculation(folder, parse_relax_process_id, mp_multistruc=args.MP_MULTISTRUC_PROTOCOL)
+        run_modes.ddg_calculation(folder, parse_relax_process_id=parse_relax_process_id, mp_multistruc=args.MP_MULTISTRUC_PROTOCOL)
 
 
 

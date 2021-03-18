@@ -296,4 +296,6 @@ def parse_args2():
         args.MUT_MODE = 'mut_file'
     if args.DUMP_PDB != 0:
         args.DUMP_PDB = 1
+    if args.IS_MP == False:
+        args.MP_MULTISTRUC_PROTOCOL == 0
     return args
