@@ -158,7 +158,7 @@ if __name__ == '__main__':
     folder.update({'prepare_checking': sys.argv[1], 'ddG_run': sys.argv[2],
                    'ddG_output': sys.argv[3], 'ddG_input': sys.argv[4], 'output': sys.argv[5]})
 
-    if len(sys.argv) > 9:
+    if len(sys.argv) > 10:
         folder.update({'ddG_postparse_run': sys.argv[11], 'ddG_postparse_output': sys.argv[12]})
         print(folder)
         postprocess_rosetta_ddg_mp_pyrosetta(

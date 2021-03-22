@@ -89,7 +89,7 @@ def parse_relax_results(folder, sc_name='score_bn15_calibrated', logger_mode='in
 if __name__ == '__main__':
     folder = AttrDict()
     print(sys.argv)
-    if len(sys.argv) <= 4:
+    if len(sys.argv) <= 5:
         folder.update({'relax_run': sys.argv[1], 'relax_output': sys.argv[2], 
             'ddG_input': sys.argv[3]})
     else:
