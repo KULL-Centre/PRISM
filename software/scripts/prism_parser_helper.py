@@ -70,6 +70,12 @@ def read_from_prism(primsfile):
     return meta_data, dataframe
 
 
+def read_prism(primsfile):
+    parser = PrismParser()
+    data = parser.read(primsfile)
+    return data
+
+
 def merge_prism(filenames, output_dir=None, identity=0.9, merge='outer', verbose=False):
     parser = PrismParser()
     data_list = []
