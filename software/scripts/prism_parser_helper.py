@@ -124,7 +124,7 @@ def merge_prism_right(filenames, output_dir=None, identity=0.9, verbose=False):
     return merged_data, prism_file
         
 
-def merge_prism_df(data_list):
+def merge_prism_df(data_list, identity=0.9):
     target_seq = (data_list[0]).metadata['protein']['sequence']
     if 'first_residue_number' in (data_list[0]).metadata['protein']:
         first_resn = int((data_list[0]).metadata['protein']['first_residue_number'])
@@ -132,7 +132,7 @@ def merge_prism_df(data_list):
         first_resn = 1
         
     merged_data = data_list[0].merge(data_list[1:], target_seq, first_resn, merge='outer', 
-                                     min_identity=.9, min_coverage=.01, mismatch="remove", 
+                                     min_identity=identity, min_coverage=.01, mismatch="remove", 
                                      allow_inserts=True, allow_deletions=True)
     return merged_data
 
