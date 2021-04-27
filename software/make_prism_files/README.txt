@@ -207,25 +207,18 @@ time
 
 2. File generation 
 
-To generate prism compatible files with gnomad data, run either of two scripts:
+To generate prism compatible files with gnomad data, run make_prism_gnomad_file_seq.py
 
-1.1 This will generate one prism file for each distinct protein products associated with the supplied uniprot ID. In other words you should get prism files for all isoforms of this uniprot entry so long as they have variants. 
-
-python3 parse_uniprotID_split_vartypes_step2_v04_woclinvar.py -uniprot P78563
-
-usage: parse_uniprotID_split_vartypes_step2_v04_woclinvar.py
-       [-h] [-e {mis,syn,complex,all}] [-m {overwrite,leave}]
-       [-tmp_folder TMP_FOLDER] [-out_folder OUT_FOLDER] [-d]
-       -uniprot UNIPROT [-isoform]
-
-required arguments:
-  -uniprot UNIPROT      Uniprot ID to get transcripts and make prism_gnomad
-                        files for
+usage: make_prism_gnomad_file_seq.py [-h] [-e {mis,syn,complex,all}]
+                                     [-m {overwrite,leave}]
+                                     [-tmp_folder TMP_FOLDER]
+                                     [-out_folder OUT_FOLDER] [-d] -uniprot
+                                     UNIPROT -seq SEQ [-v]
 
 optional arguments:
   -h, --help            show this help message and exit
   -e {mis,syn,complex,all}
-                        Type of variants to write files for. Default: mis(sense)
+                        Type of variants to write files for.
   -m {overwrite,leave}  What do when the output file already exists. Leave
                         (default) or overwrite
   -tmp_folder TMP_FOLDER
@@ -234,52 +227,14 @@ optional arguments:
                         tep1_files/+args.chromosome/
   -out_folder OUT_FOLDER
                         Where the output files should be written. Default
-                        location is /storage1/hezscha/gnomad_to_prism_parser/r
-                        esults/parser_tests/chrom_parsing/+args.chromosome/
+                        location is /storage1/shared/data/prism_gnomad/uniprot
+                        [0:2]/unipro[2:4]/uniprot[4:6]/
   -d                    Debug mode.
-  -isoform              Switch to indicate the user is looking for an isoform.
-                        If not used, any part of the uniprot ID after '-' will
-                        be omitted. This is mostly cosmetic in terms of how the 
-                        uniprot ID wil be written in the header and the file name.
-
-
-1.2 Or, this script will generate only one prism file for the protein prodcut that matches both the supplied uniprot ID and sequence. Use this to i.e. generate a prism file for only a specific isoform. The example should make a prism file corresponding to isoform 1 of P78563:
-
-python3 /storage1/hezscha/genome_proteome_map/scripts/parse_human_proteome_step2_v04_woclinvar.py -e mis -uniprot P78563 -seq MDIEDEENMSSSSTDVKENRNLDNVSPKDGSTPGPGEGSQLSNGGGGGPGRKRPLEEGSNGHSKYRLKKRRKTPGPVLPKNALMQLNEIKPGLQYTLLSQTGPVHAPLFVMSVEVNGQVFEGSGPTKKKAKLHAAEKALRSFVQFPNASEAHLAMGRTLSVNTDFTSDQADFPDTLFNGFETPDKAEPPFYVGSNGDDSFSSSGDLSLSASPVPASLAQPPLPVLPPFPPPSGKNPVMILNELRPGLKYDFLSESGESHAKSFVMSVVVDGQFFEGSGRNKKLAKARAAQSALAAIFNLHLDQTPSRQPIPSEGLQLHLPQVLADAVSRLVLGKFGDLTDNFSSPHARRKVLAGVVMTTGTDVKDAKVISVSTGTKCINGEYMSDRGLALNDCHAEIISRRSLLRFLYTQLELYLNNKDDQKRSIFQKSERGGFRLKENVQFHLYISTSPCGDARIFSPHEPILEGSRSYTQAGVQWCNHGSLQPRPPGLLSDPSTSTFQGAGTTEPADRHPNRKARGQLRTKIESGEGTIPVRSNASIQTWDGVLQGERLLTMSCSDKIARWNVVGIQGSLLSIFVEPIYFSSIILGSLYHGDHLSRAMYQRISNIEDLPPLYTLNKPLLSGISNAEARQPGKAPNFSVNWTVGDSAIEVINATTGKDELGRASRLCKHALYCRWMRVHGKVPSHLLRSKITKPNVYHESKLAAKEYQAAKARLFTAFIKAGLGAWVEKPTEQDQFSLTP
-
-usage: parse_human_proteome_step2_v04_woclinvar.py [-h]
-                                                   [-e {mis,syn,complex,all}]
-                                                   [-m {overwrite,leave}]
-                                                   [-tmp_folder TMP_FOLDER]
-                                                   [-out_folder OUT_FOLDER]
-                                                   [-d] -uniprot UNIPROT -seq
-                                                   SEQ [-isoform]
-required arguments:
   -uniprot UNIPROT      Uniprot ID to get transcripts and make prism_gnomad
                         files for
   -seq SEQ              Protein sequence of interest. Extract variants for the
                         first transcript that matches this.
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -e {mis,syn,complex,all}
-                        Type of variants to write files for. Default: mis(sense)
-  -m {overwrite,leave}  What do when the output file already exists. Leave
-                        (default) or overwrite
-  -tmp_folder TMP_FOLDER
-                        Where the temporary step 1 files are stored. Default
-                        location is /storage1/hezscha/gnomad_to_prism_parser/s
-                        tep1_files/+args.chromosome/
-  -out_folder OUT_FOLDER
-                        Where the output files should be written. Default
-                        location is /storage1/shared/data/gnomAD/prism_files/u
-                        niprot[0:2]/unipro[2:4]/uniprot[4:6]/
-  -d                    Debug mode.
-  -isoform              Switch to indicate the user is looking for an isoform.
-                        If not used, any part of the uniprot ID after '-' will
-                        be omitted. This is mostly cosmetic in terms of how the 
-                        uniprot ID wil be written in the header and the file name.
-
+  -v, --verbose         Level of output, default zero is no output
 
 
 The reason it has to be this sucky and you can't just specific isoform 1 is that while you can get all Ensembl transcripts associated to a uniprot ID there is no guaranteed way to match a specific isoform to its Ensembl transcripts. So we compare the sequences and the transcript with the same seq as has been requested must be that isoform.
