@@ -27,6 +27,8 @@ from scipy import stats
 import xmltodict
 from time import sleep
 
+#Authors: Johanna Tiemann & Henrike Zschach
+
 log_message="verbose"
 
 if log_message=="verbose":
@@ -62,25 +64,11 @@ try:
 	# because the system path already have the absolute path to folder a
 	# so it can recognize file_a.py while searching 
 	from PrismData import PrismParser, VariantData#VariantParser, VariantData
-
-	#sys.path.insert(1, '/groups/sbinlab/tiemann/repos/PRISM/PRISM/software/rosetta_ddG_pipeline')
-	sys.path.insert(1, import_path_base + 'PRISM/software/rosetta_ddG_pipeline')
-	from mp_prepare import mp_superpose_opm, mp_TMalign_opm, mp_span_from_pdb_octopus, mp_lipid_acc_resi, mp_span_from_pdb_dssp
-
-	#sys.path.insert(1, '/groups/sbinlab/tiemann/repos/PRISM/MPRISM/helper')
-	sys.path.insert(1, import_path_base + 'MPRISM/helper')
-	from uniprot_search import extract_uniprot_fasta, extract_by_uniprot_fasta
-	from restAPI_scripts import extract_from_semanticscholar, extract_from_biorxiv
-
-	sys.path.insert(1, import_path_base + 'MPRISM/helper/plot/')
-	import prism2heatmap
-
+	
 	sys.path.insert(1, import_path_base + 'PRISM/software/domain_protein_features/scripts/')
-	from get_domains import extract_single_protein_pfam, extract_pfam_nested, extract_pfam_pdb_mapping, extract_pfam_all_release
-	from get_db_features import get_disprot_disordered, get_mobidb_disordered
-	from get_human_proteome import extract_uniprot_human_proteome_ids
-	from get_uniprot_features import extract_uniprot_human_proteome_info, extract_uniprot_info
-	from map_domains_features import extract_single_infos, map_pfam_pdb, get_domain_features_human_proteome
+	from get_domains import extract_single_protein_pfam
+	from get_db_features import get_disprot_disordered, get_mobidb_consensus_priority, get_mobidb_lite_disordered
+	from get_uniprot_features import extract_uniprot_info
 
 except (ModuleNotFoundError, ImportError) as e:
 	logger.error("{} fileure".format(type(e)))
@@ -91,11 +79,12 @@ else:
 #parse arguments
 ################################################################################
 parser = argparse.ArgumentParser()
-parser.add_argument('-uniprot', dest="uniprot", help="Comma separated list of uniprot IDs (no white space)")
+parser.add_argument('-uniprot', dest="uniprot", help="Comma separated list of uniprot IDs (no white space). Can also be only one ID.")
 parser.add_argument('-fromfile', dest="fromfile", help="A file from which to read uniprot IDs (one per line)")
-parser.add_argument('-fail', dest="fail", help="A file listing uniprot IDs for which extraction failed before so we don't waste time querying for them.")
+parser.add_argument('-fail', dest="fail", help="A file listing uniprot IDs for which extraction failed before (i.e. because they have no features of interest) so we don't waste time querying for them.")
 parser.add_argument('-outdir', dest="outdir", help="Output directory for prism_uniprot files. Will be current working directory if not given.")
 parser.add_argument('-m', dest="mode", choices=['overwrite', 'leave'], default = 'leave', help="What do when the output file already exists. Leave (default) or overwrite")
+parser.add_argument("-v","--verbose", action="count", default=0, help="Level of output.")
 args = parser.parse_args()
 ################################################################################
 
@@ -127,6 +116,49 @@ def download_pdb(pdb_id, output_dir):
 	output_name = os.path.join(output_dir, f'{pdb_id}.pdb')
 	shutil.move(os.path.join(output_dir, f'pdb{pdb_id}.ent'), output_name)
 	return(output_name)
+
+def make_default_outfolder(uniprot_ID, base_prism_dir = '/storage1/shared/data/'):
+	#sometimes we cannot find the unirpot ID to a transcript. Put them in the none folder then
+	if not uniprot_ID == 'None':
+		if not os.path.exists(base_prism_dir+'prism_uniprot/'+ uniprot_ID[0:2]):
+			os.makedirs(base_prism_dir+'prism_uniprot/'+ uniprot_ID[0:2])
+		if not os.path.exists(base_prism_dir+'prism_uniprot/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]):
+			os.makedirs(base_prism_dir+'prism_uniprot/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4])
+		if not os.path.exists(base_prism_dir+'prism_uniprot/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4] + '/' + uniprot_ID[4:6]):
+			os.makedirs(base_prism_dir+'prism_uniprot/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]+ '/' + uniprot_ID[4:6])
+	
+		return(base_prism_dir+'prism_uniprot/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]+ '/' + uniprot_ID[4:6])
+	else:
+		if not os.path.exists(base_prism_dir+'prism_uniprot/NA/'):
+			os.makedirs(base_prism_dir+'prism_uniprot/NA/')
+		return(base_prism_dir+'prism_uniprot/NA/')
+
+def read_uniprot_datasets(db_path = '/storage1/shared/data/uniprot_datasets/'):
+	'''
+	Read in the datasets mentioned in the index of the db_path and return a dict that has one key for each short name and a python set of all uniprot IDs in that list as the value 
+	'''
+	dbs_d = {}
+	with open(db_path+'index', 'r') as idx_IN:
+		header = idx_IN.readline()
+		for line in idx_IN:
+			(file_name, short_name) = line.rstrip().split()
+			dbs_d[short_name] = set()
+			with open(os.path.join(db_path + file_name), 'r') as IN:
+				for line in IN:
+					dbs_d[short_name].add(line.rstrip())
+	
+	return dbs_d			
+	
+
+def check_membership(uniprot_id, dbs_d):
+	return_d = {}
+	for short_name in dbs_d:
+		if uniprot_id in dbs_d[short_name]:
+			return_d[short_name] = 'yes'
+		else:
+			return_d[short_name] = 'no'
+
+	return return_d
 
 #features are requested from the uniprot API using the terminology defined on this page: https://www.uniprot.org/help/uniprotkb_column_names (right side, 'Column names as displayed in URL')
 #in the returned object, the names used for the features are as described here: https://web.expasy.org/docs/userman.html#FT_line
@@ -221,6 +253,7 @@ direct_link_features = {
     'feature(DISULFIDE%20BOND)':'DISULFID', 
 }
 
+
 def make_uniprot_prism_files(uniprot_id, prism_file, version=1,fail_fh=''):
 	
 	'''
@@ -313,8 +346,20 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1,fail_fh=''):
 	
 	logger.info('Extract info from uniprot')
 
-	uniprot_info_df = extract_uniprot_info(uniprot_id)
-	sleep(1)
+	counter = 1
+	while counter < 3:
+		try:
+			uniprot_info_df = extract_uniprot_info(uniprot_id)
+			sleep(1)
+			break
+		except ConnectionResetError:
+			count += 1
+			sleep(10)
+	
+	if counter >= 3:
+		print("Failed 3 times to query uniprot, check what's up")
+		sys.exit()
+		
 	#for debugging
 	#print(uniprot_info_df.columns)
 
@@ -355,8 +400,7 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1,fail_fh=''):
 					'REGION', 
 					'ZN_FING']
 	
-	#for later haha
-	DBs = ['disprot', 'mobidb']
+	DBs = ['disprot', 'mobidb_lite', 'mobi_db_consensus']
 	
 	#some entries may have become obsolete like A0A087X1A0. The return then contains only the entry and entry name
 	if uniprot_info_df['sequence'].empty:
@@ -617,7 +661,7 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1,fail_fh=''):
 					
 					#both open
 					elif both_open.match(item):
-						match_obj = right_open.match(item)
+						match_obj = both_open.match(item)
 						f_start = int(match_obj.groups()[0])
 						f_end = int(match_obj.groups()[1])
 						
@@ -728,7 +772,7 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1,fail_fh=''):
 	#mobi DB actually has an entry for p53/P04637 which you can get with:
 	#r_mobi = requests.get('https://mobidb.bio.unipd.it/ws/P04637/consensus', headers={ "Content-Type" : "application/json"})
 	#however, the uniprot api doesn't return a crossref (it does for disprot though), so we always query. I have re-written the query to return NA if the entry does not exist or there are no predicted disordered regions
-	mobi_ls = get_mobidb_disordered(uniprot_id)
+	mobi_ls = get_mobidb_lite_disordered(uniprot_id)
 	sleep(1)
 	#print('MobiDB', mobi_ls)
 	if not mobi_ls == 'NA':
@@ -738,8 +782,22 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1,fail_fh=''):
 			f_start = int(sublist[0])
 			f_end = int(sublist[1])
 			for index in range(f_start, f_end+1):
-				output_df.loc[index-1,'mobidb'] = 'disordered' + '|' + str(count)
+				output_df.loc[index-1,'mobidb_lite'] = 'disordered' + '|' + str(count)
 			count += 1	
+	
+	#and the mobidb priority consensus
+	mobi_ls = get_mobidb_consensus_priority(uniprot_id)
+	sleep(1)
+	#print('MobiDB', mobi_ls)
+	if not mobi_ls == 'NA':
+		count = 1
+		#returns a list of lists but only with positions: (start,end),(start,end),...
+		for sublist in mobi_ls:
+			f_start = int(sublist[0])
+			f_end = int(sublist[1])
+			for index in range(f_start, f_end+1):
+				output_df.loc[index-1,'mobi_db_consensus'] = 'disordered' + '|' + str(count)
+			count += 1
 	
 	#for checking:
 	#print('resulting df:')
@@ -772,7 +830,7 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1,fail_fh=''):
 	#print('df after omitting NA rows and cols:')
 	#print(output_df)
 	#print(output_df.size)
-	#print(output_df.shape)
+	#print(output_df.shape)		
 	
 	logger.info('Generate metadata')
 	#column descriptions for prism header
@@ -796,6 +854,16 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1,fail_fh=''):
 		"columns": columns_dic,
 	}
 
+	#evaluate membership in uniprot sets:
+	
+	membership = check_membership(uniprot_id, dbs_d)
+	
+	if args.verbose >= 1:
+		print(membership)
+	
+	for dataset in membership:
+		metadata['protein'][dataset] = membership[dataset]
+
 	comment = [ f"version {version} - {datetime.date(datetime.now())} - uniprot extract script",] 
 	logger.info('Writing prism file')
 	write_prism(metadata, output_df, prism_file, comment=comment)
@@ -804,13 +872,8 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1,fail_fh=''):
 		f_out.close()
 	return('Success')
 
-#trying out the function make_uniprot_prism_files
-#output_dir = path_base + 'pos_spec_prism_files/results/'
-output_dir = args.outdir if args.outdir else os.getcwd()
-
-#more examples
-#uniprotIDs = ['P07550','P04637', 'P35520']
-#uniprotIDs = ['P04637', 'Q9NTF0']
+#program starts here
+#output_dir = args.outdir if args.outdir else os.getcwd()
 
 #fail list is a list of uniprot IDs that were tried before and didn't yield results, either because the entry is obsolete or no features could be extracted (the dataframe is empty)
 fail_list = set()
@@ -821,9 +884,8 @@ if args.fail:
 			for line in IN:
 				fail_list.add(line.rstrip())
 
-#debug
-print('fail_list:', fail_list)
-#debug
+if args.verbose >= 1:
+	print('fail_list:', fail_list)
 
 if args.uniprot:
 	uniprotIDs = args.uniprot.split(',')
@@ -835,9 +897,22 @@ elif args.fromfile:
 else:
 	sys.exit('Please use either -uniprot to pass one or several comma separated IDs or -fromfile to read in a file with uniprot IDs.')	
 
+dbs_d = read_uniprot_datasets()
+
 for uniprot_id in uniprotIDs:
 	print(uniprot_id)
+	
+	#define path to output file
+	if args.outdir:
+		if args.outdir == '.':
+			args.outdir = os.getcwd()
+		output_dir = args.outdir	
+	else:
+		output_dir = make_default_outfolder(uniprot_id)
+	
 	prism_file = os.path.join(output_dir, f'prism_uniprot_XXX_{uniprot_id}.txt')
+	if args.verbose >= 1:
+		print('Output file:', prism_file)
 	
 	#if file exists, either exit or mkae new one anyway, depending on mode
 	if os.path.exists(prism_file):
