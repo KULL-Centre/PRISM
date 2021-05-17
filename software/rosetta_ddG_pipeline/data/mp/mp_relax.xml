@@ -1,6 +1,8 @@
 <ROSETTASCRIPTS>
 	<SCOREFXNS>
-		<ScoreFunction name="memb_hires" weights="%%energy_func%%" />
+		<ScoreFunction name="memb_hires" weights="%%energy_func%%" >
+			<Reweight scoretype="fa_water_to_bilayer" weight="%%energy_fawtb%%" />
+		</ScoreFunction>
 	</SCOREFXNS>
 	<MOVERS>
 		<AddMembraneMover name="add_memb"/>
