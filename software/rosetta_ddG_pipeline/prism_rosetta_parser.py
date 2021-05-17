@@ -9,6 +9,7 @@ Date of last major changes: 2020-05-01
 from datetime import datetime
 import logging as logger
 import re
+import subprocess
 import sys
 
 
@@ -51,9 +52,17 @@ def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=
     }
     dataframeset = pd.DataFrame(data)
 
+    pipes2 = subprocess.Popen("git describe --tags", shell=True, cwd=rosetta_paths.ddG_pipeline, stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
+    std_out2, std_err = pipes2.communicate()
+    pipes = subprocess.Popen("git log -n 1 | grep -i commit", shell=True, cwd=rosetta_paths.ddG_pipeline, stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
+    std_out, std_err = pipes.communicate()
+    sha = std_out.strip().decode('UTF-8').split()[1]
+    tag = std_out2.strip().decode('UTF-8').split()[0]
+
+
     if rosetta_info == None:
         rosetta_info = {
-            "version": "XXX",
+            "version": f"{tag} ({sha})",
         }
 
 
@@ -80,7 +89,7 @@ def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=
         # columns is dependent on the data. different conditions go into
         # different PRISM_files
         "columns": {
-            "mean_ddG": "mean Rosetta ddG values (mean((MUT-mean(WT))/2.9)); division only for soluble proteins",
+            "mean_ddG": "mean Rosetta ddG values (mean((MUT-mean(WT))/2.9)); rescaling only for soluble proteins",
             "std_ddG": "std Rosetta ddG values (std((MUT-mean(WT))/2.9))",
             #            "ddG": "Rosetta ddG values",
         },
