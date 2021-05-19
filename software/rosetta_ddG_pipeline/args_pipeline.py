@@ -170,13 +170,13 @@ def parse_args2():
     #additional flags for benchmark or changes to protocol
     parser.add_argument('--ddgflags', '-d',
                         default=os.path.join(
-                            rosetta_paths.path_to_data, 'cartesian_ddg_flagfile'),
+                            rosetta_paths.path_to_data, 'sp', 'cartesian_ddg_flagfile'),
                         dest='DDG_FLAG_FILE',
                         help='ddG flag file'
                         )
     parser.add_argument('--relaxflags', '-r',
                         default=os.path.join(
-                            rosetta_paths.path_to_data, 'relax_flagfile'),
+                            rosetta_paths.path_to_data, 'sp', 'relax_flagfile'),
                         dest='RELAX_FLAG_FILE',
                         help='Relaxation flag file'
                         )

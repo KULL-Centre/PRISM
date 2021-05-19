@@ -110,3 +110,9 @@ def write_prism(metadata, dataframe, prism_file, comment=''):
     variant_dataset = VariantData(metadata, dataframe)
     parser = PrismParser()
     parser.write(prism_file, variant_dataset, comment_lines=comment)
+
+
+def read_prism(prism_file):
+    parser = PrismParser()
+    data = parser.read(prism_file)
+    return data
