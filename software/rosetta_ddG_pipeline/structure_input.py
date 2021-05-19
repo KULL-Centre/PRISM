@@ -350,7 +350,7 @@ class structure:
 ''')
             fp.write((f'{os.path.join(rosetta_paths.path_to_rosetta, f"bin/relax.{rosetta_paths.Rosetta_extension}")} '
                       f'-s {structure_path} '
-                      f'-relax:script {rosetta_paths.path_to_data}/cart2.script @{path_to_relaxflags}'
+                      f'-relax:script {rosetta_paths.path_to_data}/sp/cart2.script @{path_to_relaxflags}'
                      ' -out:prefix $SLURM_ARRAY_TASK_ID-'))
         self.logger.info(path_to_sbatch)
         return(path_to_sbatch)
@@ -392,7 +392,7 @@ class structure:
             input_mutfiles = os.path.join(self.folder.ddG_input, 'mutfiles')
         if ddgfile == '':
             # path_to_ddgflags = os.path.join(
-            # rosetta_paths.path_to_data, 'cartesian_ddg_flagfile')
+            # rosetta_paths.path_to_data, 'sp', 'cartesian_ddg_flagfile')
             path_to_ddgflags = os.path.join(self.folder.ddG_input, 'ddg_flagfile')
         else:
             path_to_ddgflags = ddgfile
