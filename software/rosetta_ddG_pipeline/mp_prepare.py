@@ -273,7 +273,7 @@ def rosetta_relax_mp(folder, SLURM=False, num_struc=20, sys_name='mp', partition
                       # Repeatition of FastRelax
                       f'-parser:script_vars repeats={repeats} energy_func={score_function} '
                       # Input PDB Structure: PDB file for protein structure
-                      f'-in:file:s {os.path.join(folder.relax_input, "input.pdb")} '
+                      f' -in:file:s {os.path.join(folder.relax_input, "input.pdb")} '
                       # Spanfile describing trans-membrane spans of the
                       # starting structure
 #                      f'-mp:setup:spanfiles {spanfile} '
@@ -303,7 +303,7 @@ def rosetta_relax_mp(folder, SLURM=False, num_struc=20, sys_name='mp', partition
                       # Use the membrane relax protocol Rosetta script
                       f'-parser:protocol {os.path.join(folder.relax_input, "relax.xml")} '
                       # Repeatition of FastRelax
-                      f'-parser:script_vars repeats={repeats} energy_func={score_function} energy_fawtb={fa_water_to_bilayer}'
+                      f'-parser:script_vars repeats={repeats} energy_func={score_function} energy_fawtb={energy_fawtb} '
                       # Input PDB Structure: PDB file for protein structure
                       f'-in:file:s {os.path.join(folder.relax_input, "input.pdb")} '
                       # Spanfile describing trans-membrane spans of the
