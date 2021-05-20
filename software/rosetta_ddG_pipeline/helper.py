@@ -349,11 +349,11 @@ def get_slurm_ids(path):
 
 
 def convert_mem(x):
-    if str(x[-1])=='K':
+    if str(x)[-1]=='K':
         return float(x[:-1])*1024
-    elif str(x[-1])=='M':
+    elif str(x)[-1]=='M':
         return float(x[:-1])*(1024*1024)
-    elif str(x[-1])=='G':
+    elif str(x)[-1]=='G':
         return float(x[:-1])*(1024*1024*1024)
     else:
         logger.info(x)
@@ -522,7 +522,7 @@ def generate_emission_stats(test_dir):
                      f"which is equivalent to {output['n_treeMonths']:.2f} tree-months carbon sequestration, "
                      f"a train ride of {output['nkm_train']:.2f} km, "
                      f"{output['nkm_drivingEU']:.2f} km of driving a passenger car in Europe or "
-                     f"{output['streaming_netflix_perhour']:.2f} h of netflix streaming. (calculated using green-algorithms.org v1.1)"))
+                     f"{output['streaming_netflix_perhour']:.2f} h of netflix streaming. (calculated using https://doi.org/10.1002/advs.202100707 v1.1)"))
 
     emission_out_file = os.path.join(test_dir, 'output', 'emission_stats.txt')
     with open(emission_out_file, 'w') as fp:
