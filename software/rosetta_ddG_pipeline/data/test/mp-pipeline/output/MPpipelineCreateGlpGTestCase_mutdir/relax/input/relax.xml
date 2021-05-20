@@ -1,0 +1,18 @@
+<ROSETTASCRIPTS>
+	<SCOREFXNS>
+		<ScoreFunction name="memb_hires" weights="%%energy_func%%" >
+			<Reweight scoretype="fa_water_to_bilayer" weight="%%energy_fawtb%%" />
+		</ScoreFunction>
+	</SCOREFXNS>
+	<MOVERS>
+		<AddMembraneMover name="add_memb"/>
+		<MembranePositionFromTopologyMover name="init_pos"/>
+		<FastRelax name="fast_relax" scorefxn="memb_hires" repeats="%%repeats%%"/> 
+	</MOVERS>
+	<PROTOCOLS>
+		<Add mover="add_memb"/>
+		<Add mover="init_pos"/>
+		<Add mover="fast_relax"/>
+	</PROTOCOLS>
+	<OUTPUT scorefxn="memb_hires" />
+</ROSETTASCRIPTS>

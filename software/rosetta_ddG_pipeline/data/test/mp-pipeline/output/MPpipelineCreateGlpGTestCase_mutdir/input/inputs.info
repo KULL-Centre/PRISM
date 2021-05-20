@@ -1,0 +1,5 @@
+NAME = 6xro_final_renum
+CHAIN = A
+STRUCTURE = /data/test/mp-pipeline/input/6xro_final_renum.pdb
+OUTPATH = 
+
