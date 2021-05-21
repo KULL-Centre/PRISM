@@ -64,11 +64,12 @@ class structure:
             #Gets the fasta_seq
             for chain in list(str(self.run_struc)):
                 self.path_to_cleaned_fasta = os.path.join(self.folder.prepare_cleaning, f'{name}_{chain}.fasta')
-                fasta_lines = open(self.path_to_cleaned_fasta, 'r').readlines()
-                self.fasta_seq = ''
-        
-                for line in fasta_lines[1:]:
-                    self.fasta_seq = self.fasta_seq + line.strip()
+                with open(self.path_to_cleaned_fasta, 'r') as fp:
+                    fasta_lines = fp.readlines()
+                    self.fasta_seq = ''
+            
+                    for line in fasta_lines[1:]:
+                        self.fasta_seq = self.fasta_seq + line.strip()
                     
         #This cleans the protein but keeps the ligands          
         if ligand == True:
@@ -240,6 +241,17 @@ class structure:
                                 key.append(lines[1])
                                 wt.append(lines[0])
                                 val.append(lines[2])
+                        if save:
+                            if "_".join(key) in mutate.keys():
+                                old_wt, old_val = mutate["_".join(key)]
+                                new_val = []
+                                for indl, valu in enumerate(old_val.split("_")):
+                                    new_val.append(f"{valu}{val[indl]}")
+                                mutate["_".join(key)] = "_".join(wt), "_".join(new_val)
+                            else:
+                                mutate["_".join(key)] = "_".join(wt), "_".join(val)
+                        else:
+                            save = True
                     else:
                         for line in f:
                             lines = line.split()
@@ -350,7 +362,7 @@ class structure:
 ''')
             fp.write((f'{os.path.join(rosetta_paths.path_to_rosetta, f"bin/relax.{rosetta_paths.Rosetta_extension}")} '
                       f'-s {structure_path} '
-                      f'-relax:script {rosetta_paths.path_to_parameters}/cart2.script @{path_to_relaxflags}'
+                      f'-relax:script {rosetta_paths.path_to_data}/sp/cart2.script @{path_to_relaxflags}'
                      ' -out:prefix $SLURM_ARRAY_TASK_ID-'))
         self.logger.info(path_to_sbatch)
         return(path_to_sbatch)
@@ -392,7 +404,7 @@ class structure:
             input_mutfiles = os.path.join(self.folder.ddG_input, 'mutfiles')
         if ddgfile == '':
             # path_to_ddgflags = os.path.join(
-            # rosetta_paths.path_to_parameters, 'cartesian_ddg_flagfile')
+            # rosetta_paths.path_to_data, 'sp', 'cartesian_ddg_flagfile')
             path_to_ddgflags = os.path.join(self.folder.ddG_input, 'ddg_flagfile')
         else:
             path_to_ddgflags = ddgfile

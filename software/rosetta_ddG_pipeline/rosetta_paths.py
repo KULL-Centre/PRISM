@@ -43,8 +43,6 @@ path_to_clean_keep_ligand = os.path.join(
 # Personal paths
 path_to_stability_pipeline = ddG_pipeline
 default_output_path = os.path.join(path_to_stability_pipeline, 'output')
-path_to_parameters = os.path.join(
-    path_to_stability_pipeline, 'rosetta_parameters')
 path_to_data = os.path.join(
     path_to_stability_pipeline, 'data')
 

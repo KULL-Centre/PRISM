@@ -1,8 +1,0 @@
--ignore_unrecognized_res true 
--mp:scoring:hbond 
--nstruct 3 
--out:pdb 
--packing:pack_missing_sidechains 0 
--relax:fast 
--relax:jump_move true 
--score:weights franklin2019 

@@ -31,7 +31,7 @@ def parse_relax_results(folder, sc_name='score_bn15_calibrated', logger_mode='in
             print(relax_process_id)
          
         #Get stats 
-        shell_command = f'sacct --format="JobID,Start,End,CPUTime,ReqMem,MaxRSS,MaxVMSize,AveVMSize,JobName" > memory_usage_{relax_process_id}.log'
+        shell_command = f'sacct -j {relax_process_id} --format="JobID,Start,End,CPUTime,NCPUS,Elapsed,ReqMem,MaxRSS,MaxVMSize,AveVMSize,JobName" > memory_usage_{relax_process_id}.log'
         subprocess.call(shell_command, cwd=folder.relax_run, shell=True)
                                                 
         check_memory(relax_process_id,folder.relax_run) 

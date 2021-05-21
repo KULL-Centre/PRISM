@@ -71,6 +71,7 @@ def compare_mutfile(fasta_seq, path_to_run_folder,prepare_checking,mutation_inpu
                     error=True
                     print("ERROR: RESIDUE MISMATCH")
                     break
+            mutfile.close()
         return(error)
 
 def pdbxmut(input_mutfiles,structure_dic):

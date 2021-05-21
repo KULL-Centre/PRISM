@@ -8,7 +8,9 @@ Date of last major changes: 2020-05-04
 """
 
 # Standard library imports
+import io
 import logging as logger
+import glob
 import os
 import shutil
 import subprocess
@@ -20,6 +22,7 @@ import json
 
 # Third party imports
 import numpy as np
+import pandas as pd
 from scipy import stats
 
 # Local application imports
@@ -337,7 +340,205 @@ def add_ddG_to_bfactor(in_pdb, in_ddg, out_pdb, threshold=0.0):
                 fp3.write(line)
 
 
+def get_slurm_ids(path):
+    slurm_ids = []
+    slurms = glob.glob(os.path.join(path, 'relax', 'run', 'slurm-*')) + glob.glob(os.path.join(path, 'ddG', 'run', 'slurm-*'))
+    for slurm in slurms:
+        slurm_ids.append(slurm.split('-')[-1].split('_')[0].split('.')[0])
+    return list(set(slurm_ids))
+
+
+def convert_mem(x):
+    if str(x)[-1]=='K':
+        return float(x[:-1])*1024
+    elif str(x)[-1]=='M':
+        return float(x[:-1])*(1024*1024)
+    elif str(x)[-1]=='G':
+        return float(x[:-1])*(1024*1024*1024)
+    else:
+        logger.info(x)
+        return float(x)
+
+
+def convert_mem_to_GB(x):
+    return float(x)/(1024*1024*1024)
+
+
+def calculate_emissions(memory, runTime_hours, runTime_min, runTime_sec, n_cores=1, coreType='CPU', coreModel='any', log=False):
+    runTime = runTime_hours + runTime_min/60 + runTime_sec/(60*60)
+    location = 'Denmark'
+    usage = 1
+    PUE = 1.67
+    PSF = 1
+    selected_platform = 'localServer'
+    selected_provider = ''
+    existing_state = ''
+
+    ###
+    carbonIntensity = 154.44 #gCO2e/kWh - Denmark
+    PUE_used = PUE
+    corePower = 12.0# TDP_per_core, any=coreModel 
+    #
+    ref_dic = {
+        'memoryPower': 0.3725,
+        'passengerCar_EU_perkm': 175,
+        'passengerCar_US_perkm': 251,
+        'train_perkm': 41,
+        'flight_economy_perkm': 171,
+        'treeYear': 11000,
+        'flight_NY-SF': 570000,
+        'flight_PAR-LON': 50000,
+        'flight_NYC-MEL': 2310000,
+        'streaming_netflix_perhour': 86,
+        'google_search': 10,
+        'tree_month': 917,
+    }
+
+
+    # Power needed, in Watt
+    powerNeeded_core = PUE_used * (n_cores * corePower) * usage
+    refValues_dict_memoryPower = ref_dic['memoryPower']
+    powerNeeded_memory = PUE_used * (memory * refValues_dict_memoryPower)
+    powerNeeded = powerNeeded_core + powerNeeded_memory
+
+    # Energy needed, in kWh (so dividing by 1000 to convert to kW)
+    energyNeeded_core = runTime * powerNeeded_core * PSF / 1000
+    eneregyNeeded_memory = runTime * powerNeeded_memory * PSF / 1000
+    energyNeeded = runTime * powerNeeded * PSF / 1000
+
+    # Carbon emissions: carbonIntensity is in g per kWh, so results in gCO2
+    CE_core = energyNeeded_core * carbonIntensity
+    CE_memory  = eneregyNeeded_memory * carbonIntensity
+    carbonEmissions = energyNeeded * carbonIntensity
+
+    output = dict()
+    
+    output['coreType'] = coreType
+    output['coreModel'] = coreModel
+    output['n_cores'] = n_cores
+    output['corePower'] = corePower
+    output['memory'] = memory
+    output['runTime_hours'] = runTime_hours
+    output['runTime_min'] = runTime_min
+    output['runTime'] = runTime
+    output['location'] = location
+    output['carbonIntensity'] = carbonIntensity
+    output['PUE'] = PUE_used
+    output['PSF'] = PSF
+    output['selected_platform'] = selected_platform
+    output['carbonEmissions'] = carbonEmissions
+    output['CE_core'] = CE_core
+    output['CE_memory'] = CE_memory
+    output['energy_needed'] = energyNeeded
+    output['power_needed'] = powerNeeded
+
+    output['n_treeMonths'] = carbonEmissions / ref_dic['treeYear'] * 12
+
+    output['nkm_drivingUS'] = carbonEmissions / ref_dic['passengerCar_US_perkm']
+    output['nkm_drivingEU'] = carbonEmissions / ref_dic['passengerCar_EU_perkm']
+    output['nkm_train'] = carbonEmissions / ref_dic['train_perkm']
+
+    if carbonEmissions < 0.5 * ref_dic['flight_NY-SF']:
+        output['flying_context'] = carbonEmissions / ref_dic['flight_PAR-LON']
+        output['flying_text'] = "Paris-London"
+    elif carbonEmissions < 0.5 * ref_dic['flight_NYC-MEL']:
+        output['flying_context'] = carbonEmissions / ref_dic['flight_NY-SF']
+        output['flying_text'] = "NYC-San Francisco"
+    else:
+        output['flying_context'] = carbonEmissions / ref_dic['flight_NYC-MEL']
+        output['flying_text'] = "NYC-Melbourne"
+    output['streaming_netflix_perhour'] = carbonEmissions / ref_dic['streaming_netflix_perhour']
+    output['google_search'] = carbonEmissions / ref_dic['google_search']
+
+    if log:
+        logger.info((f"This algorithm runs in {output['runTime_hours']} h and {output['runTime_min']} min "
+                 f"on {output['n_cores']} {output['coreType']} ({output['coreModel']}), "
+                 f"which draws {output['energy_needed']:.2f} kWh. Based in {location}, "
+                 f"this program produces {output['carbonEmissions']:.2f} g of CO2e, "
+                 f"which is equivalent to {output['n_treeMonths']:.2f} tree-months carbon sequestration, "
+                 f"{output['nkm_train']:.2f} km in a train, "
+                 f"{output['nkm_drivingEU']:.2f} km of driving a passenger car in Europe or "
+                 f"{output['streaming_netflix_perhour']:.2f} h of netflix streaming "
+                 f"(calculated using green-algorithms.org v1.1)."))
+
+    return output
+
+def generate_emission_stats(test_dir):
+    slurm_ids = ",".join(get_slurm_ids(test_dir))
+    logger.info(slurm_ids)
+    shell_command = f'sacct -j {slurm_ids} --format="JobID,Start,End,CPUTime,NCPUS,Elapsed,ReqMem,MaxRSS,MaxVMSize,AveVMSize,JobName"'
+    pipes = subprocess.Popen(shell_command, shell=True, cwd=test_dir,stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
+    std_out, std_err = pipes.communicate()
+    merged_memory = pd.read_fwf(io.StringIO(std_out.decode('utf-8')))
+    merged_memory = merged_memory.iloc[1: , :].reset_index(drop=True)
+    merged_memory['JobID_parent'] = merged_memory['JobID'].apply(lambda x: x.split('_')[0])
+    merged_memory = merged_memory.loc[(merged_memory['JobID'].str.endswith('+'))].reset_index(drop=True)
+    merged_memory['Elapsed'] = pd.to_timedelta(merged_memory['Elapsed'])
+    merged_memory['MaxRSS_byte'] = merged_memory['MaxRSS'].apply(lambda x: convert_mem(x))
+
+
+    emission_df = []
+    sum_mem =[]
+    sum_time = []
+    sum_cores = []
+    for index, row in merged_memory.iterrows():
+        memory = convert_mem_to_GB(row['MaxRSS_byte'])
+        df = pd.DataFrame(data=[row['Elapsed']], columns=['Elapsed'])
+        d = df['Elapsed'].dt.components[['days', 'hours', 'minutes', 'seconds']]
+        d['hours'] = d['hours'].add(d.pop('days') * 24)
+        df['Elapsed'] = d.astype(str).agg(lambda s: ':'.join(s.str.zfill(2)), axis=1)
+        runTime_hours = int(df['Elapsed'][0].split(':')[0])
+        runTime_min = int(df['Elapsed'][0].split(':')[1])
+        runTime_sec = int(df['Elapsed'][0].split(':')[2])
+        n_cores = int(row['NCPUS'])
+        emission_dic = calculate_emissions(memory, runTime_hours, runTime_min, runTime_sec, n_cores=n_cores, coreType='CPU', coreModel='any')
+        tmp_df = pd.DataFrame([emission_dic])#data=list(emission_dic.items()), columns = emission_dic.keys())
+        emission_df.append(tmp_df)
+
+    emission_df = pd.concat(emission_df)
+    output_text = ((f"This algorithm runs on {emission_df['n_cores'].sum()} {emission_df['coreType'].iloc[0]} ({emission_df['coreModel'].iloc[0]}) "
+                 f"for ~ {int(emission_df['runTime'].median())} h and {(emission_df['runTime'].median() % 1 ) * 60:.0f} min each, "
+                 f"for a total runtime of {int(emission_df['runTime'].sum())} h and {(emission_df['runTime'].sum() % 1 ) * 60:.0f} min, "
+                 f"with a memory usage of {emission_df['memory'].sum():.2f} GB, "
+                 f"drawing {emission_df['energy_needed'].sum():.2f} kWh. Based in {emission_df['location'].iloc[0]}, "
+                 f"this program produces {emission_df['carbonEmissions'].sum():.2f} g of CO2e, "
+                 f"which is equivalent to {emission_df['n_treeMonths'].sum():.2f} tree-months carbon sequestration, "
+                 f"a train ride of {emission_df['nkm_train'].sum():.2f} km, "
+                 f"{emission_df['nkm_drivingEU'].sum():.2f} km of driving a passenger car in Europe or "
+                 f"{emission_df['streaming_netflix_perhour'].sum():.2f} h of netflix streaming."))
+
+
+    memory = convert_mem_to_GB(merged_memory['MaxRSS_byte'].sum())
+    df = pd.DataFrame(data=[merged_memory['Elapsed'].sum()], columns=['Elapsed'])
+    d = df['Elapsed'].dt.components[['days', 'hours', 'minutes', 'seconds']]
+    d['hours'] = d['hours'].add(d.pop('days') * 24)
+    df['Elapsed'] = d.astype(str).agg(lambda s: ':'.join(s.str.zfill(2)), axis=1)
+    runTime_hours = int(df['Elapsed'][0].split(':')[0])
+    runTime_min = int(df['Elapsed'][0].split(':')[1])
+    runTime_sec = int(df['Elapsed'][0].split(':')[2])
+    output = calculate_emissions(memory, runTime_hours, runTime_min, runTime_sec, n_cores=1, coreType='CPU', coreModel='any')
+    output_text2 = ((f"If this would be run on 1 CPU instead of {emission_df['n_cores'].sum()} CPUs, it would "
+                     f"draw {output['energy_needed']:.2f} kWh, producing {output['carbonEmissions']:.2f} g of CO2e, "
+                     f"which is equivalent to {output['n_treeMonths']:.2f} tree-months carbon sequestration, "
+                     f"a train ride of {output['nkm_train']:.2f} km, "
+                     f"{output['nkm_drivingEU']:.2f} km of driving a passenger car in Europe or "
+                     f"{output['streaming_netflix_perhour']:.2f} h of netflix streaming. (calculated using https://doi.org/10.1002/advs.202100707 v1.1)"))
+
+    emission_out_file = os.path.join(test_dir, 'output', 'emission_stats.txt')
+    with open(emission_out_file, 'w') as fp:
+        fp.write(output_text)
+        fp.write('\n')
+        fp.write(output_text2)
+        fp.write('\n')
+        fp.write(emission_df.to_string())
+    logger.info(output_text)
+    logger.info(output_text2)
+
+
 def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism_nr='XXX', chain_id='A', output_gaps=False, bfac=True):
+    # generate emission stats
+    generate_emission_stats(folder.output[:-7])
+
     ddg_file = os.path.join(folder.ddG_run, output_name)
     pdb_file_raw = os.path.join(folder.ddG_input, 'input.pdb')
     if bfac:
@@ -411,7 +612,7 @@ def runtime_memory_stats(ddG_run_folder):
             print(ddg_process_id)
          
         #Get stats 
-        shell_command = f'sacct --format="JobID,Start,End,CPUTime,ReqMem,MaxRSS,MaxVMSize,AveVMSize,JobName" > memory_usage_{ddg_process_id}.log'
+        shell_command = f'sacct -j {relax_process_id} --format="JobID,Start,End,CPUTime,NCPUS,Elapsed,ReqMem,MaxRSS,MaxVMSize,AveVMSize,JobName" > memory_usage_{ddg_process_id}.log'
         subprocess.call(shell_command, cwd=ddG_run_folder, shell=True)
                                                 
         check_memory(ddg_process_id,ddG_run_folder) 

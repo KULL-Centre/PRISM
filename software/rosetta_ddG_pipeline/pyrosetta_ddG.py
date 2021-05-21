@@ -252,7 +252,7 @@ def mutate_residue_repack(pose, mutant_position, mutant_aa, pack_radius, pack_sc
 
 
 # mutates and repacks using the cartesian algorithm
-def mutate_residue_flex_relax_algo(pose, mutant_position, mutant_aa, pack_radius, pack_scorefxn, ddg_bbnbrs=1, cartesian=False, relax_iter=None):
+def mutate_residue_flex_relax_algo(pose, mutant_position, mutant_aa, pack_radius, pack_scorefxn, ddg_bbnbrs=1, cartesian=False, relax_iter=200):
     import time
     from pyrosetta.rosetta.core.pack.task import operation
     
