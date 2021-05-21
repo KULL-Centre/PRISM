@@ -6,4 +6,4 @@
 #SBATCH --partition=sbinlab 
 
 #This sbatch script launches the parse postprocess_rosetta_ddg_mp_pyrosetta function, from the mp_ddG 
-python3 /mp_ddG.py /prepare/checking /ddG/run /ddG/output /ddG/input /output A homodimer-1afo_renum_uniquechain ddG.out False
+python3 /mp_ddG.py /prepare/checking /ddG/run /ddG/output /ddG/input /output A True homodimer-1afo_renum_uniquechain ddG.out False

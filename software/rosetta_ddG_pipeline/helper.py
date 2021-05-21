@@ -535,7 +535,7 @@ def generate_emission_stats(test_dir):
     logger.info(output_text2)
 
 
-def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism_nr='XXX', chain_id='A', output_gaps=False, bfac=True):
+def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism_nr='XXX', chain_id='A', output_gaps=False, bfac=True, zip_files=True):
     # generate emission stats
     generate_emission_stats(folder.output[:-7])
 
@@ -601,6 +601,14 @@ def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism
         pdb_gap_file = os.path.join(folder.ddG_output, 'relaxed_gap.pdb')
         shift_pdb_numbering(pdb_file, pdb_gap_file, sec_all, startnr=1)
         create_copy(pdb_gap_file, folder.output, name=f'{sys_name}_final_gap.pdb')
+
+    if zip_files:
+        logger.info('Zip files...')
+        output_filename = os.path.join(folder.output[:-7], 'calculation')
+        shutil.make_archive(output_filename, 'tar', folder.output[:-7])
+        for r, d, f in os.walk(folder.output[:-7]):
+            if not r in [folder.output, folder.output[:-7]]:
+                shutil.rmtree(r, ignore_errors=True)
 
 
 def runtime_memory_stats(ddG_run_folder):

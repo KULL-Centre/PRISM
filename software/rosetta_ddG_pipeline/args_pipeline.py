@@ -108,6 +108,12 @@ def parse_args2():
                         dest='DUMP_PDB',
                         help='Dumps all mutant pdbs, default False.'
                         )
+    parser.add_argument('--skip_zip', '-nzip',
+                        default=True,
+                        type=lambda s: s.lower() in ['false', 'f', 'no', '0'],
+                        dest='ZIP_FILES',
+                        help='Switch folder zipping off. default on'
+                        )
     parser.add_argument('--verbose',
                         default=False,
                         dest='VERBOSE',
@@ -229,7 +235,7 @@ def parse_args2():
                         #      )
                         )
     parser.add_argument('--mp_temperature',
-                        default=37.0,
+                        default=20.0,
                         type=float,
                         dest='MP_TEMPERATURE',
                         help=SUPPRESS,
@@ -312,6 +318,8 @@ def parse_args2():
         args.MUT_MODE = 'mut_file'
     if args.DUMP_PDB != 0:
         args.DUMP_PDB = 1
+    if args.ZIP_FILES != True:
+        args.ZIP_FILES = False
     if args.IS_MP == False:
         args.MP_MULTISTRUC_PROTOCOL == 0
     if args.IS_MP:

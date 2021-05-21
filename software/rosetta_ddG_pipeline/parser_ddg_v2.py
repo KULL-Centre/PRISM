@@ -74,7 +74,7 @@ def csv_to_prism(data,structure_input,chain_id):
             prism_data.write('#\t chain_id: '+ chain_id+"\n")
             output_df.to_csv(prism_data, index = False,sep=' ')
 
-def parse_rosetta_ddgs(sys_name, chain_id, fasta_seq, ddG_run, ddG_output, structure_input, ddG_input, output, prepare_checking, output_gaps=False):
+def parse_rosetta_ddgs(sys_name, chain_id, fasta_seq, ddG_run, ddG_output, structure_input, ddG_input, output, prepare_checking, output_gaps=False, zip_files=True):
     """This script parses the results from the ddG calculations into two files. A regular data file containing only the data and the variants and a prism-like file with data variants and additional information"""
     
     runtime_memory_stats(ddG_run)
@@ -136,7 +136,7 @@ def parse_rosetta_ddgs(sys_name, chain_id, fasta_seq, ddG_run, ddG_output, struc
     folder.update({'prepare_checking': prepare_checking, 'ddG_run': ddG_run,
                    'ddG_output': ddG_output, 'ddG_input': ddG_input, 'output': output})
     generate_output(folder, output_name='ddg.out', sys_name=sys_name, 
-        chain_id=chain_id, output_gaps=output_gaps)
+        chain_id=chain_id, output_gaps=output_gaps, zip_files=zip_files)
 
 #    try:
 #        data=output_file_path + ".csv"
@@ -153,4 +153,4 @@ def parse_rosetta_ddgs(sys_name, chain_id, fasta_seq, ddG_run, ddG_output, struc
 if __name__ == '__main__':
     parse_rosetta_ddgs(sys_name=sys.argv[1], chain_id=sys.argv[2], fasta_seq=sys.argv[3], 
         ddG_run=sys.argv[4], ddG_output=sys.argv[5], structure_input=sys.argv[6], 
-        ddG_input=sys.argv[7], output=sys.argv[8], prepare_checking=sys.argv[9], output_gaps=sys.argv[10])
+        ddG_input=sys.argv[7], output=sys.argv[8], prepare_checking=sys.argv[9], output_gaps=sys.argv[10], zip_files=sys.argv[11])

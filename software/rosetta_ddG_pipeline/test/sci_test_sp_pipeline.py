@@ -106,6 +106,7 @@ class SPpipelineFullrunDHFRTestCase(unittest.TestCase):
             'SLURM_PARTITION': 'sbinlab',
             'GAPS_OUTPUT': False,
             'DUMP_PDB': 0,
+            'ZIP_FILES': True,
             'VERBOSE': False,
             'IS_MP': False,
             'MP_SPAN_INPUT': None,
@@ -118,7 +119,7 @@ class SPpipelineFullrunDHFRTestCase(unittest.TestCase):
             'UNIPROT_ID': '',
             'MP_THICKNESS': 15,
             'MP_LIPIDS': 'DLPC',
-            'MP_TEMPERATURE': 37.0,
+            'MP_TEMPERATURE': 20.0,
             'MP_PH': -1.0,
             'BENCH_MP_REPACK': 8.0,
             'BENCH_MP_REPEAT': 5,
@@ -214,6 +215,13 @@ class SPpipelineFullrunDHFRTestCase(unittest.TestCase):
     def test_c_analyze_comp_rosettamutfile_prov_flag(self):
         self.output_dir = tmp('fullrun_rosettamutfile_DHFR_prov_flag')
         self.reference_dir_out = data('sp-pipeline/output/SPpipelineFullrunDHFRTestCase_rosettamutfile')
+
+        prism_file_test = os.path.join(self.output_dir, 'output', 'prism_rosetta_XXX_4M6J_gap-shifted.txt')
+        date_time = pd.Timestamp.today()
+        date_time += timedelta(hours = 2)
+        print(f"Please wait for ~ 2h ({date_time.strftime('%Y-%m-%d %H:%M')}) for the calculation to finish.")
+        while not os.path.isfile(prism_file_test):
+            time.sleep(20)
 
         ref_ddG_file = os.path.join(self.reference_dir_out , 'ref_ddG.txt')
         ref_ddG_df = pd.read_csv(ref_ddG_file, header=[0])

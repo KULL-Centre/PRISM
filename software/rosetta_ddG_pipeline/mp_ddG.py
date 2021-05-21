@@ -85,11 +85,11 @@ echo $INDEX
         sys.exit()
 
 
-def postprocess_rosetta_ddg_mp_pyrosetta(folder, output_name='ddG.out', sys_name='', version=1, prism_nr='XXX', chain_id='A', output_gaps=False, mp_multistruc=0):
+def postprocess_rosetta_ddg_mp_pyrosetta(folder, output_name='ddG.out', sys_name='', version=1, prism_nr='XXX', chain_id='A', zip_files=True, output_gaps=False, mp_multistruc=0):
     print(mp_multistruc, folder)
     if mp_multistruc == 0:
         runtime_memory_stats(folder.ddG_run)
-        generate_output(folder, output_name=output_name, sys_name=sys_name, version=version, prism_nr=prism_nr, chain_id=chain_id, output_gaps=output_gaps)
+        generate_output(folder, output_name=output_name, sys_name=sys_name, version=version, prism_nr=prism_nr, chain_id=chain_id, output_gaps=output_gaps, zip_files=zip_files)
     else:
         dfs = [['variant', 'ddG', 'std']]
         for sub_ddG_folder in folder.ddG_run.split(":"):
@@ -105,7 +105,7 @@ def postprocess_rosetta_ddg_mp_pyrosetta(folder, output_name='ddG.out', sys_name
         folder.ddG_output = folder.ddG_postparse_output
 
 
-        generate_output(folder, output_name=output_name, sys_name=sys_name, version=version, prism_nr=prism_nr, chain_id=chain_id, output_gaps=output_gaps)
+        generate_output(folder, output_name=output_name, sys_name=sys_name, version=version, prism_nr=prism_nr, chain_id=chain_id, output_gaps=output_gaps, zip_files=zip_files)
 
 
     # The ddg_file should only contain the data, looking like this:
@@ -120,7 +120,7 @@ def postprocess_rosetta_ddg_mp_pyrosetta(folder, output_name='ddG.out', sys_name
 
 
 def write_parse_rosetta_ddg_mp_pyrosetta_sbatch(folder, chain_id='A', sys_name='input', output_name='ddG.out', 
-        partition='sbinlab', output_gaps=False, mp_multistruc=0):
+        partition='sbinlab', output_gaps=False, mp_multistruc=0, zip_files=True):
     if mp_multistruc != 0:
         ddG_run = ":".join(folder.ddG_run)
         ddG_output = ":".join(folder.ddG_output )
@@ -145,7 +145,7 @@ def write_parse_rosetta_ddg_mp_pyrosetta_sbatch(folder, chain_id='A', sys_name='
         fp.write((f'python3 {os.path.join(rosetta_paths.path_to_stability_pipeline, "mp_ddG.py")} '
                   f'{folder.prepare_checking} {ddG_run} {ddG_output} '
                   f'{ddG_input} {folder.output} '
-                  f'{chain_id} {sys_name} {output_name} {output_gaps}'
+                  f'{chain_id} {zip_files} {sys_name} {output_name} {output_gaps}'
                   ))
         if mp_multistruc != 0:
             fp.write(f' {mp_multistruc} {folder.ddG_postparse_run} {folder.ddG_postparse_output}')
@@ -158,21 +158,21 @@ if __name__ == '__main__':
     folder.update({'prepare_checking': sys.argv[1], 'ddG_run': sys.argv[2],
                    'ddG_output': sys.argv[3], 'ddG_input': sys.argv[4], 'output': sys.argv[5]})
 
-    if len(sys.argv) > 10:
-        folder.update({'ddG_postparse_run': sys.argv[11], 'ddG_postparse_output': sys.argv[12]})
+    if len(sys.argv) > 11:
+        folder.update({'ddG_postparse_run': sys.argv[12], 'ddG_postparse_output': sys.argv[13]})
         print(folder)
         postprocess_rosetta_ddg_mp_pyrosetta(
-            folder, chain_id=sys.argv[6], sys_name=sys.argv[7], output_name=sys.argv[8], output_gaps=sys.argv[9], mp_multistruc=sys.argv[10] )
+            folder, chain_id=sys.argv[6], zip_files=sys.argv[7], sys_name=sys.argv[8], output_name=sys.argv[9], output_gaps=sys.argv[10], mp_multistruc=sys.argv[11] )
+    elif len(sys.argv) > 9:
+        postprocess_rosetta_ddg_mp_pyrosetta(
+            folder, chain_id=sys.argv[6], zip_files=sys.argv[7], sys_name=sys.argv[8], output_name=sys.argv[9], output_gaps=sys.argv[10])
     elif len(sys.argv) > 8:
         postprocess_rosetta_ddg_mp_pyrosetta(
-            folder, chain_id=sys.argv[6], sys_name=sys.argv[7], output_name=sys.argv[8], output_gaps=sys.argv[9])
+            folder, chain_id=sys.argv[6], zip_files=sys.argv[7], sys_name=sys.argv[8], output_name=sys.argv[9])
     elif len(sys.argv) > 7:
         postprocess_rosetta_ddg_mp_pyrosetta(
-            folder, chain_id=sys.argv[6], sys_name=sys.argv[7], output_name=sys.argv[8])
+            folder, chain_id=sys.argv[6], zip_files=sys.argv[7], sys_name=sys.argv[8])
     elif len(sys.argv) > 6:
-        postprocess_rosetta_ddg_mp_pyrosetta(
-            folder, chain_id=sys.argv[6], sys_name=sys.argv[7])
-    elif len(sys.argv) > 5:
-        postprocess_rosetta_ddg_mp_pyrosetta(folder, chain_id=sys.argv[6])
+        postprocess_rosetta_ddg_mp_pyrosetta(folder, chain_id=sys.argv[6], zip_files=sys.argv[7])
     else:
         postprocess_rosetta_ddg_mp_pyrosetta(folder)
