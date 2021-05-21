@@ -64,11 +64,12 @@ class structure:
             #Gets the fasta_seq
             for chain in list(str(self.run_struc)):
                 self.path_to_cleaned_fasta = os.path.join(self.folder.prepare_cleaning, f'{name}_{chain}.fasta')
-                fasta_lines = open(self.path_to_cleaned_fasta, 'r').readlines()
-                self.fasta_seq = ''
-        
-                for line in fasta_lines[1:]:
-                    self.fasta_seq = self.fasta_seq + line.strip()
+                with open(self.path_to_cleaned_fasta, 'r') as fp:
+                    fasta_lines = fp.readlines()
+                    self.fasta_seq = ''
+            
+                    for line in fasta_lines[1:]:
+                        self.fasta_seq = self.fasta_seq + line.strip()
                     
         #This cleans the protein but keeps the ligands          
         if ligand == True:
@@ -240,6 +241,17 @@ class structure:
                                 key.append(lines[1])
                                 wt.append(lines[0])
                                 val.append(lines[2])
+                        if save:
+                            if "_".join(key) in mutate.keys():
+                                old_wt, old_val = mutate["_".join(key)]
+                                new_val = []
+                                for indl, valu in enumerate(old_val.split("_")):
+                                    new_val.append(f"{valu}{val[indl]}")
+                                mutate["_".join(key)] = "_".join(wt), "_".join(new_val)
+                            else:
+                                mutate["_".join(key)] = "_".join(wt), "_".join(val)
+                        else:
+                            save = True
                     else:
                         for line in f:
                             lines = line.split()
