@@ -19,7 +19,6 @@ import sys
 
 # Local application imports
 from AnalyseStruc import get_structure_parameters
-from analysis import calc_all
 from args_pipeline import parse_args2
 from checks import compare_mutfile, pdbxmut
 from folders import folder2
@@ -27,8 +26,6 @@ from helper import create_symlinks, create_copy, find_copy, get_mut_dict, read_f
 import mp_prepare
 import mp_ddG
 from pdb_to_fasta_seq import pdb_to_fasta_seq
-from plotting import plot_all
-from prism_rosetta_parser import read_from_prism
 import rosetta_paths
 import run_modes
 import storeinputs
@@ -64,7 +61,7 @@ def predict_stability(args):
     name = os.path.splitext(os.path.basename(structure_list))[0]
 
     # Initiate folder structure
-    folder = folder2(outpath, overwrite_path, is_mp=args.IS_MP)
+    folder = folder2(outpath, overwrite_path, is_mp=args.IS_MP, mp_multistruc=args.MP_MULTISTRUC_PROTOCOL)
     logger = make_log(folder,verbose)
 
     # Store input files
@@ -153,12 +150,10 @@ def predict_stability(args):
                     input_dict['MP_SPAN_INPUT'], folder.prepare_mp_span, name='input.span')
 
             logger.info(f'Calculate lipid accessible residues')
-            lipacc_dic = mp_prepare.mp_lipid_acc_resi(structure_instance.path_to_cleaned_pdb, folder.prepare_mp_lipacc, folder.prepare_mp_span, thickness=args.MP_THICKNESS, SLURM=False)
+            lipacc_dic, lipacc_file = mp_prepare.mp_lipid_acc_resi(structure_instance.path_to_cleaned_pdb, folder.prepare_mp_lipacc, folder.prepare_mp_span, thickness=args.MP_THICKNESS, SLURM=False)
 
         # Making mutfiles and checks
-        if args.MUT_MODE == 'prism':
-            new_mut_input = os.path.join(folder.prepare_input, 'input_mutfile')
-        elif args.MUT_MODE == 'mut_file':
+        if args.MUT_MODE == 'mut_file':
             new_mut_input = input_dict['MUTATION_INPUT']
         else:
             new_mut_input = None
@@ -187,9 +182,8 @@ def predict_stability(args):
             structure_instance.path_to_cleaned_pdb, folder.prepare_output, name='output.pdb'))
         if args.IS_MP == True:
             prepare_output_span_dir = create_copy(folder.prepare_mp_span, f'{folder.prepare_output}', name='spanfiles', directory=True)
-        else:
-            prepare_output_ddg_mutfile_dir = create_copy(
-                folder.prepare_mutfiles, folder.prepare_output, name='mutfiles', directory=True)
+        prepare_output_ddg_mutfile_dir = create_copy(
+            folder.prepare_mutfiles, folder.prepare_output, name='mutfiles', directory=True)
 
         # Copy files for relax & run
         relax_input_struc = check_path(create_copy(
@@ -215,13 +209,8 @@ def predict_stability(args):
 
             # Parse sbatch relax parser
             path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(
-                folder, sys_name=f'{name}_relax', partition=args.SLURM_PARTITION, sc_name='relax_scores')
+                folder, sys_name=f'{name}_relax', partition=args.SLURM_PARTITION, sc_name='relax_scores', mp_multistruc=args.MP_MULTISTRUC_PROTOCOL)
 
-            # Parse sbatch ddg file
-            ddg_input_ddgfile = create_copy(
-                input_dict['DDG_FLAG_FILE'], folder.ddG_input, name='ddg_flagfile')
-            ddg_input_span_dir = create_copy(
-                prepare_output_span_dir, folder.ddG_input, name='spanfiles', directory=True)
 
             if args.MP_PH == -1:
                 is_pH = 0
@@ -229,14 +218,47 @@ def predict_stability(args):
             else:
                 is_pH = 1
                 pH_value = args.MP_PH
-            path_to_ddg_calc_sbatch = mp_ddG.rosetta_ddg_mp_pyrosetta(
-                folder, mut_dic, SLURM=True, sys_name=name, partition=args.SLURM_PARTITION,
-                repack_radius=args.BENCH_MP_REPACK, lipids=args.MP_LIPIDS,
-                temperature=args.MP_TEMPERATURE, repeats=args.BENCH_MP_REPEAT,
-                is_pH=is_pH, pH_value=pH_value, lipacc_dic=lipacc_dic, score_function=args.MP_ENERGY_FUNC)
-            # Parse sbatch ddg parser
-            path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
-                folder, chain_id=args.CHAIN, sys_name=name, output_name='ddG.out', partition=partition, output_gaps=args.GAPS_OUTPUT)
+
+
+            # Parse sbatch ddg file
+            if  args.MP_MULTISTRUC_PROTOCOL == 0:
+                ddg_input_ddgfile = create_copy(
+                    input_dict['DDG_FLAG_FILE'], folder.ddG_input, name='ddg_flagfile')
+                ddg_input_span_dir = create_copy(
+                    prepare_output_span_dir, folder.ddG_input, name='spanfiles', directory=True)
+                ddg_input_mutfile_dir = create_copy(
+                    prepare_output_ddg_mutfile_dir, folder.ddG_input, name='mutfiles', directory=True)
+                path_to_ddg_calc_sbatch = mp_ddG.rosetta_ddg_mp_pyrosetta(
+                    folder.ddG_input, folder.ddG_run, mut_dic, SLURM=True, sys_name=name, partition=args.SLURM_PARTITION,
+                    repack_radius=args.BENCH_MP_REPACK, lipids=args.MP_LIPIDS,
+                    temperature=args.MP_TEMPERATURE, repeats=args.BENCH_MP_REPEAT, dump_pdb = args.DUMP_PDB,
+                    is_pH=is_pH, pH_value=pH_value, lipacc_dic=lipacc_file, score_function=args.MP_ENERGY_FUNC,
+                    repack_protocol=args.MP_REPACK_PROTOCOL, mutfiles=ddg_input_mutfile_dir)
+                path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
+                        folder, chain_id=args.CHAIN, sys_name=name, output_name='ddG.out', partition=partition, 
+                        output_gaps=args.GAPS_OUTPUT, zip_files=args.ZIP_FILES)
+            else:
+                for indi, sub_ddg_folder in enumerate(folder.ddG_input):
+                    ddg_input_ddgfile = create_copy(
+                        input_dict['DDG_FLAG_FILE'], sub_ddg_folder, name='ddg_flagfile')
+                    ddg_input_span_dir = create_copy(
+                        prepare_output_span_dir, sub_ddg_folder, name='spanfiles', directory=True)
+                    ddg_input_mutfile_dir = create_copy(
+                        prepare_output_ddg_mutfile_dir, sub_ddg_folder, name='mutfiles', directory=True)
+
+
+                    path_to_ddg_calc_sbatch = mp_ddG.rosetta_ddg_mp_pyrosetta(
+                        folder.ddG_input[indi], folder.ddG_run[indi], mut_dic, SLURM=True, sys_name=name, partition=args.SLURM_PARTITION,
+                        repack_radius=args.BENCH_MP_REPACK, lipids=args.MP_LIPIDS, lowest=0,
+                        temperature=args.MP_TEMPERATURE, repeats=1, dump_pdb = args.DUMP_PDB,
+                        is_pH=is_pH, pH_value=pH_value, lipacc_dic=lipacc_file, score_function=args.MP_ENERGY_FUNC,
+                        repack_protocol=args.MP_REPACK_PROTOCOL, mutfiles=ddg_input_mutfile_dir)
+
+                # Parse sbatch ddg parser
+                #folds = [folder.prepare_checking, folder.ddG_run, folder.ddG_output, folder.ddG_input, folder.output]
+                path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
+                    folder, chain_id=args.CHAIN, sys_name=name, output_name='ddG.out', partition=partition, 
+                    output_gaps=args.GAPS_OUTPUT, mp_multistruc=args.MP_MULTISTRUC_PROTOCOL, zip_files=args.ZIP_FILES)
         else:
             # Parse sbatch relax file
             relax_input_relaxfile = check_path(create_copy(
@@ -259,7 +281,7 @@ def predict_stability(args):
                 folder, ddg_input_mutfile_dir, ddgfile=ddg_input_ddgfile, sys_name=name,  partition=partition)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = structure_instance.write_parse_cartesian_ddg_sbatch(
-                folder,  partition=partition, output_gaps=args.GAPS_OUTPUT)
+                folder,  partition=partition, output_gaps=args.GAPS_OUTPUT, zip_files=args.ZIP_FILES)
 
 
     # Execution
@@ -270,22 +292,15 @@ def predict_stability(args):
             folder.relax_run, '.pdb', folder.relax_output, 'output.pdb')
 
     if mode == 'ddg_calculation':
-        run_modes.ddg_calculation(folder,parse_relax_process_id=None)
+        run_modes.ddg_calculation(folder,parse_relax_process_id=None, mp_multistruc=args.MP_MULTISTRUC_PROTOCOL)
 #        ddg_output_score = find_copy(
 #            folder.ddG_run, '.sc', folder.ddG_output, 'output.sc')
-
-    if mode == 'analysis':
-        if args.PRISM_INPUT:
-            calc_all(folder, sys_name=name)
-            plot_all(folder, sys_name=name)
-        else:
-            logger.warning('No reference prism file provided. No analysis performed.')
 
     # Full SLURM execution
     if mode == 'proceed' or mode == 'fullrun':
         # Start relax calculation
         parse_relax_process_id = run_modes.relaxation(folder)
-        run_modes.ddg_calculation(folder, parse_relax_process_id)
+        run_modes.ddg_calculation(folder, parse_relax_process_id=parse_relax_process_id, mp_multistruc=args.MP_MULTISTRUC_PROTOCOL)
 
 
 

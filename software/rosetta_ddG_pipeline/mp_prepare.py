@@ -191,7 +191,8 @@ def mp_lipid_acc_resi(pdbinput, outdir_path, folder_spanfile, thickness=15, SLUR
     
     lipacc_dic = {}
     out_pdb_file = glob.glob(os.path.join(outdir_path, '*.pdb'))[0]
-    with open (out_pdb_file, 'r') as fp, open(os.path.join(outdir_path, "mp_lipid_acc_dic.json"), 'w') as fp2:
+    output_json_file = os.path.join(outdir_path, "mp_lipid_acc_dic.json")
+    with open (out_pdb_file, 'r') as fp, open(output_json_file, 'w') as fp2:
         for line in fp:
             if line.startswith('ATOM'):
                 resid = int(line[22:26])
@@ -200,7 +201,7 @@ def mp_lipid_acc_resi(pdbinput, outdir_path, folder_spanfile, thickness=15, SLUR
                 else:
                     lipacc_dic[resid] = 'false'
         json.dump(lipacc_dic, fp2, indent=4) 
-    return lipacc_dic
+    return lipacc_dic, output_json_file
 
 
 def mp_span_from_pdb_dssp(pdbinput, outdir_path, thickness=15, SLURM=False):
@@ -261,6 +262,10 @@ def rosetta_relax_mp(folder, SLURM=False, num_struc=20, sys_name='mp', partition
         for file in files:
             if file.endswith('.span'):
                 spanfile = os.path.join(root, file)
+    if score_function=='franklin2019':
+      energy_fawtb=1.5
+    else:
+      energy_fawtb=0
     if mp_switch_off:
         relax_command = (f'{Rosetta_script_exec} '
                       # Use the membrane relax protocol Rosetta script
@@ -268,7 +273,7 @@ def rosetta_relax_mp(folder, SLURM=False, num_struc=20, sys_name='mp', partition
                       # Repeatition of FastRelax
                       f'-parser:script_vars repeats={repeats} energy_func={score_function} '
                       # Input PDB Structure: PDB file for protein structure
-                      f'-in:file:s {os.path.join(folder.relax_input, "input.pdb")} '
+                      f' -in:file:s {os.path.join(folder.relax_input, "input.pdb")} '
                       # Spanfile describing trans-membrane spans of the
                       # starting structure
 #                      f'-mp:setup:spanfiles {spanfile} '
@@ -298,7 +303,7 @@ def rosetta_relax_mp(folder, SLURM=False, num_struc=20, sys_name='mp', partition
                       # Use the membrane relax protocol Rosetta script
                       f'-parser:protocol {os.path.join(folder.relax_input, "relax.xml")} '
                       # Repeatition of FastRelax
-                      f'-parser:script_vars repeats={repeats} energy_func={score_function} '
+                      f'-parser:script_vars repeats={repeats} energy_func={score_function} energy_fawtb={energy_fawtb} '
                       # Input PDB Structure: PDB file for protein structure
                       f'-in:file:s {os.path.join(folder.relax_input, "input.pdb")} '
                       # Spanfile describing trans-membrane spans of the

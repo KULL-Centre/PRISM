@@ -8,7 +8,7 @@ Date of last major changes: 2020-04-15
 """
 
 # Standard library imports
-
+import glob
 import logging 
 import os
 import subprocess
@@ -22,7 +22,6 @@ import pdb_to_fasta_seq
 import rosetta_paths
 from AnalyseStruc import get_structure_parameters
 from helper import read_fasta
-from prism_rosetta_parser import prism_to_mut
 
 class structure:
     
@@ -65,11 +64,12 @@ class structure:
             #Gets the fasta_seq
             for chain in list(str(self.run_struc)):
                 self.path_to_cleaned_fasta = os.path.join(self.folder.prepare_cleaning, f'{name}_{chain}.fasta')
-                fasta_lines = open(self.path_to_cleaned_fasta, 'r').readlines()
-                self.fasta_seq = ''
-        
-                for line in fasta_lines[1:]:
-                    self.fasta_seq = self.fasta_seq + line.strip()
+                with open(self.path_to_cleaned_fasta, 'r') as fp:
+                    fasta_lines = fp.readlines()
+                    self.fasta_seq = ''
+            
+                    for line in fasta_lines[1:]:
+                        self.fasta_seq = self.fasta_seq + line.strip()
                     
         #This cleans the protein but keeps the ligands          
         if ligand == True:
@@ -187,59 +187,154 @@ class structure:
 
         if mutation_input != "proceed":
 
-            if mutation_mode == 'prism':
-                self.logger.info(f'Convert prism file: {self.input_dict["PRISM_INPUT"]}')
-                path_to_mutation_input = self.folder.prepare_input    
-                mutation_input=os.path.join(path_to_mutation_input,'mutation_input.txt') 
-                prism_to_mut(self.input_dict['PRISM_INPUT'], mutation_input)
-            elif mutation_mode == 'all':
+            if mutation_mode == 'all':
                 self.make_mut_input()
                 path_to_mutation_input = self.folder.prepare_input    
                 mutation_input=os.path.join(path_to_mutation_input,'mutation_input.txt') 
 
             mutate = {}
             self.logger.debug("Printing point mutations [WT, ResID, Mutations]")
-            with open(mutation_input) as f:
-                for line in f:
-                    (wt, key, val) = line.split()
-                    mutate[int(key)] = wt, val
-                    c = mutate[int(key)][0] in list(mutate[int(key)][1])
-                    if c == True:
-                        mutate[int(key)] = wt, val
+            if os.path.isdir(mutation_input):
+                for file in glob.glob(os.path.join(mutation_input, '*')):
+                    with open(file, 'r') as f:
+                        total_muts = int(next(f).split()[1].split('\\n')[0])
+                        lines = f.readlines()
+                        key = file.split('/')[-1].split("mutfile")[1].split('_')
+                        res_nums = len(key)
+                        mutsNum = int(total_muts/res_nums)
+                        wt=[]
+                        val=[]            
+                        for resii in range(res_nums):
+                            single_var = []
+                            for singlemuts in range(mutsNum):
+                                target = lines[(1+1*singlemuts)+(resii+(singlemuts*res_nums))].split()
+                                single_var.append(target[2])
+                                single_wt = target[0]
+                            val.append("".join(single_var))
+                            wt.append(single_wt)
+                        mutate["_".join(key)] = "_".join(wt), "_".join(val)
+            else:
+                with open(mutation_input) as f:
+                    first_line = next(f).split()[0]
+                with open(mutation_input, 'r') as f:
+                    if first_line == 'total':
+                        save = False
+                        next(f)
+                        for lines in f:
+                            lines = lines.split()
+                            if len(lines) == 1:
+                                if save:
+                                    if "_".join(key) in mutate.keys():
+                                        old_wt, old_val = mutate["_".join(key)]
+                                        new_val = []
+                                        for indl, valu in enumerate(old_val.split("_")):
+                                            new_val.append(f"{valu}{val[indl]}")
+                                        mutate["_".join(key)] = "_".join(wt), "_".join(new_val)
+                                    else:
+                                        mutate["_".join(key)] = "_".join(wt), "_".join(val)
+                                else:
+                                    save = True
+                                key=[]
+                                wt=[]
+                                val=[]
+                            else:
+                                key.append(lines[1])
+                                wt.append(lines[0])
+                                val.append(lines[2])
+                        if save:
+                            if "_".join(key) in mutate.keys():
+                                old_wt, old_val = mutate["_".join(key)]
+                                new_val = []
+                                for indl, valu in enumerate(old_val.split("_")):
+                                    new_val.append(f"{valu}{val[indl]}")
+                                mutate["_".join(key)] = "_".join(wt), "_".join(new_val)
+                            else:
+                                mutate["_".join(key)] = "_".join(wt), "_".join(val)
+                        else:
+                            save = True
                     else:
-                        val = wt + val
-                        mutate[int(key)] = wt, val
+                        for line in f:
+                            lines = line.split()
+                            if len(lines) == 3:
+                                (wt, key, val) = line.split()
+                                mutate[int(key)] = wt, val
+                                c = mutate[int(key)][0] in list(mutate[int(key)][1])
+                                if c == True:
+                                    mutate[int(key)] = wt, val
+                                else:
+                                    val = wt + val
+                                    mutate[int(key)] = wt, val
+                            else:
+                                key=[]
+                                wt=[]
+                                val=[]
+                                for multi_muts in range(int(len(lines)/3)):
+                                    wt_single = lines[0+(3*multi_muts)]
+                                    var_single = lines[2+(3*multi_muts)]
+                                    if not wt_single in var_single:
+                                        var_single += wt_single
+                                    #var_single = ''.join(set(var_single))
+                                    wt.append(wt_single)
+                                    key.append(lines[1+(3*multi_muts)])
+                                    val.append(var_single)
+                                mutate["_".join(key)] = "_".join(wt), "_".join(val)
             with open(os.path.join(self.folder.prepare_cleaning, 'mutation_clean.txt'), 'w') as fp:
+                i = 10000
                 for residue_number in mutate:
                     if mutation_mode == 'all':
                         residue_number_ros = alignment_dic[residue_number]
                     else:
                         try:
-                            residue_number_ros = self.struc_dic['resdata_reverse'][residue_number] 
-                        except:
-                            self.logger.warning(f"Residue {residue_number} present in the mutation/prism file is not resolved in the structure. No output generated for it.")
+                            residue_number_ros = []
+                            for res_num in str(residue_number).split('_'):
+                                residue_number_ros.append(self.struc_dic['resdata_reverse'][int(res_num)])
+                        except Exception as e:
+                            self.logger.warning(f"Residue {residue_number} present in the mutation file is not resolved in the structure. No output generated for it.")
                             continue
                     self.logger.debug(f"{residue_number_ros}  {residue_number}")
                     #This checks that the position in the mutfile is the correct one in the fasta sequence
-                    check = self.fasta_seq[residue_number_ros-1] in list(
-                        mutate[residue_number][0])
-                    if check == False:
-                        check2 = True
-                        self.logger.warning(f'Missmatch{self.fasta_seq[residue_number_ros-1]}, {residue_number},{mutate[residue_number][0]}')
-                    final_list = []
-                    for num in mutate[residue_number][1]:                    
-                        if num not in final_list:
-                            final_list.append(num)                
-                    self.logger.debug(f"{mutate[residue_number][0]} {residue_number}  {''.join(final_list)}")
+                    if len(residue_number_ros)==1:
+                        residue_number_ros = int(residue_number_ros[0])
+                        check = self.fasta_seq[residue_number_ros-1] in list(
+                            mutate[residue_number][0])
+                        if check == False:
+                            check2 = True
+                            self.logger.warning(f'Missmatch{self.fasta_seq[residue_number_ros-1]}, {residue_number},{mutate[residue_number][0]}')
+                        final_list = []
+                        for num in mutate[residue_number][1]:                    
+                            if num not in final_list:
+                                final_list.append(num)                
+                        self.logger.debug(f"{mutate[residue_number][0]} {residue_number}  {''.join(final_list)}")
 
-                    with open(os.path.join(self.folder.prepare_mutfiles, f'mutfile{str(residue_number_ros):0>5}'), 'w') as mutfile:
-                        mutfile.write('total ' + str(len(final_list)))
-                        mut_dic[str(residue_number_ros)] = "".join(final_list)
-                        fp.write(f'{self.fasta_seq[residue_number_ros - 1]} {residue_number_ros} {"".join(final_list)}\n')
-                        for AAtype in final_list:
-                            mutfile.write('\n1\n')
-                            mutfile.write(self.fasta_seq[
-                                          residue_number_ros - 1] + ' ' + str(residue_number_ros) + ' ' + AAtype)
+                        with open(os.path.join(self.folder.prepare_mutfiles, f'mutfile{str(residue_number_ros):0>5}'), 'w') as mutfile:
+                            mutfile.write('total ' + str(len(final_list)))
+                            mut_dic[str(residue_number_ros)] = "".join(final_list)
+                            fp.write(f'{self.fasta_seq[residue_number_ros - 1]} {residue_number_ros} {"".join(final_list)}\n')
+                            for AAtype in final_list:
+                                mutfile.write('\n1\n')
+                                mutfile.write(self.fasta_seq[
+                                              residue_number_ros - 1] + ' ' + str(residue_number_ros) + ' ' + AAtype)
+                    else:
+                        for res_index, residue in enumerate(residue_number_ros):
+                            check = self.fasta_seq[int(residue)-1] in list(
+                                mutate[residue_number][0].split("_")[res_index])
+                            if check == False:
+                                check2 = True
+                                self.logger.warning(f'Missmatch{self.fasta_seq[int(residue)-1]}, {residue},{mutate[int(residue)][0]}')
+                            fp.write(f'{self.fasta_seq[int(residue) - 1]} {int(residue)} {mutate[residue_number][1].split("_")[res_index]} ')
+                        fp.write('\n')
+
+                        with open(os.path.join(self.folder.prepare_mutfiles, f'mutfile{str(residue_number)}'), 'w') as mutfile:#f'mutfile{str(i)}'), 'w') as mutfile:
+                            mutfile.write('total ' + str(len(residue_number_ros)*len(mutate[residue_number][1].split('_')[0]))+'\n')
+                            mut_dic[residue_number] = "".join(mutate[residue_number][1])
+                            for res_rounds in range(len(mutate[residue_number][1].split('_')[0])):
+                                mutfile.write(f'{len(residue_number_ros)}\n')
+                                
+                                for indi, res in enumerate(residue_number_ros):
+                                    towrite = self.fasta_seq[int(res) - 1] + ' ' + str(res) + ' ' + mutate[residue_number][1].split("_")[indi].split()[0][res_rounds]+ '\n'
+                                    mutfile.write(towrite)
+                        i += 1
+
         return(check2, mut_dic)
 
 
@@ -267,18 +362,17 @@ class structure:
 ''')
             fp.write((f'{os.path.join(rosetta_paths.path_to_rosetta, f"bin/relax.{rosetta_paths.Rosetta_extension}")} '
                       f'-s {structure_path} '
-                      f'-relax:script {rosetta_paths.path_to_parameters}/cart2.script @{path_to_relaxflags}'
+                      f'-relax:script {rosetta_paths.path_to_data}/sp/cart2.script @{path_to_relaxflags}'
                      ' -out:prefix $SLURM_ARRAY_TASK_ID-'))
         self.logger.info(path_to_sbatch)
         return(path_to_sbatch)
 
 
-    def parse_relax_sbatch(self, folder, sys_name='', partition='sbinlab', sc_name='score_bn15_calibrated'):
+    def parse_relax_sbatch(self, folder, sys_name='', partition='sbinlab', sc_name='score_bn15_calibrated', mp_multistruc=0):
         """This script creates the parse_relax.sbatch script"""
                                   
         path_to_parse_relax_script = os.path.join(
         rosetta_paths.path_to_stability_pipeline, 'relax_parse_results.py')
-
         path_to_sbatch = os.path.join(self.folder.relax_input, 'parse_relax.sbatch')
         with open(path_to_sbatch, 'w') as fp:
             fp.write(f'''#!/bin/sh
@@ -289,7 +383,13 @@ class structure:
 
 # launching parsing script 
 ''')
-            fp.write(f'python {path_to_parse_relax_script} {folder.relax_run} {folder.relax_output} {folder.ddG_input} {sc_name}')
+            if mp_multistruc == 0:
+                fp.write(f'python {path_to_parse_relax_script} {folder.relax_run} {folder.relax_output} {folder.ddG_input} {sc_name}')
+            else:
+                fp.write(f'python {path_to_parse_relax_script} {folder.relax_run} {folder.relax_output}' )
+                for ddg_subfolder in folder.ddG_input:
+                    fp.write(f' {ddg_subfolder}')
+                fp.write(f' {sc_name} {mp_multistruc}')
         self.logger.info(path_to_sbatch)
         return path_to_sbatch
 
@@ -304,7 +404,7 @@ class structure:
             input_mutfiles = os.path.join(self.folder.ddG_input, 'mutfiles')
         if ddgfile == '':
             # path_to_ddgflags = os.path.join(
-            # rosetta_paths.path_to_parameters, 'cartesian_ddg_flagfile')
+            # rosetta_paths.path_to_data, 'sp', 'cartesian_ddg_flagfile')
             path_to_ddgflags = os.path.join(self.folder.ddG_input, 'ddg_flagfile')
         else:
             path_to_ddgflags = ddgfile
@@ -333,7 +433,7 @@ echo $INDEX
         return path_to_sbatch
 
 
-    def write_parse_cartesian_ddg_sbatch(self, folder, partition='sbinlab', output_gaps=False):
+    def write_parse_cartesian_ddg_sbatch(self, folder, partition='sbinlab', output_gaps=False, zip_files=True):
         """This script creates the parse_ddgs.sbatch script"""
                                   
         score_sbatch_path = os.path.join(self.folder.ddG_input, 'parse_ddgs.sbatch')
@@ -350,5 +450,5 @@ echo $INDEX
 ''')
             fp.write((f'python3 {rosetta_paths.path_to_stability_pipeline}/parser_ddg_v2.py '
                       f'{self.sys_name} {self.chain_id} {self.fasta_seq} {folder.ddG_run} {folder.ddG_output} {structure_input}'
-                      f' {folder.ddG_input} {folder.output} {folder.prepare_checking} {output_gaps}'))
+                      f' {folder.ddG_input} {folder.output} {folder.prepare_checking} {output_gaps} {zip_files}'))
         return score_sbatch_path

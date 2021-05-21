@@ -1,0 +1,197 @@
+# --------------------
+# version: 0
+# protein:
+#     name: infile_A
+#     organism: None
+#     uniprot: None
+#     sequence: ERAGPVTWVMMIACVVVFIAMQILGDQEVMLWLAWPFDPTLKFEFWRYFTHALMHFSLMHILFNLLWWWYLGGAVEKRLGSGKLIVITLISALLSGYVQQKFSGPWFGGLSGVVYALMGYVWLRGERDPQSGIYLQRGLIIFALIWIVAGWFDLFGMSMANGAHIAGLAVGLAMAFVDSLNA
+# merged:
+#     file_00: prism_pdb_XXX_infile_A.txt (version 1)
+#     file_01: prism_merged_XXX_GlpG_ecoli.txt (version 0)
+# variants:
+#     number: 154
+#     coverage: 0.566
+#     depth: 2.049
+#     width: multi mutants
+# columns:
+#     ddG_unf_00_01: Thermodybamic stability of folding derived by steric trapping with tags at P95C/G172C (ΔΔGu [kcal/mol])
+#     std_ddG_unf_00_01: std ddG
+#     ddG_unf_01_01: Thermodybamic stability of folding derived by steric trapping with tags at G172C/V267C (ΔΔGu [kcal/mol])
+#     ddG_kin_02_01: ΔΔG_kin denatured by SDS (kcal/mol)
+#     std_ddG_kin_02_01: std of ΔΔG_kin
+#     phi_kin_02_01: ϕ_kin denatured by SDS
+#     std_phi_kin_02_01: std of ϕ_kin
+#     ddG_03_01: ΔΔG (kcal/mol)
+#     dTm_03_01: ΔTm (kcal/mol)
+#     ddG_unf_04_01: Thermodyamic stability of folding derived by steric trapping with tags at P95C/G172C (ΔΔGu [kcal/mol])
+#     std_ddG_unf_04_01: std ddG
+#     activity_04_01: activity
+#     std_activity_04_01: std activity
+#     ddG_unf_05_01: Thermodyamic stability of folding derived by steric trapping with tags at G172C/V267C (ΔΔGu [kcal/mol])
+#     std_ddG_unf_05_01: std ddG
+#     activity_05_01: activity
+#     std_activity_05_01: std activity
+#     ddG_sds_06_01: Thermodyamic stability of folding derived by SDS with background P95C/G172C (ΔΔGSDS [kcal/mol])
+#     dmSDS_06_01: ΔmSDS with background P95C/G172C
+#     ddG_sds_07_01: Thermodyamic stability of folding derived by SDS with background G172C/V267C (ΔΔGSDS [kcal/mol])
+#     dmSDS_07_01: ΔmSDS with background P95C/G172C
+#     ddG_unf_08_01: Single-molecule forced unfolding in bicelle (ΔΔGu [kcal/mol])
+#     std_ddG_unf_08_01: std ddG
+# --------------------
+#
+#
+variant ddG_unf_00_01 std_ddG_unf_00_01 ddG_unf_01_01 ddG_kin_02_01 std_ddG_kin_02_01 phi_kin_02_01 std_phi_kin_02_01 ddG_03_01 dTm_03_01 ddG_unf_04_01 std_ddG_unf_04_01 activity_04_01 std_activity_04_01 ddG_unf_05_01 std_ddG_unf_05_01 activity_05_01 std_activity_05_01 ddG_sds_06_01 dmSDS_06_01 ddG_sds_07_01 dmSDS_07_01 ddG_unf_08_01 std_ddG_unf_08_01
+T7A         NA         NA         NA 2.05 0.12 0.64 0.07 0.6 12.0         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+M10A         NA         NA         NA 1.67 0.09 0.47 0.06         NA         NA 2.8 0.2 0.95 0.03 2.5 0.5 0.89 0.02         NA         NA         NA         NA         NA         NA
+C14A         NA         NA         NA 0.93 0.22 0.26 0.24         NA 3.8 2.2 0.3 0.81 0.02 0.2 0.2 1.3 0.04         NA         NA         NA         NA         NA         NA
+C14V         NA         NA         NA 0.89 0.1 0.21 0.11         NA 4.1         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+M21A         NA         NA         NA 0.68 0.13 -0.08 0.18         NA 4.8         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+Q22A         NA         NA         NA 0.81 0.11 0.05 0.13         NA 4.7         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+M30A         NA         NA         NA 0.47 0.11 -0.69 0.26         NA 3.0         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+L33A         NA         NA         NA         NA         NA         NA         NA         NA 9.3         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+E44A         NA         NA         NA 0.4 0.16 0.19 0.39         NA 7.8         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+W46A         NA         NA         NA 0.51 0.1 -1.78 0.38 0.2 12.2         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+W46F         NA         NA         NA         NA         NA         NA         NA         NA 11.0         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+W46H         NA         NA         NA         NA         NA         NA         NA         NA -1.4         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+W46Y         NA         NA         NA         NA         NA         NA         NA         NA 4.3         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+R47A         NA         NA         NA 0.88 0.1 -1.78 0.22 2.7 20.4         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+R47K         NA         NA         NA         NA         NA         NA         NA         NA 16.2         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+Y48F         NA         NA         NA 2.07 0.23 0.5 0.12         NA 6.8 1.9 0.2 0.59 0.03 0.6 0.2 1.48 0.04         NA         NA         NA         NA         NA         NA
+F49A         NA         NA         NA 1.12 0.25 0.04 0.22         NA 7.8         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+T50A         NA         NA         NA 0.615 0.13 -1.29 0.34         NA 9.6 1.7 0.1 1.39 0.05 0.7 0.2 1.19 0.04 -2.6000000000000005 0.3999999999999986 -4.9 -4.300000000000001         NA         NA
+H51A         NA         NA         NA 1.12 0.1 -0.53 0.1         NA 18.9         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+L53A         NA         NA         NA 0.14 0.08         NA         NA         NA 12.3 2.4 0.2 0.96 0.02 1.3 0.2 1.26 0.03         NA         NA         NA         NA         NA         NA
+M54A         NA         NA         NA 0.42 0.11 -1.83 0.56         NA 6.9         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+H55A         NA         NA         NA 1.71 0.18 -0.54 0.1 2.5 22.2         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+H55F         NA         NA         NA         NA         NA         NA         NA         NA 19.6         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+H55Q         NA         NA         NA         NA         NA         NA         NA         NA 19.0         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+F56A         NA         NA         NA 0.59 0.09 -1.08 0.23         NA 5.5         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+S57A         NA         NA         NA 1.2 0.24 0.35 0.2         NA 11.0         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+H60A         NA         NA         NA 0.8 0.11 0.16 0.13 0.2 5.9         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+I61A         NA         NA         NA         NA         NA         NA         NA         NA 3.6         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+F63A         NA         NA         NA 0.682 0.14 0.07 0.2         NA 1.2         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+N64A 1.5 0.1 0.8 1.5 0.13 -0.01 0.08 0.4 6.1 1.3 0.2 0.07 0.01 0.4 0.3 0.09 0.01 -0.7000000000000002 2.3999999999999986 0.7000000000000011 6.800000000000001         NA         NA
+L65A         NA         NA         NA 1.03 0.16 -0.04 0.14         NA 8.6         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA -2.17 0.52
+W67F         NA         NA         NA         NA         NA         NA         NA         NA 0.6         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+W68F         NA         NA         NA 0.02 0.1         NA         NA         NA 3.0 1.1 0.2 1.41 0.05 0.1 0.2 1.27 0.04 0.2999999999999989 1.8000000000000007 1.1000000000000014 4.5         NA         NA
+Y70F         NA         NA         NA 0.54 0.12 -0.34 0.23         NA 2.8         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+L71A         NA         NA         NA         NA         NA         NA         NA         NA         NA 1.9 0.2 0.13 0.02 1.8 0.4 0.1 0.01         NA         NA         NA         NA         NA         NA
+G72A         NA         NA         NA         NA         NA         NA         NA         NA -0.8         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+G72V         NA         NA         NA 3.07 0.17 -0.02 0.05 2.6 24.6         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+E76A         NA         NA         NA 5.46 0.36 0.22 0.05 1.9 21.3         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+R78A         NA         NA         NA -0.85 0.18 -0.73 0.22         NA 1.6         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+L79A         NA         NA         NA 1.08 0.09 0.82 0.1         NA 3.5         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+G80A         NA         NA         NA 0.75 0.17 0.17 0.23 0.9 11.1         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+G80V         NA         NA         NA         NA         NA         NA         NA         NA 14.0         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+S81A         NA         NA         NA -0.1 0.11         NA         NA 0.7 5.8         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+K83A         NA         NA         NA 0.76 0.13 -1.56 0.3 0.5 10.4         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+L84A         NA         NA         NA 1.88 0.32 -0.25 0.17         NA 16.3 3.8 0.2 0.23 0.04 3.3 0.2 0.14 0.05         NA         NA         NA         NA         NA         NA
+I87A         NA         NA         NA 2.17 0.23 -0.12 0.11         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+T88A         NA         NA         NA 0.95 0.15 0.15 0.15         NA 5.9 0.7 0.1 1.35 0.05 0.3 0.1 1.63 0.05 16.200000000000003 43.7 17.6 47.400000000000006         NA         NA
+L89A         NA         NA         NA 0.37 0.08 0.14 0.2         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+I90A         NA         NA         NA 0.43 0.08 0.05 0.17         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+S91A         NA         NA         NA         NA         NA         NA         NA         NA -0.1 -0.5 0.2 1.3 0.04 0.6 0.2 1.49 0.06 0.9000000000000004 1.0 -0.5 -1.3000000000000007         NA         NA
+L93A         NA         NA         NA         NA         NA         NA         NA         NA -0.8         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+L94A         NA         NA         NA -0.41 0.1 -0.01 0.2         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+S95A         NA         NA         NA         NA         NA         NA         NA         NA 2.4         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+G96V         NA         NA         NA         NA         NA         NA         NA         NA 15.9         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+Q100A         NA         NA         NA 0.17 0.08         NA         NA         NA -1.4         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+S103A         NA         NA         NA         NA         NA         NA         NA         NA 2.1         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+G104V         NA         NA         NA 1.2 0.22 -0.73 0.22         NA 11.2         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+P105A         NA         NA         NA         NA         NA         NA         NA         NA 3.2         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+W106A         NA         NA         NA         NA         NA         NA         NA         NA 2.6         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+F107A         NA         NA         NA 0.93 0.19 -0.58 0.23         NA 6.5         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+F107V         NA         NA         NA         NA         NA         NA         NA         NA 9.2         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+G108V         NA         NA         NA 0.64 0.1 -1.07 0.23         NA 6.5         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+G109A         NA         NA         NA 1.65 0.11 -0.04 0.07         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+G109V         NA         NA         NA         NA         NA         NA         NA 1.2 17.7         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+L110A         NA         NA         NA 0.83 0.15 -0.58 0.21         NA 11.6         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+L110S         NA         NA         NA         NA         NA         NA         NA         NA 13.7         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+S111A 1.1 0.1 0.6 0.27 0.1 -1.9 0.76 -0.1 6.2         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+S111C         NA         NA         NA         NA         NA         NA         NA         NA 6.0         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+S111T         NA         NA         NA         NA         NA         NA         NA         NA 3.4 1.0 0.2 0.04 0.02 1.0 0.3 0.03 0.02         NA         NA         NA         NA         NA         NA
+G112A         NA         NA         NA 0.73 0.09 -0.26 0.12         NA 5.9         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+G112V         NA         NA         NA         NA         NA         NA         NA         NA 15.7         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+V113A         NA         NA         NA 1.55 0.12 0.03 0.07         NA 10.9         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+V114A         NA         NA         NA         NA         NA         NA         NA         NA 8.9         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+Y115A         NA         NA         NA 0.58 0.1 -0.07 0.17         NA -1.8         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+A116G         NA         NA         NA 1.05 0.11 0.04 0.1         NA 5.3         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA -1.21 0.43
+A116V         NA         NA         NA         NA         NA         NA         NA         NA 17.4         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+L117A         NA         NA         NA 0.92 0.11 -1.59 0.22         NA 17.7 4.1 0.1 0.08 0.01 2.7 0.1 0.08 0.02         NA         NA         NA         NA         NA         NA
+G119A         NA         NA         NA         NA         NA         NA         NA         NA 1.7         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+G119V         NA         NA         NA 0.57 0.1 -2.19 0.4         NA 8.1         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+Y120F         NA         NA         NA 1.65 0.18 0.17 0.11 0.7 10.9 2.0 0.2 1.15 0.04 1.3 0.1 0.68 0.02         NA         NA         NA         NA         NA         NA
+R124A         NA         NA         NA 0.07 0.09         NA         NA         NA 7.1         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+G125V         NA         NA         NA 0.8 0.08 -0.08 0.1         NA 8.9         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+D128A         NA         NA         NA 1.42 0.15 0.14 0.1         NA 7.4         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+P129A         NA         NA         NA -0.46 0.08 3.85 0.72         NA 4.5         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+S131A         NA         NA         NA 0.69 0.12 0.03 0.16         NA 1.9         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+Y134A         NA         NA         NA         NA         NA         NA         NA         NA 0.6         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+L135A         NA         NA         NA         NA         NA         NA         NA         NA         NA -0.6 0.2 0.28 0.05 1.2 0.4 0.33 0.04 6.9 16.2 8.8 20.5         NA         NA
+Q136A         NA         NA         NA 0.25 0.1 -0.7 0.46         NA 4.9 -0.2 0.2 1.42 0.06 0.8 0.4 1.81 0.09 0.0 -1.1000000000000014 -1.299999999999999 -3.4000000000000004         NA         NA
+L139A         NA         NA         NA -0.2 0.1         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+I140A         NA         NA         NA         NA         NA         NA         NA         NA -0.7         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+W146G         NA         NA         NA 0.46 0.11 0.16 0.21         NA 0.8         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+I147A         NA         NA         NA         NA         NA         NA         NA         NA -1.1         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+G150A         NA         NA         NA         NA         NA         NA         NA         NA 1.8         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+W151A         NA         NA         NA 0.88 0.14 0.02 0.15         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+D153A         NA         NA         NA 0.51 0.19 -0.11 0.36         NA 6.2         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+L154A         NA         NA         NA         NA         NA         NA         NA         NA 2.1         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+F155A         NA         NA         NA         NA         NA         NA         NA         NA 2.2         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+M157A         NA         NA         NA 0.19 0.16         NA         NA         NA 2.1         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+M159A         NA         NA         NA         NA         NA         NA         NA         NA -0.5         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+A163V         NA         NA         NA 1.43 0.1 0.04 0.07         NA 7.7 1.7 0.2 0.04 0.01 0.8 0.2 0.06 0.01         NA         NA         NA         NA         NA         NA
+H164A 0.7 0.1 -0.8         NA         NA         NA         NA         NA -1.0         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+H164K         NA         NA         NA         NA         NA         NA         NA         NA 2.6         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+G167A         NA         NA         NA         NA         NA         NA         NA         NA 5.9         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+G167V         NA         NA         NA 2.49 0.13 -0.07 0.05 1.8 14.4         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+L168A         NA         NA         NA         NA         NA         NA         NA         NA 5.6         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+G171A         NA         NA         NA         NA         NA         NA         NA         NA 20.0 4.1 0.2 0.06 0.05 2.7 0.2 0.0 0.05         NA         NA         NA         NA         NA         NA
+G171V         NA         NA         NA 4.68 0.27 -0.01 0.05 2.9 28.1         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+L172A         NA         NA         NA         NA         NA         NA         NA         NA 2.6         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+A175G         NA         NA         NA         NA         NA         NA         NA         NA -0.1         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+A175V         NA         NA         NA         NA         NA         NA         NA         NA 16.5 2.4 0.2 0.4 0.05 1.3 0.2 0.22 0.05 -6.6000000000000005 -7.4 -6.999999999999999 -7.4         NA         NA
+D178A         NA         NA         NA         NA         NA         NA         NA 1.1 16.9 2.5 0.2 0.17 0.02 1.3 0.1 0.44 0.02         NA         NA         NA         NA         NA         NA
+S179A         NA         NA         NA         NA         NA         NA         NA         NA 2.6         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+S179V         NA         NA         NA 1.41 0.12 0.13 0.08         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+S111A:H164A 0.4 0.2         NA         NA         NA         NA         NA         NA 1.7         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+N64A:H164A 1.8         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+N64A:S111A 2.4         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+V6A:M10A         NA         NA         NA         NA         NA         NA         NA 1.6 14.6         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+T7A:E76A         NA         NA         NA         NA         NA         NA         NA 1.9 25.8         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+T7A:S81A         NA         NA         NA         NA         NA         NA         NA         NA 13.5         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+T7A:E76A:S81A         NA         NA         NA         NA         NA         NA         NA         NA 24.0         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+M11A:F18A         NA         NA         NA         NA         NA         NA         NA         NA 12.3         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+M11A:F18A:I61A:L65A         NA         NA         NA         NA         NA         NA         NA 2.3 18.1         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+L31A:F37A         NA         NA         NA         NA         NA         NA         NA         NA -0.0         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+L31A:F37A:W106A         NA         NA         NA         NA         NA         NA         NA         NA -2.1         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+F43A:F45A         NA         NA         NA         NA         NA         NA         NA         NA 5.4         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+F43A:F45A:F49A         NA         NA         NA         NA         NA         NA         NA 0.5 13.1         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+E44A:R47A         NA         NA         NA         NA         NA         NA         NA 2.5 22.8         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+H55A:N64A         NA         NA         NA         NA         NA         NA         NA 3.2 26.0         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+I61A:L65A         NA         NA         NA         NA         NA         NA         NA         NA 14.7         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+F63A:W67A         NA         NA         NA         NA         NA         NA         NA         NA 0.7         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+F63A:W146A         NA         NA         NA         NA         NA         NA         NA         NA 4.2         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+F63A:W67A:F142A:W146A         NA         NA         NA         NA         NA         NA         NA         NA -0.3         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+W67A:L71A         NA         NA         NA         NA         NA         NA         NA         NA 5.7         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+G72A:G73A         NA         NA         NA         NA         NA         NA         NA         NA 2.1         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+G72V:E76A         NA         NA         NA         NA         NA         NA         NA         NA 27.0         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+G72V:G171V         NA         NA         NA         NA         NA         NA         NA         NA 26.2         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+E76A:S81A         NA         NA         NA         NA         NA         NA         NA         NA 21.9         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+R78A:D128A:S131A         NA         NA         NA         NA         NA         NA         NA         NA 9.1         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+R78A:K83A:R124A:D128A:S131A:D178A         NA         NA         NA         NA         NA         NA         NA 1.3 16.5         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+K83A:Y120F         NA         NA         NA         NA         NA         NA         NA         NA 12.1         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+K83A:D178A         NA         NA         NA         NA         NA         NA         NA 1.3 15.5         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+K83A:Y120F:D178A         NA         NA         NA         NA         NA         NA         NA         NA 12.3         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+L94A:V98A         NA         NA         NA         NA         NA         NA         NA         NA 2.9         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+L94A:V98A:V114A:L117A         NA         NA         NA         NA         NA         NA         NA 1.6 14.9         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+G96V:F107V         NA         NA         NA         NA         NA         NA         NA         NA 11.6         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+V114A:L117A         NA         NA         NA         NA         NA         NA         NA 2.5 21.6         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+Y115A:H164A         NA         NA         NA         NA         NA         NA         NA         NA -1.9         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+Y115A:H164K         NA         NA         NA         NA         NA         NA         NA         NA -3.0         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+A116G:G167A         NA         NA         NA         NA         NA         NA         NA         NA 7.6         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+Y120F:D178A         NA         NA         NA         NA         NA         NA         NA         NA 20.6         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+D128A:S131A         NA         NA         NA         NA         NA         NA         NA         NA 7.1         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+L139A:F142A:W146A         NA         NA         NA         NA         NA         NA         NA         NA 0.1         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+F142A:W146A         NA         NA         NA         NA         NA         NA         NA         NA -0.3         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA
+V170A:M174A         NA         NA         NA         NA         NA         NA         NA         NA 12.8         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA         NA

@@ -34,7 +34,7 @@ def check_paths(dir_path, overwrite_path=True):
 
 class folder2:
 
-    def __init__(self, output_path, overwrite_path, is_mp=False):
+    def __init__(self, output_path, overwrite_path, is_mp=False, mp_multistruc=0):
         # Create
         # Global folder
         self.output_path = check_paths(
@@ -45,9 +45,8 @@ class folder2:
         self.input = check_paths(join(self.output_path, 'input'))
         self.prepare = check_paths(join(self.output_path, 'prepare'))
         self.relax = check_paths(join(self.output_path, 'relax'))
-        self.ddG = check_paths(join(self.output_path, 'ddG'))
+#        self.ddG = check_paths(join(self.output_path, 'ddG'))
         self.output = check_paths(join(self.output_path, 'output'))
-        self.analysis = check_paths(join(self.output_path, 'analysis'))
 
         # Subfolders
         self.prepare_input = check_paths(join(self.prepare, 'input'))
@@ -70,8 +69,33 @@ class folder2:
         self.relax_run = check_paths(join(self.relax, 'run'))
         self.relax_output = check_paths(join(self.relax, 'output'))
 
-        self.ddG_input = check_paths(join(self.ddG, 'input'))
-        self.ddG_run = check_paths(join(self.ddG, 'run'))
-        self.ddG_output = check_paths(join(self.ddG, 'output'))
+#        self.ddG_input = check_paths(join(self.ddG, 'input'))
+#        self.ddG_run = check_paths(join(self.ddG, 'run'))
+#        self.ddG_output = check_paths(join(self.ddG, 'output'))
+
+        if mp_multistruc == 0:
+            self.ddG = check_paths(join(self.output_path, 'ddG'))
+            self.ddG_input = check_paths(join(self.ddG, 'input'))
+            self.ddG_run = check_paths(join(self.ddG, 'run'))
+            self.ddG_output = check_paths(join(self.ddG, 'output'))
+        else:
+            self.ddG_general = check_paths(join(self.output_path, 'ddG'))
+            self.ddG_postparse_input = check_paths(join(self.ddG_general, 'input'))
+            self.ddG_postparse_run = check_paths(join(self.ddG_general, 'run'))
+            self.ddG_postparse_output = check_paths(join(self.ddG_general, 'output'))
+            ddg_dirs1 = []
+            ddg_dirs2 = []
+            ddg_dirs3 = []
+            ddg_dirs4 = []
+            for i in range(mp_multistruc):
+                ddG = check_paths(join(self.ddG_general, f'ddG_{i}'))
+                ddg_dirs1.append(ddG)
+                ddg_dirs2.append(check_paths(join(ddG, 'input')))
+                ddg_dirs3.append(check_paths(join(ddG, 'run')))
+                ddg_dirs4.append(check_paths(join(ddG, 'output')))
+            self.ddG = ddg_dirs1
+            self.ddG_input = ddg_dirs2
+            self.ddG_run = ddg_dirs3
+            self.ddG_output = ddg_dirs4
 
         return
