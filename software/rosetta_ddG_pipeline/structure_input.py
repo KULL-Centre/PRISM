@@ -433,7 +433,7 @@ echo $INDEX
         return path_to_sbatch
 
 
-    def write_parse_cartesian_ddg_sbatch(self, folder, partition='sbinlab', output_gaps=False):
+    def write_parse_cartesian_ddg_sbatch(self, folder, partition='sbinlab', output_gaps=False, zip_files=True):
         """This script creates the parse_ddgs.sbatch script"""
                                   
         score_sbatch_path = os.path.join(self.folder.ddG_input, 'parse_ddgs.sbatch')
@@ -450,5 +450,5 @@ echo $INDEX
 ''')
             fp.write((f'python3 {rosetta_paths.path_to_stability_pipeline}/parser_ddg_v2.py '
                       f'{self.sys_name} {self.chain_id} {self.fasta_seq} {folder.ddG_run} {folder.ddG_output} {structure_input}'
-                      f' {folder.ddG_input} {folder.output} {folder.prepare_checking} {output_gaps}'))
+                      f' {folder.ddG_input} {folder.output} {folder.prepare_checking} {output_gaps} {zip_files}'))
         return score_sbatch_path
