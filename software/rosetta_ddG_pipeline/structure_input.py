@@ -293,6 +293,8 @@ class structure:
                             continue
                     self.logger.debug(f"{residue_number_ros}  {residue_number}")
                     #This checks that the position in the mutfile is the correct one in the fasta sequence
+                    if type(residue_number_ros)!=list:
+                        residue_number_ros = [residue_number_ros]
                     if len(residue_number_ros)==1:
                         residue_number_ros = int(residue_number_ros[0])
                         check = self.fasta_seq[residue_number_ros-1] in list(
