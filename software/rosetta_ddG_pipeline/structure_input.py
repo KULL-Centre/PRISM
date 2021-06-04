@@ -278,6 +278,35 @@ class structure:
                                     key.append(lines[1+(3*multi_muts)])
                                     val.append(var_single)
                                 mutate["_".join(key)] = "_".join(wt), "_".join(val)
+                    # remove duplicate mutants and add WT
+                    for key in mutate.keys():
+                        wt_list = mutate[key][0].split('_')
+                        mut_list = mutate[key][1].split('_')
+                        resi_list = key.split('_')
+                        joined_muts = []
+                        for mut_ind in range(0,len(mut_list[0])):
+                            tmp_joined = []
+                            for resi_indi, resi in enumerate(resi_list):
+                                tmp_joined.append(mut_list[resi_indi][mut_ind])
+                            joined_muts.append(":".join(tmp_joined))
+                        tmp_joined = []
+                        for resi_indi, resi in enumerate(resi_list):
+                            tmp_joined.append(wt_list[resi_indi])
+                        joined_muts.append(":".join(tmp_joined))
+                        joined_muts = list(set(joined_muts))
+                        #split back to mutate dic format
+                        mut_dic = {}
+                        for muti_ind, muti in enumerate(joined_muts):
+                            for mut_ind, mut in enumerate(joined_muts[muti_ind].split(':')):
+                                if mut_ind in mut_dic.keys():
+                                    mut_dic[mut_ind].append(mut)
+                                else:
+                                    mut_dic[mut_ind] = [mut]
+                        mut_list = []
+                        for sub_key in mut_dic.keys():
+                            mut_list.append("".join(mut_dic[sub_key]))
+                        mutate[key] = (mutate[key][0], "_".join(mut_list))
+
             with open(os.path.join(self.folder.prepare_cleaning, 'mutation_clean.txt'), 'w') as fp:
                 i = 10000
                 for residue_number in mutate:
