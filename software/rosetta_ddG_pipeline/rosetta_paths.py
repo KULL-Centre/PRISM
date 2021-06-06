@@ -4,12 +4,12 @@ import os
 default_path = {
     'muscle_exec': '/groups/sbinlab/software/muscle/muscle3.8.31_i86linux64',
     'TMalign_exec': '/groups/sbinlab/software/TMalign/TMalign',
-    'ddG_pipeline': '/sbinlab/software/PRISM/software/rosetta_ddG_pipeline',
+    'ddG_pipeline': '/groups/sbinlab/software/PRISM_tools/rosetta_stability-v0.1/software/rosetta_ddG_pipeline',
     'Rosetta_main_path': '/sbinlab/software/Rosetta_2020_July_dc83fa/source/',
     'Rosetta_tools_path': '/sbinlab/software/Rosetta_tools/tools/',
     'Rosetta_database_path': '/sbinlab/software/Rosetta_2020_July_dc83fa/database/',
     'Rosetta_extension': 'linuxgccrelease',
-    'prism_parser': '/sbinlab/tiemann/repos/PRISM/prism/scripts',
+    'prism_parser': '/groups/sbinlab/software/PRISM_tools/prism_parser/scripts',
 }
 
 
