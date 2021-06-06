@@ -282,7 +282,10 @@ class structure:
                     for key in mutate.keys():
                         wt_list = mutate[key][0].split('_')
                         mut_list = mutate[key][1].split('_')
-                        resi_list = key.split('_')
+                        if type(key) == str:
+                            resi_list = key.split('_')
+                        else:
+                            resi_list[key]
                         joined_muts = []
                         for mut_ind in range(0,len(mut_list[0])):
                             tmp_joined = []
