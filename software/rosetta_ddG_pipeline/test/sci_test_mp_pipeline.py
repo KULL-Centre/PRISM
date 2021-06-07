@@ -205,12 +205,14 @@ class MPpipelineFullrunGlpGTestCase(unittest.TestCase):
 
         result_dic = dict()
         for key in cutoffs_ref.keys():
-            self.assertTrue(abs(cutoffs_test[key]) > cutoffs_ref[key])
             if abs(cutoffs_test[key]) > cutoffs_ref[key]:
                 result_dic[key] = True
             else:
                 result_dic[key] = False
         print(f"{result_dic}, {cutoffs_test}, {cutoffs_ref}")
+        
+        for key in cutoffs_ref.keys():
+            self.assertTrue(abs(cutoffs_test[key]) > cutoffs_ref[key])
 
     def test_c_analyze_comp_rosettamutfile_prov_flag(self):
         self.output_dir = tmp('fullrun_rosettamutfile_GlpG_prov_flag')

@@ -130,7 +130,7 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
 
         # evaluates the test
         skip_files = ['logs/info.log', 'span.log', 
-            'mp_lipid_acc/input_A_0001.pdb',
+            'mp_lipid_acc/input_A_0001.pdb', 'parse_ddgs.sbatch',
         ]
 
         output_dic = {}
@@ -233,7 +233,7 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
 
         # evaluates the test
         skip_files = ['logs/info.log', 'span.log', 
-            'mp_lipid_acc/input_A_0001.pdb',
+            'mp_lipid_acc/input_A_0001.pdb', 'parse_ddgs.sbatch',
         ]
 
         output_dic = {}
@@ -335,7 +335,7 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
 
         # evaluates the test
         skip_files = ['logs/info.log', 'span.log', 
-            'mp_lipid_acc/input_A_0001.pdb', 'mutation_clean.txt',
+            'mp_lipid_acc/input_A_0001.pdb', 'mutation_clean.txt',  'parse_ddgs.sbatch',
         ]
 
         output_dic = {}
@@ -438,7 +438,7 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
 
         # evaluates the test
         skip_files = ['logs/info.log', 'span.log', 
-            'mp_lipid_acc/input_A_0001.pdb', 'mutation_clean.txt',
+            'mp_lipid_acc/input_A_0001.pdb', 'mutation_clean.txt', 'parse_ddgs.sbatch',
         ]
 
         output_dic = {}

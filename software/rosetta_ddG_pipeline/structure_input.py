@@ -285,7 +285,7 @@ class structure:
                         if type(key) == str:
                             resi_list = key.split('_')
                         else:
-                            resi_list[key]
+                            resi_list = [key]
                         joined_muts = []
                         for mut_ind in range(0,len(mut_list[0])):
                             tmp_joined = []
@@ -296,7 +296,7 @@ class structure:
                         for resi_indi, resi in enumerate(resi_list):
                             tmp_joined.append(wt_list[resi_indi])
                         joined_muts.append(":".join(tmp_joined))
-                        joined_muts = list(set(joined_muts))
+                        joined_muts = sorted(list(set(joined_muts)))
                         #split back to mutate dic format
                         mut_dic = {}
                         for muti_ind, muti in enumerate(joined_muts):
@@ -467,7 +467,7 @@ echo $INDEX
         return path_to_sbatch
 
 
-    def write_parse_cartesian_ddg_sbatch(self, folder, partition='sbinlab', output_gaps=False, zip_files=True):
+    def write_parse_cartesian_ddg_sbatch(self, folder, partition='sbinlab', output_gaps=False, zip_files=True, sha_tag=''):
         """This script creates the parse_ddgs.sbatch script"""
                                   
         score_sbatch_path = os.path.join(self.folder.ddG_input, 'parse_ddgs.sbatch')
@@ -484,5 +484,5 @@ echo $INDEX
 ''')
             fp.write((f'python3 {rosetta_paths.path_to_stability_pipeline}/parser_ddg_v2.py '
                       f'{self.sys_name} {self.chain_id} {self.fasta_seq} {folder.ddG_run} {folder.ddG_output} {structure_input}'
-                      f' {folder.ddG_input} {folder.output} {folder.prepare_checking} {output_gaps} {zip_files}'))
+                      f' {folder.ddG_input} {folder.output} {folder.prepare_checking} {output_gaps} {zip_files} {sha_tag}'))
         return score_sbatch_path
