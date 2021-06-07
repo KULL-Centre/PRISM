@@ -54,6 +54,8 @@ def predict_stability(args):
     verbose = args.VERBOSE
     partition=args.SLURM_PARTITION
 
+    SHA_TAG = f'{rosetta_paths.sha}tag{rosetta_paths.tag}'
+
     if run_struc == None:
         run_struc = chain_id
         
@@ -236,7 +238,7 @@ def predict_stability(args):
                     repack_protocol=args.MP_REPACK_PROTOCOL, mutfiles=ddg_input_mutfile_dir)
                 path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
                         folder, chain_id=args.CHAIN, sys_name=name, output_name='ddG.out', partition=partition, 
-                        output_gaps=args.GAPS_OUTPUT, zip_files=args.ZIP_FILES)
+                        output_gaps=args.GAPS_OUTPUT, zip_files=args.ZIP_FILES, sha_tag=SHA_TAG)
             else:
                 for indi, sub_ddg_folder in enumerate(folder.ddG_input):
                     ddg_input_ddgfile = create_copy(
@@ -258,7 +260,7 @@ def predict_stability(args):
                 #folds = [folder.prepare_checking, folder.ddG_run, folder.ddG_output, folder.ddG_input, folder.output]
                 path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
                     folder, chain_id=args.CHAIN, sys_name=name, output_name='ddG.out', partition=partition, 
-                    output_gaps=args.GAPS_OUTPUT, mp_multistruc=args.MP_MULTISTRUC_PROTOCOL, zip_files=args.ZIP_FILES)
+                    output_gaps=args.GAPS_OUTPUT, mp_multistruc=args.MP_MULTISTRUC_PROTOCOL, zip_files=args.ZIP_FILES, sha_tag=SHA_TAG)
         else:
             # Parse sbatch relax file
             relax_input_relaxfile = check_path(create_copy(
@@ -281,7 +283,7 @@ def predict_stability(args):
                 folder, ddg_input_mutfile_dir, ddgfile=ddg_input_ddgfile, sys_name=name,  partition=partition)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = structure_instance.write_parse_cartesian_ddg_sbatch(
-                folder,  partition=partition, output_gaps=args.GAPS_OUTPUT, zip_files=args.ZIP_FILES)
+                folder,  partition=partition, output_gaps=args.GAPS_OUTPUT, zip_files=args.ZIP_FILES, sha_tag=SHA_TAG)
 
 
     # Execution

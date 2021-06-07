@@ -11,6 +11,7 @@ import logging as logger
 import re
 import subprocess
 import sys
+import time
 
 
 # Third party imports
@@ -23,7 +24,7 @@ sys.path.insert(1, rosetta_paths.prism_parser)
 from PrismData import PrismParser, VariantData
 
 
-def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=1, sys_name='', first_residue_number=1):
+def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=1, sys_name='', first_residue_number=1, sha_tag='', MP=False):
     
     sequence = sequence.replace('-', 'X')
     # create prism file with rosetta values
@@ -52,19 +53,18 @@ def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=
     }
     dataframeset = pd.DataFrame(data)
 
-    pipes2 = subprocess.Popen("git describe --tags", shell=True, cwd=rosetta_paths.ddG_pipeline, stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
-    std_out2, std_err = pipes2.communicate()
-    pipes = subprocess.Popen("git log -n 1 | grep -i commit", shell=True, cwd=rosetta_paths.ddG_pipeline, stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
-    std_out, std_err = pipes.communicate()
-    sha = std_out.strip().decode('UTF-8').split()[1]
-    tag = std_out2.strip().decode('UTF-8').split()[0]
-
+    sha = sha_tag.split('tag')[0]
+    tag = sha_tag.split('tag')[1]
 
     if rosetta_info == None:
         rosetta_info = {
             "version": f"{tag} ({sha})",
         }
 
+    if MP:
+        units = ') REU'
+    else:
+        units = '/2.9) kcal/mol'
 
     metadata = {
         # new version always when the data is edited or major changes are made
@@ -78,20 +78,11 @@ def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=
             "sequence": sequence,
         },
         "rosetta": rosetta_info,
-  #      "variants": {
-            #      "number": df["pos"].count(),
-            #      "coverage": df["pos"].nunique() / len(seq[1][1]),
-  #          "number": data["variant"].count(),
-  #          "coverage": len(set(sum(data["resi"], []))) / len(sequence),
-  #          "width": "single",
-            #        "depth":,
-  #      },
         # columns is dependent on the data. different conditions go into
         # different PRISM_files
         "columns": {
-            "mean_ddG": "mean Rosetta ddG values (mean((MUT-mean(WT))/2.9)); rescaling only for soluble proteins",
-            "std_ddG": "std Rosetta ddG values (std((MUT-mean(WT))/2.9))",
-            #            "ddG": "Rosetta ddG values",
+            "mean_ddG": f"mean Rosetta ddG values (mean((MUT-mean(WT)){units})",
+            "std_ddG": f"std Rosetta ddG values (std((MUT-mean(WT)){units})",
         },
     }
     if first_residue_number != 1:

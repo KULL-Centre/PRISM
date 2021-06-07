@@ -1,4 +1,6 @@
 import os
+import subprocess
+import time
 
 # yes, I know global vars are bad...
 default_path = {
@@ -31,8 +33,21 @@ Rosetta_database_path = load_env('Rosetta_database_path')
 Rosetta_extension = load_env('Rosetta_extension')
 prism_parser = load_env('prism_parser')
 
+try:
+    pipes2 = subprocess.Popen("git describe --tags", shell=True, cwd=ddG_pipeline, stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
+    std_out2, std_err = pipes2.communicate()
+    pipes = subprocess.Popen("git log -n 1 | grep -i commit", shell=True, cwd=ddG_pipeline, stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
+    std_out, std_err = pipes.communicate()
+    time.sleep(3)
+    sha = std_out.strip().decode('UTF-8').split()[1]
+    tag = std_out2.strip().decode('UTF-8').split()[0]
+except:
+    sha = 'v0.1'
+    tag = '09edce8ae74dceca2a79d20b2e8d0bbb5c0813e3'
+
+
 print('current env paths & exec:', TMalign_exec, muscle_exec, ddG_pipeline, Rosetta_main_path,
-      Rosetta_tools_path, Rosetta_database_path, Rosetta_extension, prism_parser)
+      Rosetta_tools_path, Rosetta_database_path, Rosetta_extension, prism_parser, sha, tag)
 
 # Rosetta paths
 path_to_rosetta = Rosetta_main_path

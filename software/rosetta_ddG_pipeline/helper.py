@@ -535,7 +535,7 @@ def generate_emission_stats(test_dir):
     logger.info(output_text2)
 
 
-def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism_nr='XXX', chain_id='A', output_gaps=False, bfac=True, zip_files=True):
+def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism_nr='XXX', chain_id='A', output_gaps=False, bfac=True, zip_files=True, sha_tag='', MP=False):
     # generate emission stats
     generate_emission_stats(folder.output[:-7])
 
@@ -565,7 +565,7 @@ def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism
     ddG_postprocessing(ddg_file, ddg_sorted_file, sec_all=None, startnr=1, chain_id=chain_id)
     prism_file = os.path.join(folder.ddG_output, f'prism_rosetta_{prism_nr}_{sys_name}.txt')
     rosetta_to_prism(ddg_sorted_file, prism_file, rosetta_seq, rosetta_info=None,
-                     version=version, sys_name=sys_name, first_residue_number=1)
+                     version=version, sys_name=sys_name, first_residue_number=1, sha_tag=sha_tag, MP=MP)
     create_copy(prism_file, folder.output)
     create_copy(pdb_file, folder.output, name=f'{sys_name}_final.pdb')
 
@@ -583,7 +583,7 @@ def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism
             prism_gap_shifted_file = os.path.join(folder.ddG_output, f'prism_rosetta_{prism_nr}_{sys_name}_gap-shifted.txt')
             ddG_postprocessing(ddg_file, ddg_shifted_gap_file, sec_all=sec_all, startnr=first_residue_number, chain_id=chain_id)
             rosetta_to_prism(ddg_shifted_gap_file, prism_gap_shifted_file, sequence, rosetta_info=None,
-                             version=version, sys_name=sys_name, first_residue_number=first_residue_number)
+                             version=version, sys_name=sys_name, first_residue_number=first_residue_number, sha_tag=sha_tag, MP=MP)
             create_copy(prism_gap_shifted_file, folder.output)
 
             pdb_gap_shifted_file = os.path.join(folder.ddG_output, 'relaxed_gap_shifted.pdb')
@@ -595,7 +595,7 @@ def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism
         ddG_postprocessing(ddg_file, ddg_gap_file, sec_all=sec_all, startnr=1, chain_id=chain_id)
         prism_gap_file = os.path.join(folder.ddG_output, f'prism_rosetta_{prism_nr}_{sys_name}-gap.txt')
         rosetta_to_prism(ddg_gap_file, prism_gap_file, sequence, rosetta_info=None,
-                         version=version, sys_name=sys_name, first_residue_number=1)
+                         version=version, sys_name=sys_name, first_residue_number=1, sha_tag=sha_tag, MP=MP)
         create_copy(prism_gap_file, folder.output)
 
         pdb_gap_file = os.path.join(folder.ddG_output, 'relaxed_gap.pdb')
