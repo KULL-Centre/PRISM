@@ -7,6 +7,7 @@ Date of last major changes: 2020-05-01
 
 # Standard library imports
 from datetime import datetime
+import json
 import logging as logger
 import re
 import subprocess
@@ -24,7 +25,17 @@ sys.path.insert(1, rosetta_paths.prism_parser)
 from PrismData import PrismParser, VariantData
 
 
-def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=1, sys_name='', first_residue_number=1, sha_tag='', MP=False):
+def span_multi(x, region):
+    out_tms = []
+    for resi in x:
+        if int(resi) in region:
+            out_tms.append('True')
+        else:
+            out_tms.append('False')
+    return ":".join(out_tms)
+
+def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=1, sys_name='', 
+    first_residue_number=1, sha_tag='', MP=False, span_file='', lipid_file=''):
     
     sequence = sequence.replace('-', 'X')
     # create prism file with rosetta values
@@ -52,6 +63,26 @@ def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=
         "aa_var": [[seg[-1]] for seg in variant],
     }
     dataframeset = pd.DataFrame(data)
+
+    if span_file!='':
+        TM_regions = []
+        with open(span_file) as fp:
+            next(fp)
+            next(fp)
+            next(fp)
+            next(fp)
+            for line in fp:
+                line = line.strip().split()
+                TM_regions += range(int(line[0]), int(line[1])+1)
+        dataframeset['TMspan'] = dataframeset['resi'].apply(lambda x: span_multi(x, TM_regions))
+
+    if lipid_file!='':
+        with open(lipid_file, 'r') as fp:
+            data = json.load(fp)
+        lipid_df = pd.DataFrame.from_dict( data, orient='index', columns=['LAR']).reset_index(drop=False)#.T.set_index('index')
+        lipid_df = lipid_df.loc[lipid_df['LAR']=='true'].reset_index(drop=True)
+        lipid_df = lipid_df['index'].astype(int).unique()
+        dataframeset['LAR'] = dataframeset['resi'].apply(lambda x: span_multi(x, lipid_df))
 
     sha = sha_tag.split('tag')[0]
     tag = sha_tag.split('tag')[1]
@@ -85,6 +116,11 @@ def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=
             "std_ddG": f"std Rosetta ddG values (std((MUT-mean(WT)){units})",
         },
     }
+    if span_file!='':
+        metadata['columns']['TMspan'] = 'Residue within the TM region defined by the Rosetta span file'
+    if lipid_file!='':
+        metadata['columns']['LAR'] = 'Lipid accessible residue defined by Rosetta'
+
     if first_residue_number != 1:
         metadata['protein']['first_residue_number'] = first_residue_number
 
