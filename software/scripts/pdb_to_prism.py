@@ -13,7 +13,9 @@ from functools import reduce
 import logging as log
 import os
 import shutil
+import subprocess
 import sys
+import time
 
 
 # Third party imports
@@ -110,6 +112,144 @@ def parse_args():
     except OSError as error:
         logger.warning(f"Directory {args.output_dir} can not be created")
     return args
+
+
+def calc_contacts(infile, pdbID, chain, tmp_base_dir, uniprot_id='', exec_path='/groups/sbinlab/tiemann/repos/getcontacts/'):
+    time_stamp = time.time()
+    tmp_dir_sub = os.path.join(tmp_base_dir, f'tmp_deleted_{time_stamp}')
+    os.makedirs(tmp_base_dir, exist_ok = True)
+    os.makedirs(tmp_dir_sub, exist_ok = True)
+
+    contact_tsv = os.path.join(tmp_dir_sub, f"contacts_{uniprot_id}_{pdbID}_{chain}.tsv")
+    submitter = f'python3 {os.path.join(exec_path, "get_static_contacts.py")} --structure {infile} --output {contact_tsv} --itypes all'
+    pipes = subprocess.Popen(submitter, shell=True, cwd=tmp_dir_sub,stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
+    std_out, std_err = pipes.communicate()
+
+    resfreq_tsv = os.path.join(tmp_dir_sub, f"resfreq_{uniprot_id}_{pdbID}_{chain}.tsv")
+    submitter = f'python3 {os.path.join(exec_path, "get_contact_frequencies.py")} --input_files {contact_tsv} --output {resfreq_tsv} --itypes all'
+    pipes = subprocess.Popen(submitter, shell=True, cwd=tmp_dir_sub, stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
+    std_out, std_err = pipes.communicate()
+
+    df = pd.read_csv(resfreq_tsv, sep='\t', skiprows=2, names=['resi_1', 'resi_2', 'frame_count','contact_freq'])
+    def convert_resi(x):
+        d3d1={'ALA':'A', 'ARG':'R', 'ASP':'D', 'ASN':'N', 'CYS':'C', 'GLY':'G', 'GLU':'E', 'GLN':'Q', 'HIS': 'H', 'ILE': 'I',
+             'LEU':'L', 'LYS':'K', 'MET':'M', 'PHE':'F', 'PRO':'P', 'SER':'S', 'THR':'T', 'TRP':'W', 'TYR':'Y', 'VAL':'V'}
+        x = x.split(':')
+        wt = x[1].split('_')[0]
+        resi = x[2].split('_')[-1]
+        return f"{d3d1[wt]}{resi}="
+    df['variant'] = df['resi_1'].apply(lambda x: convert_resi(x))
+    df['variant_2'] = df['resi_2'].apply(lambda x: convert_resi(x)[:-1])
+    df = df.drop(columns=['resi_1', 'resi_2', 'frame_count', 'contact_freq']).sort_values(by=['variant']).reset_index(drop=True)
+    df_pvt = df.pivot_table(index = 'variant', aggfunc='count')
+    df_pvt = df_pvt.reset_index(drop=False)
+    df_pvt = df_pvt.rename(columns={'variant_2': 'contact;count'})
+
+    df = df.pivot_table(index = 'variant', aggfunc={'variant_2':lambda x: "|".join(x)})
+    df = df.reset_index(drop=False)
+    df = df.rename(columns={'variant_2': 'contact;res'})
+    df = pd.merge(df_pvt, df, on=['variant'])
+
+    df2 = pd.read_csv(contact_tsv, sep='\t', skiprows=2, names=['frame','interaction_type', 'resi_1' 'resi_2']).reset_index(drop=False)
+    df2 = df2.rename(columns={'frame': 'interaction_type', 'interaction_type': 'resi_1', 'resi_1resi_2': 'resi_2'}).drop(columns='index')
+    df2['variant'] = df2['resi_1'].apply(lambda x: convert_resi(x))
+    df2['variant_2'] = df2['resi_2'].apply(lambda x: convert_resi(x))
+    df2 = df2.drop(columns=['resi_1', 'resi_2']).sort_values(by=['variant']).reset_index(drop=True)
+    df2_pvt = df2.pivot_table(index = 'variant', aggfunc='count', columns = 'interaction_type')
+    df2_pvt.columns = df2_pvt.columns.droplevel()
+    df2_pvt = df2_pvt.reset_index(drop=False)
+    df2_pvt.columns.name = None
+    columns_types_raw = list(df2_pvt.columns)
+    columns_types = list(df2_pvt.columns)
+    columns_types.remove('vdw')
+    df2_pvt['total_no_vdw'] = df2_pvt[columns_types].sum(axis=1)
+    df2_pvt['total'] = df2_pvt[columns_types_raw].sum(axis=1)
+    df2 = df2.pivot_table(index = 'variant', aggfunc={'variant_2':lambda x: "|".join(x)})
+    df2 = df2.reset_index(drop=False)
+    df2 = df2.rename(columns={'variant_2': 'contact;res'})
+    df2 = pd.merge(df2_pvt, df2, on=['variant'])
+
+    shutil.rmtree(tmp_dir_sub)
+
+    return df
+
+
+def rosetta_energy_to_prism(infile, prism_file, pdbID, chain, tmp_base_dir, uniprot_id='', organism='', version=1, count=True):
+    df_list = []
+    with open(infile, 'r') as fp:
+        started=False
+        for line in fp:
+            if not started:
+                if line.startswith('#BEGIN_POSE_ENERGIES_TABLE'):
+                    started=True
+            else:
+                if (line.startswith('#END_POSE_ENERGIES_TABLE') or line.startswith('MEM')):
+                    break
+                elif not (line.startswith('pose') or line.startswith('weights')):
+                    df_list.append(line.split())
+                else:
+                    pass
+    df = pd.DataFrame(data=df_list[1:], columns=df_list[0])
+    
+    def convert_resi(x):
+        d3d1={'ALA':'A', 'ARG':'R', 'ASP':'D', 'ASN':'N', 'CYS':'C', 'GLY':'G', 'GLU':'E', 'GLN':'Q', 'HIS': 'H', 'ILE': 'I',
+             'LEU':'L', 'LYS':'K', 'MET':'M', 'PHE':'F', 'PRO':'P', 'SER':'S', 'THR':'T', 'TRP':'W', 'TYR':'Y', 'VAL':'V'}
+        x = x.split(':')
+        if len(x)>1:
+            wt = x[0].split('_')[0]
+            resi = x[-1].split('_')[-1]
+        else:
+            wt = x[0].split('_')[0]
+            resi = x[0].split('_')[-1]
+        return f"{d3d1[wt]}{resi}="
+        
+    
+    df['variant'] = df['label'].apply(lambda x: convert_resi(x))
+    df['resi'] = df['variant'].apply(lambda x: int(x[1:-1]))
+    df['wt'] = df['variant'].apply(lambda x: x[0])
+    max_val = df['resi'].max()
+    len_seq = len(df['resi'])
+    if max_val >=len_seq:
+        sequence = ['-']*(max_val+1)
+    else:
+        sequence = ['-']*(len_seq+1)
+    varis = df['variant'].unique()
+    for var in varis:
+        sequence[int(var[1:-1])-1] = var[0]
+    sequence = "".join(sequence)
+    df = df.drop(columns=['label', 'resi', 'wt'])
+    df = df.dropna(axis=1, how='all')
+    df = df.reset_index(drop=True)
+    df = df.add_prefix('energy;')
+    df = df.rename(columns={'energy;variant': 'variant'})
+    
+    if count:
+        df_count = calc_contacts(infile, pdbID, chain, tmp_base_dir, uniprot_id=uniprot_id, exec_path='/groups/sbinlab/tiemann/repos/getcontacts/')
+        df = pd.merge(df, df_count, on=['variant']).reset_index(drop=True)
+    
+    
+    meta = {}
+    for column in df.columns:
+        if not column in ['variant', 'n_mut', 'aa_ref', 'resi']:
+            meta[column] = column
+    df = df[['variant']+list(meta.keys())]
+
+    metadata = {
+        "version": str(version),
+        "protein": {
+            "name": f'{pdbID}_{chain}',
+            "organism": organism,
+            "uniprot": uniprot_id,
+            "sequence": sequence,
+        },
+        "rosettapdb": {
+            'chain': chain,
+            'pdbID': pdbID
+        },
+        "columns": meta,
+    }
+    comment = [ f"version {version} - {datetime.date(datetime.now())} - rosetta_pdb info script",] 
+    write_prism(metadata, df, prism_file, comment=comment)
 
 
 def download_pdb(pdb_id, output_dir='.'):
