@@ -395,7 +395,7 @@ def check_membership(uniprot_id, dbs_d):
 
 	return return_d
 
-def write_prism_wrapper(symbol, t_info, symbol_entry):
+def write_prism_wrapper(symbol, t_info, symbol_entry, HGNC, output_dir):
 	print(symbol)
 	#go through all main transcripts
 	
@@ -422,7 +422,15 @@ def write_prism_wrapper(symbol, t_info, symbol_entry):
 				print('No uniprot ID to', tn, 'of', symbol, file = sys.stdout)
 				continue
 
-		#if there were no uniprot IDs to be found we can't do anything 
+		#if there were no uniprot IDs found for the transcripts, try with the HGNC
+		if len(uniprot_set) == 0:
+			print('Trying to get uniprot ID to HGNC:', HGNC, file = sys.stdout)
+			try:
+				uniprot_set.update(HGNC_to_uniprot[HGNC])
+			except KeyError:
+				print('No uniprot ID to', HGNC, 'of', symbol, file = sys.stdout)
+		
+		#finally, let me know if we still couldn't find a uniprot ID
 		if len(uniprot_set) == 0:
 			print('No uniprot IDs found for transcript', transcript, 'of gene', symbol, 'so no prism file will be made', file = sys.stdout)
 			continue
@@ -435,7 +443,20 @@ def write_prism_wrapper(symbol, t_info, symbol_entry):
 		
 		#get the other infos necessary for the prism file: uniprot ID and transcript protein sequence for the header
 		organism = get_ncbi_organism(transcript)
-		prot_seq = t_info[transcript]['prot_seq']
+		prot_seq = t_info[transcript]['prot_seq'].upper()
+		#replace U with X
+		nsr = []
+		if 'U' in prot_seq:
+			repl_seq = ''
+			#need also the positions and all instances and I don't feel up for regex
+			for pos,char in enumerate(prot_seq):
+				if char == 'U':
+					repl_seq += 'X'
+					nsr.append('U'+str(pos))
+				else:
+					repl_seq += char
+			
+			prot_seq = repl_seq
 		
 
 		#debug
@@ -502,14 +523,14 @@ base_prism_dir = '/storage1/shared/data/'
 
 
 #proper file
-clinvar_file = '/storage1/hezscha/data/clinvar/variant_summary.sort.symbol'
+#clinvar_file = '/storage1/hezscha/data/clinvar/variant_summary.sort.symbol'
 
 #test files
-#clinvar_file = '/storage1/hezscha/data/clinvar/variant_summary.NF1'
+#clinvar_file = '/storage1/hezscha/data/clinvar/variant_summary.PPP1R15B'
 # ~ clinvar_file = '/storage1/hezscha/data/clinvar/variant_summary.test'
 # ~ clinvar_file = '/storage1/hezscha/data/clinvar/PGM1_clinvar.HGNC.txt'
-# ~ clinvar_file = '/storage1/hezscha/data/clinvar/variant_summary.CBS'
-# ~ clinvar_file = '/storage1/hezscha/data/clinvar/var_sum.2'
+clinvar_file = '/storage1/hezscha/data/clinvar/variant_summary.HGNC_30396'
+# ~ clinvar_file = '/storage1/hezscha/data/clinvar/variant_summary.NF1'
 
 #for real data
 #output_dir = '/storage1/hezscha/src/PRISM/prism/prism_clinvar/'
@@ -530,6 +551,7 @@ else:
 dbs_d = read_uniprot_datasets()
 
 transcript_to_uniprot = {}
+HGNC_to_uniprot = {}
 with open('/storage1/hezscha/data/uniprot_idmapping/HUMAN_9606_idmapping.dat','r') as IN:
 	for line in IN:
 		ls = line.rstrip().split('\t')
@@ -541,9 +563,21 @@ with open('/storage1/hezscha/data/uniprot_idmapping/HUMAN_9606_idmapping.dat','r
 				transcript_to_uniprot[transc].append(uniprot)
 			else:
 				transcript_to_uniprot[transc] = [uniprot]
+		elif ls[1] == 'HGNC':
+			#A0A087WX20	HGNC	HGNC:7127
+			HGNC = ls[2]
+			uniprot = ls[0].split('-')[0]
+			if HGNC in HGNC_to_uniprot:
+				HGNC_to_uniprot[HGNC].append(uniprot)
+			else:
+				HGNC_to_uniprot[HGNC] = [uniprot]
 
 #read in list of already processed symbols 
 proc_set = set()
+#if it doesn't exist, make it exist
+if not os.path.exists(os.path.join(output_base,'processed_symbols.txt')):
+	with open(os.path.join(output_base,'processed_symbols.txt'), 'w') as tmpout:
+		pass
 with open(os.path.join(output_base,'processed_symbols.txt'), 'r') as IN:
 	for line in IN:
 		proc_set.add(line.rstrip())
@@ -596,10 +630,10 @@ with open(clinvar_file, 'r') as CV_in:
 		if (symbol) and (curr_symbol) and (curr_symbol != symbol):
 			
 			#write prism file
-			write_prism_wrapper(symbol, t_info, symbol_entry)
+			write_prism_wrapper(symbol, t_info, symbol_entry, HGNC, output_dir)
 			
 			#add symbol to the processed file
-			proc_OUT = open(os.path.join(output_base+'processed_symbols.txt'),'a')
+			proc_OUT = open(os.path.join(output_base,'processed_symbols.txt'),'a')
 			print(symbol, file = proc_OUT)
 			proc_OUT.close()
 			
@@ -617,6 +651,7 @@ with open(clinvar_file, 'r') as CV_in:
 		var_type = ls[1]
 		cID = ls[30]
 		curr_symbol = ls[4]
+		HGNC = ls[5]
 		
 		if not assembly == 'GRCh38': #check assembly == GRCh38
 			continue
@@ -643,6 +678,10 @@ with open(clinvar_file, 'r') as CV_in:
 			print('Entry',ls[2], ', ID:', cID,'for symbol', symbol, 'states protein change', var_name, 'but this is incorrect according to esummary which returns', check_varname, '. The entry has therefore been skipped.', file = sys.stderr)
 			continue
 		
+		#lastly, if the variant name contains a U change it to X
+		if var_name.startswith('U'):
+			var_name = 'X'+ var_name[1:]
+		
 		#check done, get other infos and save the entry
 		csig = process_clinsig(ls[6])
 		#keeping version numbers because its necessary to identify the correct protein seq to the transcript
@@ -664,7 +703,7 @@ with open(clinvar_file, 'r') as CV_in:
 		if not transcript in symbol_entry:
 			
 			#debug
-			print(transcript, 'not in keys for this symbol')
+			print(transcript, 'is not in the representative transcript set for this symbol')
 			#debug
 			
 			#the first thing to do is find out if this transcript matches to another transcript that already has an entry in symbol_entry, and if so switch to that
@@ -704,7 +743,7 @@ with open(clinvar_file, 'r') as CV_in:
 				#else we have checked against all known unique protseq transcripts of this symbol and the sequence is different, so the current transcript has a different protein seq then and gets its own entry in t_info and matches itself
 				else:
 					#debug
-					print('no match was found for transcript', transcript)
+					print('no match was found for transcript', transcript, ', making new representative entry')
 					#debug
 					
 					t_info[transcript] = {}
@@ -736,10 +775,14 @@ with open(clinvar_file, 'r') as CV_in:
 #in the end, process the last symbol
 if symbol:
 	#write prism file
-	write_prism_wrapper(symbol, t_info, symbol_entry)
+	write_prism_wrapper(symbol, t_info, symbol_entry, HGNC, output_dir)
+
+	#debug
+	#print("I am here")
+	#debug
 
 	#add symbol to the processed file
-	proc_OUT = open(os.path.join(output_base+'processed_symbols.txt'),'a')
+	proc_OUT = open(os.path.join(output_base,'processed_symbols.txt'),'a')
 	print(symbol, file = proc_OUT)
 	proc_OUT.close()				
 
