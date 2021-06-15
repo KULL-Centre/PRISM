@@ -83,7 +83,8 @@ parser.add_argument('-uniprot', dest="uniprot", help="Comma separated list of un
 parser.add_argument('-fromfile', dest="fromfile", help="A file from which to read uniprot IDs (one per line)")
 parser.add_argument('-fail', dest="fail", help="A file listing uniprot IDs for which extraction failed before (i.e. because they have no features of interest) so we don't waste time querying for them.")
 parser.add_argument('-outdir', dest="outdir", help="Output directory for prism_uniprot files. Will be current working directory if not given.")
-parser.add_argument('-m', dest="mode", choices=['overwrite', 'leave'], default = 'leave', help="What do when the output file already exists. Leave (default) or overwrite")
+parser.add_argument('-version', dest="version", default = '002', help="Version of the files we're creating. Right now we are on version 002 since the addition of the mobidb disorder priority column (named mobi_db_consensus).")
+parser.add_argument('-m', dest="mode", choices=['overwrite', 'leave', 'check'], default = 'leave', help="What do when the output file already exists. Leave (default) or overwrite")
 parser.add_argument("-v","--verbose", action="count", default=0, help="Level of output.")
 args = parser.parse_args()
 ################################################################################
@@ -254,7 +255,7 @@ direct_link_features = {
 }
 
 
-def make_uniprot_prism_files(uniprot_id, prism_file, version=1,fail_fh=''):
+def make_uniprot_prism_files(uniprot_id, prism_file, version=args.version,fail_fh=''):
 	
 	'''
 	
@@ -346,19 +347,27 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1,fail_fh=''):
 	
 	logger.info('Extract info from uniprot')
 
-	counter = 1
-	while counter < 3:
-		try:
-			uniprot_info_df = extract_uniprot_info(uniprot_id)
-			sleep(1)
-			break
-		except ConnectionResetError:
-			count += 1
-			sleep(10)
-	
-	if counter >= 3:
-		print("Failed 3 times to query uniprot, check what's up")
+	uniprot_info_df = extract_uniprot_info(uniprot_id)
+	if uniprot_info_df is None:
+		print('Something went wrong fetching data from uniprot.')
 		sys.exit()
+
+	#the below catch might not work, may need to catch urllib.error.URLError instead. I do that inside get_uniprot_features.py now	
+	# ~ counter = 1
+	# ~ while counter < 3:
+		# ~ try:
+			# ~ uniprot_info_df = extract_uniprot_info(uniprot_id)
+			# ~ sleep(1)
+			# ~ break
+		# ~ 
+		# ~ except ConnectionResetError:
+		# ~ #except urllib.error.URLError
+			# ~ counter += 1
+			# ~ sleep(10)
+	
+	# ~ if counter >= 3:
+		# ~ print("Failed 3 times to query uniprot, check what's up")
+		# ~ sys.exit()
 		
 	#for debugging
 	#print(uniprot_info_df.columns)
@@ -410,6 +419,22 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1,fail_fh=''):
 				print(uniprot_id, file = f_out)
 				f_out.close()
 		return()
+	
+	#replace U (selenocysteine) with X and make a note
+	nsr = []
+	uniprot_info_df['sequence'][0] = uniprot_info_df['sequence'][0].upper()
+	if 'U' in uniprot_info_df['sequence'][0]:
+		repl_seq = ''
+		#need also the positions and all instances and I don't feel up for regex
+		for pos,char in enumerate(uniprot_info_df['sequence'][0]):
+			if char == 'U':
+				repl_seq += 'X'
+				nsr.append('U'+str(pos+1))
+			else:
+				repl_seq += char
+		
+		#uniprot_info_df['sequence'] = uniprot_info_df['sequence'].replace('U', 'X')
+		uniprot_info_df['sequence'][0] = repl_seq
 	
 	#print(uniprot_info_df['sequence'])
 	#print(uniprot_info_df['sequence'][0])
@@ -839,12 +864,13 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1,fail_fh=''):
 	for elem in output_df.columns[1:]:
 		columns_dic[elem]= elem
 	metadata = {
-		"version": version,
+		"version": args.version,
 		"protein": {
 			"name": uniprot_info_df['Entry name'][0],
 			"organism": uniprot_info_df['organism'][0],
 			"uniprot": uniprot_info_df['Entry'][0],
 			"sequence": uniprot_info_df['sequence'][0],
+			"non-standard residues" : ','.join(nsr)
 		},
 		"uniprot": {
 		"reviewed": uniprot_info_df['reviewed'][0],
@@ -855,16 +881,17 @@ def make_uniprot_prism_files(uniprot_id, prism_file, version=1,fail_fh=''):
 	}
 
 	#evaluate membership in uniprot sets:
-	
 	membership = check_membership(uniprot_id, dbs_d)
-	
 	if args.verbose >= 1:
 		print(membership)
-	
 	for dataset in membership:
 		metadata['protein'][dataset] = membership[dataset]
 
-	comment = [ f"version {version} - {datetime.date(datetime.now())} - uniprot extract script",] 
+	#add non standard residues if they existed
+	if nsr:
+		metadata['protein']['non-standard residues'] = ','.join(nsr)
+
+	comment = [ f"version {args.version} - {datetime.date(datetime.now())} - uniprot extract script",] 
 	logger.info('Writing prism file')
 	write_prism(metadata, output_df, prism_file, comment=comment)
 	logger.info('uniprot prism files written!')
@@ -910,17 +937,26 @@ for uniprot_id in uniprotIDs:
 	else:
 		output_dir = make_default_outfolder(uniprot_id)
 	
-	prism_file = os.path.join(output_dir, f'prism_uniprot_XXX_{uniprot_id}.txt')
+	prism_file = os.path.join(output_dir, f'prism_uniprot_{args.version}_{uniprot_id}.txt')
 	if args.verbose >= 1:
 		print('Output file:', prism_file)
 	
-	#if file exists, either exit or mkae new one anyway, depending on mode
+	#if file exists, either exit or make new one anyway, depending on mode
 	if os.path.exists(prism_file):
 		if args.mode == 'leave':
 			print(prism_file, 'already exists. If you wish to overwrite it use -m overwrite.')
-		#there are only two modes, the other one is overwrite
+		
+		#add checking the version in the existing prism file and re-making it if it is lower than the current version stated in the args
+		elif args.mode == 'check':
+			ex_meta, ex_df = read_from_prism(prism_file)
+			if int(ex_meta['version']) < int(args.version):
+				ret = make_uniprot_prism_files(uniprot_id, prism_file)
+			else:
+				print(prism_file, 'already exists in this version. If you wish to overwrite it use -m overwrite.')
+		
+		#the remaining mode is overwrite
 		else:	
-			ret = make_uniprot_prism_files(uniprot_id, prism_file, version=1)
+			ret = make_uniprot_prism_files(uniprot_id, prism_file)
 			#try to reimport the file we just made to check for compatibility with the prism parser
 			if ret == 'Success':
 				meta_data, dataframe = read_from_prism(prism_file)
@@ -932,9 +968,9 @@ for uniprot_id in uniprotIDs:
 	
 	else:
 		if args.fail:
-			ret = make_uniprot_prism_files(uniprot_id, prism_file, version=1, fail_fh = args.fail)
+			ret = make_uniprot_prism_files(uniprot_id, prism_file, fail_fh = args.fail)
 		else:
-			ret = make_uniprot_prism_files(uniprot_id, prism_file, version=1)
+			ret = make_uniprot_prism_files(uniprot_id, prism_file)
 		#try to reimport the file we just made to check for compatibility with the prism parser
 		if ret == 'Success':
 			meta_data, dataframe = read_from_prism(prism_file)
