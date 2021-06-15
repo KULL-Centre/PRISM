@@ -12,8 +12,14 @@ arguments:
   -fromfile FROMFILE    A file from which to read uniprot IDs (one per line)
   -outdir OUTDIR        Output directory for prism_uniprot files. Will be
                         current working directory if not given.
-  -m {overwrite,leave}  What do when the output file already exists. Leave
-                        (default) or overwrite
+  -version VERSION      Version of the files we're creating. Right now we are
+                        on version 002 since the addition of the mobidb
+                        disorder priority column (named mobi_db_consensus).                        
+  -m {overwrite,leave,check}  
+                        What do when the output file already exists. Leave
+                        (default), overwrite the file or check the version and 
+                        overwrite if the version of the new file would be 
+                        higher.
   -v, --verbose         Level of output.
   -fail FAIL            A file listing uniprot IDs for which extraction failed
                         before (i.e. because they have no features of interest) 
@@ -69,14 +75,15 @@ There are currently a maximum of 29 features available, however for most uniprot
 
 White space in fields has been replaced with '_' since that is the column separator, i.e. Transcription_activation_(acidic). Each field also contains a number separated by '|' to count up the feature instance. For example, the first disulfide bond in a protein is DISULFID|1, the second one is DISULFID|2 and so on.
 
+------
 2. Creating prism_gnomad files
 ------
 A python parser to take a protein idenitfier and a gnomAD vcf file and produce a prism file for the protein
 
-0. Setup step1 files
-This was done already on the binf system, so just info unless things need redoing.
+2.0. Setup step1 files
+This was done already on the binf system, so just info unless things need redoing. Skip to 2.1. Prerequists or 2.2. Prism file generation
 
-0.1. downloaded vcf files from gnomad:
+2.0.1. downloaded vcf files from gnomad:
 https://gnomad.broadinstitute.org/downloads
 https://gnomad.broadinstitute.org/faq
 
@@ -85,7 +92,7 @@ The FAQ details that:
 
 I therefore used exome data from gnomad v2 and genome data from gnomad v3 to get the best available coverage in terms of both variants seen and their allel frequencies in the population.
 
-0.2. annotation with Ensembl's Variant Effect Predictor
+2.0.2. annotation with Ensembl's Variant Effect Predictor
 
 However, gnomad v2 vcfs are only annotated for protein variants for the transcript set of GRCh37. Since we aim to combine the v2 and v3 data, we used the GRCh38 liftover of the v2 exome vcf (also downloaded from gnomad) and then annotated with Variant Effect Predictor (VEP) for GRCh38. At the time the project was started there were also vital fields missing from the VEP annotation of the gnomad v3 genome data, so I re-annotated those vcfs as well for GRCh38, same VEP version and same transcript set as used for the v2 exome liftover.
 
@@ -138,7 +145,7 @@ vep_install -a f -s homo_sapiens -y GRCh38 --CACHE_VERSION [put version here] -c
 #now test the manual cache
 /groups/sbinlab/hezscha/.conda/envs/conda_vep/bin/vep -i /groups/sbinlab/hezscha/test/ensembl-vep/examples/homo_sapiens_GRCh38.vcf --cache --dir_cache /groups/sbinlab/hezscha/software/vep/cache_GRCh38_100 --fasta /groups/sbinlab/hezscha/software/vep/cache_GRCh38_100/homo_sapiens/100_GRCh38/Homo_sapiens.GRCh38.dna.toplevel.fa.gz -o /groups/sbinlab/hezscha/test/vep_test_deic/homo_sapiens_GRCh38.100.vcf --vcf --offline --variant_class --sift b --polyphen b --distance 0 --hgvs --uniprot --domains --canonical --gene_phenotype --force_overwrite --CACHE_VERSION [put version here]
 
-0.3. temporary files 
+2.0.3. temporary files 
 
 To avoid reading in the huge vcf files every time, I made a directory with sub directories per chromosome that contains temporary files for each transcript. 
 
@@ -152,8 +159,8 @@ Specifically per transcript ID there are:
 
 Files may not exist if there was no such data. I.e. if missense mutations were found for a certain transcript in the genome data but not in the exome data (i.e. due to the genomic region not being in the exome data), only the .mis.genomes.tmp will exist, not the .mis.exomes.tmp . The complex files are experimental and only exist for chrom Y.
 
-These files are made with: 
-python3 parse_whole_chromosome_split_vartypes_v04.py 
+These tmp files are made with: 
+python3 parse_whole_chromosome_split_vartypes_v04.py
 
 required arguments:
   -chrom CHROMOSOME     The chromosome for which to parse the gnomad_v2 exomes
@@ -192,7 +199,7 @@ and in a tar archive:
 
 The tmp_folder option of the gnomad file generating scripts below points there automatically, change it if you untar the tar file somewhere else.
 
-1. Prerequisits 
+2.1. Prerequisits 
 
 python libraries: 
 cyvcf2
@@ -205,15 +212,21 @@ datetime
 numpy
 time
 
-2. File generation 
+2.2. Prism file generation 
 
-To generate prism compatible files with gnomad data, run make_prism_gnomad_file_seq.py
+To generate prism compatible files with gnomad data, run either make_prism_gnomad_file_seq.py or make_prism_gnomad_file_all.py. 
 
-usage: make_prism_gnomad_file_seq.py [-h] [-e {mis,syn,complex,all}]
+usage: make_prism_gnomad_file_all.py [-h] [-e {mis,syn,complex,all}]
                                      [-m {overwrite,leave}]
                                      [-tmp_folder TMP_FOLDER]
                                      [-out_folder OUT_FOLDER] [-d] -uniprot
-                                     UNIPROT -seq SEQ [-v]
+                                     UNIPROT [-v]
+
+Minimally requires a uniprot ID. Will make all possible prism gnomad files to that ID, one per unique protein product.
+
+required arguments:
+  -uniprot UNIPROT      Uniprot ID to get transcripts and make prism_gnomad
+                        files for
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -230,16 +243,28 @@ optional arguments:
                         location is /storage1/shared/data/prism_gnomad/uniprot
                         [0:2]/unipro[2:4]/uniprot[4:6]/
   -d                    Debug mode.
+  -v, --verbose         Level of output, default zero is no output
+
+usage: make_prism_gnomad_file_seq.py [-h] [-e {mis,syn,complex,all}]
+                                     [-m {overwrite,leave}]
+                                     [-tmp_folder TMP_FOLDER]
+                                     [-out_folder OUT_FOLDER] [-d] -uniprot
+                                     UNIPROT -seq SEQ [-v]
+
+Minimally requires a uniprot ID and a seq. Will make one prism file for the Ensembl transcript that matches this uniprot and sequence, if it exists. This is done to specifically make a file to a certain isoform/transcript.
+
+required arguments:
   -uniprot UNIPROT      Uniprot ID to get transcripts and make prism_gnomad
                         files for
   -seq SEQ              Protein sequence of interest. Extract variants for the
                         first transcript that matches this.
-  -v, --verbose         Level of output, default zero is no output
 
+optional arugments:
+same as make_prism_gnomad_file_all
 
 The reason it has to be this sucky and you can't just specific isoform 1 is that while you can get all Ensembl transcripts associated to a uniprot ID there is no guaranteed way to match a specific isoform to its Ensembl transcripts. So we compare the sequences and the transcript with the same seq as has been requested must be that isoform.
 
-3. proteome wide data
+2.3. proteome wide data
 
 For generating this data I have downloaded the human proteome with one sequence per protein from uniprot from here: https://www.uniprot.org/proteomes/UP000005640 (click on "Download one protein sequence per gene")
 resulting in: UP000005640_9606.fasta.gz
@@ -251,3 +276,219 @@ The following wrapper script reads in the space separated list and attempts to p
 human_proteome_gnomad_wrapper.sh
 
 Some proteins have no gnomad variants or are not on the main assembly. This means their genomic location is on what is called a patch. We do not have data for those locations since gnomad maps only to the main assembly. Therefore these protein do not have corresponding prism_gnomad files.
+
+I later discovered that approached caused issues during merge because sometimes we are more interested in gnomad data on isoforms other than isoform 1, so I decided to instead make all possible files per uniprot ID. Re-ran make_prism_gnomad_file_all.py with only the uniprot ID.
+
+------
+3. Creating prism clinvar files
+------
+
+3.1. Generating prism_clinvar files
+
+You should not have to unless there are large scale changes.
+
+3.1.0.
+download a flat file with clinvar summary information to parse:
+https://ftp.ncbi.nlm.nih.gov/pub/clinvar/tab_delimited/variant_summary.txt.gz
+
+unzip and sort the file by te symbol column (important!):
+gunzip variant_summary.txt.gz
+sort variant_summary.txt -k5 -t$'\t' > variant_summary.sort.symbol
+
+other pages or interest
+website:
+https://www.ncbi.nlm.nih.gov/clinvar/
+Significance levels:
+https://www.ncbi.nlm.nih.gov/clinvar/docs/clinsig/
+Review status:
+https://www.ncbi.nlm.nih.gov/clinvar/docs/review_status/
+FTP directory:
+https://ftp.ncbi.nlm.nih.gov/pub/clinvar/tab_delimited/
+
+3.1.1.
+run: 
+make_prism_clinvar.py
+, making sure line 526 is pointed to the flat file sorted by symbol! This is very important, otherwise it will not work properly. The file I've used is /storage1/hezscha/data/clinvar/variant_summary.sort.symbol . The script will go through the file and process it symbol by symbol, producing one prism_clinvar file per named refseq transcript (within the same symbol) and per uniprot ID associated to the refseq transcript, or to the HGNC if there are no uniprot IDs directly cross-referenced to the transcript.
+
+------
+4. Creating prism spliceAI files
+------
+
+4.1. Generating prism spliceAI files
+
+You should not have to unless there are large scale changes. The files are created by parsing an entire chromosome vcf.
+
+4.1.0.
+go to https://github.com/Illumina/SpliceAI and obtain the vcf file spliceai_scores.masked.snv.hg38.vcf or similar
+
+create separate file per one chromosome:
+cd /storage0/shared/data/spliceAI
+#if unzipped:
+grep -P '^21\t' spliceai_scores.masked.snv.hg38.vcf > spliceai_scores.masked.snv.hg38.chromosome21.vcf
+#otherwise:
+gunzip -c spliceai_scores.masked.snv.hg38.vcf | grep -P '^Y\t' > spliceai_scores.masked.snv.hg38.chromosomeY.vcf
+#add header
+cat spliceai_scores.masked.snv.hg38.vcf.head spliceai_scores.masked.snv.hg38.chromosome21.vcf > tmp 
+mv tmp spliceai_scores.masked.snv.hg38.chromosome21.vcf
+
+2. filter for only positions predicted to be splice altering
+https://github.com/Illumina/SpliceAI
+according to their documentation the cutoffs are: 0.2 (high recall), 0.5 (recommended), and 0.8 (high precision). We used 0.2 to get the most info out.
+
+I made this script to do the filtering:
+python3 spliceAI_filter_vcf.py -chrom 7 -filter 0.2
+#bash loop
+for i in {1..5..1}; do; python3 spliceAI_filter_vcf.py -filter 0.2 -chrom $i; done
+
+gzip the resulting file again
+
+4.1.1. annotate the filtered vcf files with vep
+if vep is not installed take a look at the gnomad section, it explains how to do it
+annotated each filtered chromosome vcf with vep
+
+#the command I used. I used sbatch on deic, an example job script can be found under vep_spliceai_chr21.sh
+srun /groups/sbinlab/hezscha/.conda/envs/conda_vep/bin/vep -i /groups/sbinlab/hezscha/data/spliceAI/spliceai_scores.masked.snv.hg38.chromosome2.filter.spliceAI0.2.vcf.gz --cache --dir_cache /groups/sbinlab/hezscha/software/vep/cache_GRCh38_100 --fasta /groups/sbinlab/hezscha/software/vep/cache_GRCh38_100/homo_sapiens/100_GRCh38/Homo_sapiens.GRCh38.dna.toplevel.fa.gz -o /groups/sbinlab/hezscha/results/vep/spliceai_scores.masked.snv.hg38.chromosome2.filter.spliceAI0.2.vcf.VEP.cache100.bgz --vcf --offline --variant_class --sift b --polyphen b --distance 0 --hgvs --uniprot --domains --canonical --gene_phenotype --compress_output bgzip --force_overwrite --CACHE_VERSION 100 --gencode_basic
+
+4.1.2. make prism files
+
+python3 make_prism_spliceAI_files_v04.py -chrom Y -cutoff 0.2
+
+------
+5. Creating prism netsurfp files
+------
+
+Netsurfp predicts secondary structure in q3 and q8 categories as well as relative surface accessible area and disorder from sequence.
+
+5.0.1 installing netsurfp
+downloaded from:
+https://services.healthtech.dtu.dk/cgi-bin/sw_request
+tar -xvzf netsurfp-2.0.Any.tar.gz
+prerequisits:
+https://github.com/soedinglab/hh-suite
+https://github.com/soedinglab/MMseqs2
+
+#more infos, manuals, dbs
+https://github.com/soedinglab/hh-suite/wiki#hh-suite-databases
+https://wwwuser.gwdg.de/~compbiol/data/hhsuite/databases/hhsuite_dbs/
+https://github.com/soedinglab/mmseqs2/wiki#downloading-databases
+
+#I kept having dependency issues. What worked in the end was this order of installing things:
+conda create -n netsurfp_tensor 
+conda activate netsurfp_tensor
+conda install -c conda-forge tensorflow=1.14
+
+conda install -c conda-forge -c bioconda hhsuite 
+#install mmseqs
+conda install -c conda-forge -c bioconda mmseqs2
+#for using the prism parser inside the env we need biopython and pandas
+conda install -c anaconda biopython
+conda install -c anaconda pandas
+pip install pyyaml
+
+cd netsurfp
+mkdir build
+#I removed the install_requires from setup.py (since both tensorflow and numpy(prereq of tensorflow) have been installed into the conda env manually) and re-ran installation
+python setup.py develop --install-dir /storage1/hezscha/src/netsurfp/build
+
+5.1. Running netsurfp
+
+calling netsurfp only works after activating the conda env and standing in the directory it was installed into (full path to executable doesn't help):
+conda activate netsurfp_tensor
+cd /storage1/hezscha/src/netsurfp
+netsurfp2 --help
+
+#example run:
+netsurfp2 --csv example/dhfr_human.csv --hhdb /storage1/shared/data/HH_databases/UniRef30_2020/UniRef30_2020_02 hhblits /storage1/hezscha/src/netsurfp/models/hhsuite.pb ../dhfr_human.fasta example/
+
+#run over a list of uniprot IDs:
+#given a a list of uniprot IDs and their isoform1 seq like so:
+>tr|A0A024R1R8|A0A024R1R8_HUMAN A0A024R1R8 MSSHEGGKKKALKQPKKQAKEMDEEEKAFKQKQKEEQKKLEVLKAKVVGKGPLATGGIKKSGKK
+>...
+#this script generates temporary fasta files and submits them to netsurfp
+python3 netsurfp_preds.py -in data/UP000005640_chromosome21_ID_seq.list -v -spliceAI -proteome
+#the -proteome flag is important because it limits the prediction to IDs on the proteome list, /storage1/shared/data/uniprot_datasets/human_proteome_UP000005640_9606.list. The single chromosome lists contain more proteins than are in the 1 seq per gene list. They contain in total about 74K as oposed to 20K on the 1 seq per gene list!
+
+#when done, run this to create prism files from the csv output files of netsurfp
+python3 make_prism_netsurfp_files.py
+
+------
+6. Merging prism files
+------
+
+Since each prism file can only have one sequence WT and the sequences in clinvar, uniprot, gnomad and spliceAI file can differ due to coming from different data sources as well as potentially being different isoforms, we need to choose one target sequence to merge all other sequences to. Variants that do not conform to the WT stated in the target sequence (that will be in the metadata of the output prism file) are dropped during merge.
+
+The target sequence is selected with the following hierarchy:
+1. the sequence with the most non-VUS clinvar variants
+2. the sequence with the most gnomad variants
+3. the sequence with the most spliceAI variants
+4. uniprot isoform 1
+
+python3 merge_wrapper_v003.py
+
+usage: merge_wrapper_v003.py [-h] [-all] [-list FILELIST] [-uniprot UNIPROT]
+                             [-ffs FFS] [-ff FF] [-out_folder OUT_FOLDER]
+                             [-m {overwrite,leave}] [-v] [-allow]
+                             [-check_uniprot] [-cleanup] [-fail]
+                             [-min_id MIN_ID] [-min_cov MIN_COV]
+                             [-snp_af SNP_AF] [--fill_invert]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -all                  Run on all gnomad files
+  -list FILELIST        Run only on this list of files
+  -uniprot UNIPROT      The uniprot ID for which to merge files. The sequence
+                        of isoform 1 will be the authorative sequence for
+                        merging unless otherwise specified with -seq
+  -ffs FFS, --fromfileseq FFS
+                        A file containing a header line specifying 'uniprot'
+                        and 'seq' columns. You can also run a bash loop over
+                        your list, calling this script once per line, and
+                        supply -uniprot and -seq as arguments.
+  -ff FF, --fromfile FF
+                        A file from which to read uniprot IDs (one per line).
+  -out_folder OUT_FOLDER
+                        Where the output files should be written. Default
+                        location is /storage1/shared/data/prism_merge/uniprot[
+                        0:2]/unipro[2:4]/uniprot[4:6]/
+  -m {overwrite,leave}  What do when the output file already exists. Leave
+                        (default) or overwrite
+  -v, --verbose         Level of output, default zero is no output
+  -allow                Allow merging with files that do not have the exact
+                        same sequence (but still the same uniprot ID). This
+                        feature is under development while I figure out how to
+                        select the closest sequence (by using the aligner in
+                        the parser so we don't have another layer of
+                        complexity).
+  -check_uniprot        If there is no prism_uniprot file, check if this ID is
+                        on the fail list (if it's not we can try to make a
+                        prism_uniprot file to this ID).
+  -cleanup              Reduce the resulting prism file to only rows that have
+                        values in the gnomad/spliceAI/clinvar columns since
+                        those are actual variants we have data for. Remove
+                        rows, i.e. variants for which we only have uniprot
+                        feature or netsurfp data.
+  -fail                 Consult a file listing uniprot IDs for which we tried
+                        to make this type of merge file before and failed.
+                        Used to limit the amount of seq lookups we do to
+                        uniprot since this is failing a lot now
+  -min_id MIN_ID        Minimum identity (1.00 = 100 procent) to authoritative
+                        sequence needed to qualify file for the merge. Default
+                        0.8.
+  -min_cov MIN_COV      Minimum coverage (1.00 = 100 procent) of authoritative
+                        sequence needed to qualify file for the merge. Default
+                        0.1.
+  -snp_af SNP_AF        Variants with allel frequencies greater than or equal
+                        to this will be regarded as SNPs, i.e. common
+                        variants. Default 0.01.
+  --fill_invert         If there are known SNP positions in the gnomad file
+                        this will attempt to resolve mismatches with the
+                        target seq by inverting those SNPs, also for uniprot
+                        and netsurfp files.
+
+additional information: The options -uniprot, -ffs and -ff are mutually
+exlusive. Use only one of them. -seq only pairs with the special case of a
+single uniprot ID passed to -uniprot. Otherwise use -ffs if you have a list of
+uniprot IDs and associated sequences.
+
+You should always use --fill_invert unless you have a specific reason not to. It will not affect the merging of files that do not have SNPs. It will attempt to resolved mismatches in WT that originate from common variants between the target seq and other sequences by matching the target seq WT. In the case of gnomad data the variant line is inverted (i.e. from T546A to A546T) to conform to the target seq WT and allel frequency estimates are calc as 1 - orig AF. In the case of uniprot nad netsurfp files which carry information per position, not per variant, the WT is simply switchen to conform to the target seq WT (i.e. from T546= to A546=). This only occurs if the variant has an allel freq of at least 1% in the gnomad data.
+
