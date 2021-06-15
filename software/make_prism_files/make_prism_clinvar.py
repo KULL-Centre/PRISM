@@ -523,13 +523,13 @@ base_prism_dir = '/storage1/shared/data/'
 
 
 #proper file
-#clinvar_file = '/storage1/hezscha/data/clinvar/variant_summary.sort.symbol'
+clinvar_file = '/storage1/hezscha/data/clinvar/variant_summary.sort.symbol'
 
 #test files
 #clinvar_file = '/storage1/hezscha/data/clinvar/variant_summary.PPP1R15B'
 # ~ clinvar_file = '/storage1/hezscha/data/clinvar/variant_summary.test'
 # ~ clinvar_file = '/storage1/hezscha/data/clinvar/PGM1_clinvar.HGNC.txt'
-clinvar_file = '/storage1/hezscha/data/clinvar/variant_summary.HGNC_30396'
+#clinvar_file = '/storage1/hezscha/data/clinvar/variant_summary.HGNC_30396'
 # ~ clinvar_file = '/storage1/hezscha/data/clinvar/variant_summary.NF1'
 
 #for real data
