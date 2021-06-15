@@ -267,6 +267,9 @@ for record in vcf_reader:
 				
 			#save spliceAI info to that tID
 			var_name = parse_HGVSp(transcript, HGSV_field_pos=pos['HGVSp'], prot_pos_field_pos=pos['Protein_position'], aa_field_pos=pos['Amino_acids'], v=False)
+			if var_name.startswith('U'):
+				var_name = 'X'+ var_name[1:]
+			
 			#if there is no HGVSp, the parse_HGVSp will return None. This is how I control that I only get vars in that I can describe in the prism framework
 			#add: skip stop loss mutations because they are not covered in parse_HGVSp and I'm not sure they would be useful in the prism framework because we can't model them in Rosetta and there will be no MAVE data either
 			#debug
@@ -339,6 +342,20 @@ for geneID in meta:
 		#if df is empty, skip
 		if output_df.empty:
 			continue
+		
+		#fix U's into X's in the seq
+		nsr = []
+		if 'U' in prot_seqs[geneID][tID]:
+			repl_seq = ''
+			#need also the positions and all instances and I don't feel up for regex
+			for pos,char in enumerate(prot_seqs[geneID][tID]):
+				if char == 'U':
+					repl_seq += 'X'
+					nsr.append('U'+str(pos))
+				else:
+					repl_seq += char
+			
+			prot_seqs[geneID][tID] = repl_seq
 		
 		#debug
 		print(geneID, meta[geneID]['name'], tID)
