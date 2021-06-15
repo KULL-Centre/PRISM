@@ -263,7 +263,7 @@ dbs_d = read_uniprot_datasets()
 
 #human proteome: we just want to run on the transcript that matches the sequence in the downloaded fasta, i.e. the sequence given with -seq arg
 chosen_t = {}
-transcript_info = {} #dict of geneIDs and locations. The keys are the transcripts and serve as the transcript list to be iterated over
+#transcript_info = {} #dict of geneIDs and locations. The keys are the transcripts and serve as the transcript list to be iterated over
 r = requests.get('https://www.uniprot.org/uniprot/'+args.uniprot+'.txt').text
 for line_u in r.split('\n'):
 	ls = line_u.rstrip().split()
@@ -273,6 +273,8 @@ for line_u in r.split('\n'):
 		ensg = ls[4][:-1]
 		#look up the location and only use transcripts that are on the main assembly and protein coding
 		ens_ret = check_transcript(t_ID)
+		if args.verbose > 1:
+			print('ens_ret:', ens_ret)
 		if not ens_ret['chromosome'] == 'not_main' and ens_ret['biotype'] == 'protein_coding':
 			if args.verbose >= 1:
 				print('transcript:', t_ID, 'chromosome:', ens_ret['chromosome'])
@@ -284,7 +286,22 @@ for line_u in r.split('\n'):
 					chosen_t['ID'] = t_ID
 					chosen_t['ensg'] = ensg
 					chosen_t['chrom'] = ens_ret['chromosome']
-					chosen_t['prot_seq'] = t_seq
+					chosen_t['prot_seq'] = t_seq.upper()
+					#replace U (selenocysteine) with X and make a note
+					nsr = []
+					if 'U' in chosen_t['prot_seq']:
+						repl_seq = ''
+						#need also the positions and all instances and I don't feel up for regex
+						for pos,char in enumerate(chosen_t['prot_seq']):
+							if char == 'U':
+								repl_seq += 'X'
+								nsr.append('U'+str(pos+1))
+							else:
+								repl_seq += char
+						
+						#uniprot_info_df['sequence'] = uniprot_info_df['sequence'].replace('U', 'X')
+						chosen_t['prot_seq'] = repl_seq
+					
 					chosen_t['all_transcripts'] = [t_ID]
 					chosen_t['gene_name'] = ens_ret['display_name'].split('-')[0]
 				#else add to the transcripts with the same sequence
@@ -433,6 +450,9 @@ try:
 		else:
 			fields = line.rstrip().split()
 			var_name = fields[0] #the variant's prism name is always the first field
+			#if the var_name contains a non standard residue, replace it with X
+			if var_name.startswith('U'):
+				var_name = 'X'+ var_name[1:]
 			
 			#v04: don't consider data with AN < 100
 			if int(fields[pos['AN']]) < 100:
@@ -488,7 +508,7 @@ try:
 #if there is no exomes file for this transript + var type combo, try to open the genomes file instead		 	
 except FileNotFoundError:
 	if args.verbose >= 1:
-		print('There is no ', tmp_folder + pref + '.' + var_type + '.exomes.tmp', sep = '')
+		print('There is no ', tmp_folder + chosen_t['tmp_file_prefix'] + '.' + var_type + '.exomes.tmp', sep = '')
 		print('Proceeding to genomes tmp file')
 	
 	pass	
@@ -549,6 +569,8 @@ try:
 		else:
 			fields = line.rstrip().split()
 			var_name = fields[0] #the variant's prism name is always the first field
+			if var_name.startswith('U'):
+				var_name = 'X'+ var_name[1:]
 			
 			#!we need to differentiate whether this var was seen before in the genomes or the exomes when we calc the AF_g ect
 			
@@ -685,7 +707,8 @@ metadata = {
 			"Ensembl transcript ID": ','.join(chosen_t['all_transcripts']),
 			"is canonical": chosen_t['is_canonical'],
 			"chromosome": chosen_t['chrom'],
-			"transcript has variants in": chosen_t['data_source']
+			"transcript has variants in": chosen_t['data_source'],
+			"non-standard residues" : ','.join(nsr)
 			
 		},
 		"gnomad": {
@@ -703,6 +726,11 @@ comment = [ "containing only variants with AN > 100",]
 membership = check_membership(args.uniprot, dbs_d)
 for dataset in membership:
 	metadata['protein'][dataset] = membership[dataset]	
+
+if df.empty:
+	if args.verbose >= 1:
+		print(chosen_t['ID'], 'has no variants.')
+	sys.exit()
 
 print('Writing prism file')
 if args.verbose >= 1:
