@@ -452,7 +452,7 @@ def write_prism_wrapper(symbol, t_info, symbol_entry, HGNC, output_dir):
 			for pos,char in enumerate(prot_seq):
 				if char == 'U':
 					repl_seq += 'X'
-					nsr.append('U'+str(pos))
+					nsr.append('U'+str(pos+1))
 				else:
 					repl_seq += char
 			
