@@ -115,11 +115,27 @@ for csv in os.scandir(csv_path):
 		df["burried_exposed"] = np.where(df['rsa']>0.25, 'e', 'b')
 		#https://stackoverflow.com/questions/11858472/string-concatenation-of-two-pandas-columns
 		#df['baz'] = df.agg(lambda x: f"{x['bar']} is {x['foo']}", axis=1)
+		#replace U's with X's
+		df.loc[df['aa'] == 'U', 'aa'] = 'X'
 		df['variant'] = df.agg(lambda x: f"{x['aa']}{x['pos']}=", axis=1)
 		
 		#get the seq from the column		
-		seq = ''.join(df['aa'])
+		seq = ''.join(df['aa']).upper()
 		#print(seq)
+		nsr = []
+		if 'U' in seq:
+			repl_seq = ''
+			#need also the positions and all instances and I don't feel up for regex
+			for pos,char in enumerate(seq):
+				if char == 'U':
+					repl_seq += 'X'
+					nsr.append('U'+str(pos+1))
+				else:
+					repl_seq += char
+			
+			seq = repl_seq
+		
+		#fix variant lines that contain U's to be X's instead 
 		
 		#remove some cols
 		df.drop(columns=['name', 'aa', 'pos'])
