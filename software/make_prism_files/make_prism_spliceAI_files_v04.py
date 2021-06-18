@@ -351,7 +351,7 @@ for geneID in meta:
 			for pos,char in enumerate(prot_seqs[geneID][tID]):
 				if char == 'U':
 					repl_seq += 'X'
-					nsr.append('U'+str(pos))
+					nsr.append('U'+str(pos+1))
 				else:
 					repl_seq += char
 			
