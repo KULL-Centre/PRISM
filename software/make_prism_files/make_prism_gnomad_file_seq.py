@@ -211,7 +211,7 @@ def check_transcript(t_ID,ensembl_server=ensembl_server):
 		#print(status_code)
 		if status_code == 400:
 			print('Bad Request for '+ensembl_server+'/lookup/id/'+t_ID+'. Possibly the transcript has been retired and is not in release' + ensembl_release +'for GRCh38.', file = sys.stderr)#, file = logOUT)
-			return('NA')
+			return({})
 	
 	else:
 	
@@ -275,7 +275,7 @@ for line_u in r.split('\n'):
 		ens_ret = check_transcript(t_ID)
 		if args.verbose > 1:
 			print('ens_ret:', ens_ret)
-		if not ens_ret['chromosome'] == 'not_main' and ens_ret['biotype'] == 'protein_coding':
+		if len(ens_ret) and ens_ret['chromosome'] != 'not_main' and ens_ret['biotype'] == 'protein_coding':
 			if args.verbose >= 1:
 				print('transcript:', t_ID, 'chromosome:', ens_ret['chromosome'])
 			
