@@ -38,11 +38,11 @@ parser.add_argument('-m', dest="mode", choices=['overwrite', 'leave'], default =
 parser.add_argument('-chrom', dest="chromosome", type = str, required=True, help="The chromosome for which to parse.")
 parser.add_argument('-cutoff', dest="cutoff", choices=[0.2, 0.5], type = float, required=True, help="The delta cutoff for when spliceAI preds are considered splice altering.")
 parser.add_argument('-v', dest="v", action='store_true', help="Verbose")
-parser.add_argument('-out_folder', dest='out_folder', help="Use to change where the output files should be written. Default location is /storage1/shared/data/prism_spliceai/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]+ '/' + uniprot_ID[4:6]")
+parser.add_argument('-out_folder', dest='out_folder', help="Use to change where the output files should be written. Default location is /storage1/shared/data/prism/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]+ '/' + uniprot_ID[4:6]")
 args = parser.parse_args()
 ################################################################################
 
-fail_out = open('/storage1/shared/data/prism_spliceai/failed_parsing.txt', 'a')
+fail_out = open('/storage1/shared/data/prism/failed_parsing_spliceai.txt', 'a')
 
 #functions
 #PRISM parser functions
@@ -115,7 +115,7 @@ def fill_t_matches(geneID):
 
 def make_default_outfolder(uniprot_ID):
 	#sometimes we cannot find the unirpot ID to a transcript. Put them in the none folder then
-	base_dir = '/storage1/shared/data/prism_spliceai/'
+	base_dir = '/storage1/shared/data/prism/'
 	if not uniprot_ID == 'None':
 		if not os.path.exists(base_dir+ uniprot_ID[0:2]):
 			os.makedirs(base_dir+ uniprot_ID[0:2])
