@@ -36,7 +36,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-e', dest="extract", choices=['mis', 'syn', 'complex', 'all'], default = 'mis', help="Type of variants to write files for.")
 parser.add_argument('-m', dest="mode", choices=['overwrite', 'leave'], default = 'leave', help="What do when the output file already exists. Leave (default) or overwrite")
 parser.add_argument('-tmp_folder', dest='tmp_folder', help="Where the temporary step 1 files are stored. Default location is /storage1/hezscha/gnomad_to_prism_parser/step1_files/+args.chromosome/")
-parser.add_argument('-out_folder', dest='out_folder', help="Where the output files should be written. Default location is /storage1/shared/data/prism_gnomad/uniprot[0:2]/unipro[2:4]/uniprot[4:6]/")
+parser.add_argument('-out_folder', dest='out_folder', help="Where the output files should be written. Default location is /storage1/shared/data/prism/uniprot[0:2]/unipro[2:4]/uniprot[4:6]/")
 parser.add_argument('-d', dest="debug", action='store_true', help="Debug mode.")
 parser.add_argument('-uniprot', dest='uniprot', required=True, help="Uniprot ID to get transcripts and make prism_gnomad files for.")
 parser.add_argument("-v","--verbose", action="count", default=0, help="Level of output, default zero is no output")
@@ -131,18 +131,18 @@ def check_membership(uniprot_id, dbs_d):
 def make_default_outfolder(uniprot_ID):
 	#sometimes we cannot find the unirpot ID to a transcript. Put them in the none folder then
 	if not uniprot_ID == 'None':
-		if not os.path.exists('/storage1/shared/data/prism_gnomad/'+ uniprot_ID[0:2]):
-			os.makedirs('/storage1/shared/data/prism_gnomad/'+ uniprot_ID[0:2])
-		if not os.path.exists('/storage1/shared/data/prism_gnomad/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]):
-			os.makedirs('/storage1/shared/data/prism_gnomad/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4])
-		if not os.path.exists('/storage1/shared/data/prism_gnomad/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4] + '/' + uniprot_ID[4:6]):
-			os.makedirs('/storage1/shared/data/prism_gnomad/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]+ '/' + uniprot_ID[4:6])
+		if not os.path.exists('/storage1/shared/data/prism/'+ uniprot_ID[0:2]):
+			os.makedirs('/storage1/shared/data/prism/'+ uniprot_ID[0:2])
+		if not os.path.exists('/storage1/shared/data/prism/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]):
+			os.makedirs('/storage1/shared/data/prism/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4])
+		if not os.path.exists('/storage1/shared/data/prism/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4] + '/' + uniprot_ID[4:6]):
+			os.makedirs('/storage1/shared/data/prism/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]+ '/' + uniprot_ID[4:6])
 	
-		return('/storage1/shared/data/prism_gnomad/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]+ '/' + uniprot_ID[4:6])
+		return('/storage1/shared/data/prism/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]+ '/' + uniprot_ID[4:6])
 	else:
-		if not os.path.exists('/storage1/shared/data/prism_gnomad/None/'):
-			os.makedirs('/storage1/shared/data/prism_gnomad/None/')
-		return('/storage1/shared/data/prism_gnomad/None/')
+		if not os.path.exists('/storage1/shared/data/prism/None/'):
+			os.makedirs('/storage1/shared/data/prism/None/')
+		return('/storage1/shared/data/prism/None/')
 
 def est_AF_error(AC, AN, lam=5.0, n_iter=100):
 	AC = int(AC)
