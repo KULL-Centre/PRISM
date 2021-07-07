@@ -210,9 +210,9 @@ def rosetta_energy_to_prism(infile, prism_file, pdbID, chain, tmp_base_dir, unip
     max_val = df['resi'].max()
     len_seq = len(df['resi'])
     if max_val >=len_seq:
-        sequence = ['-']*(max_val+1)
+        sequence = ['X']*(max_val+1)
     else:
-        sequence = ['-']*(len_seq+1)
+        sequence = ['X']*(len_seq+1)
     varis = df['variant'].unique()
     for var in varis:
         sequence[int(var[1:-1])-1] = var[0]
