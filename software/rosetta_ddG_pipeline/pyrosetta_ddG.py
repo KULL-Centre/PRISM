@@ -16,6 +16,7 @@ import sys
 
 # Third party imports
 import numpy as np
+import pandas as pd
 import pyrosetta.rosetta.protocols.membrane
 from pyrosetta.rosetta.core.pose import Pose
 from pyrosetta import create_score_function
@@ -429,6 +430,31 @@ def compute_ddG(pose, sfxn, resnum, aa, repack_radius, repack_protocol='MP_repac
     return [aa, mutant_score, rmsd]
 
 
+def checkIfCalculated(variant, out, out_add):
+    if os.path.getsize(out) > 0:
+        df = pd.read_csv(out, header=None)
+        df = df.rename(columns={0:'variant', 1:'ddG', 2:'std'})
+    else:
+        df = pd.DataFrame(columns=['variant', 'ddG', 'std'])
+    
+    if variant in df['variant'].values:
+        mean_saved = True
+    else:
+        mean_saved = False
+    
+    if os.path.getsize(out_add) > 0:
+        df_add = pd.read_csv(out_add, header=None)
+        df_add = df_add.rename(columns={0:'variant_raw', 1:'dG', 2:'rmsd'})
+    else:
+        df_add = pd.DataFrame(columns=['variant_raw', 'dG', 'rmsd'])
+    df_add['variant'] = df_add['variant_raw'].apply(lambda x: x.split('_')[1])
+    df_add = df_add.loc[df_add['variant']==variant].reset_index(drop=True)
+    if len(df_add['variant'])>0:
+        return mean_saved, list(map(lambda x,y: [variant[-1],x,y], df_add['dG'], df_add['rmsd'])), len(df_add['variant'])
+    else:
+        return mean_saved, [], 0
+
+
 def main():
     """
     Main function called as default at the end.
@@ -477,9 +503,10 @@ def main():
         #Get WT & mutants
         native_aa, mut_aas = mutations_dic[residue]
 
-        # Calculate ddGs for WT
-        repacked_wt_list = []
-        for repeat in range(args.repeats):
+        # Calculate ddGs for WT 
+        wt_variant = f"{native_aa}{residue}{native_aa}"
+        mean_saved, repacked_wt_list, counts = checkIfCalculated(wt_variant, args.outfile, args.out_add)
+        for repeat in range(args.repeats-counts):
             logger.warning(f'repacking protocol: {args.repack_protocol}')
             repacked_wt_list.append(compute_ddG(pose, sfxn, residue, native_aa, args.repack_radius, 
                 repack_protocol=args.repack_protocol, add_file=args.out_add, flag='WT', dump_pdb=args.dump_pdb, output_dir=args.dump_dir))
@@ -491,47 +518,52 @@ def main():
             repacked_mut_list_all = []
             for index, mutant in enumerate(mut_aas):
                 repacked_mut_list = []
-                for repeat in range(args.repeats):
-                    logger.warning(f'repacking protocol: {args.repack_protocol}')
-                    repacked_mut_list.append(compute_ddG(pose, sfxn, residue, mutant, args.repack_radius, 
-                        repack_protocol=args.repack_protocol, add_file=args.out_add, flag='MUT', dump_pdb=args.dump_pdb, output_dir=args.dump_dir))
-                repacked_mut_list_all.append([mutant, repacked_mut_list])
-                
-                # get variant name
-                variant_name = []
-                logger.info(mutant)
-                for indi, var in enumerate(mutant.split('_')):
-                    variant_name.append(f"{repacked_wt_list[0][0].split('_')[indi]}{residue.split('_')[indi]}{var}")
-                variant_name = ":".join(variant_name)
-                logger.info(f'variant_name: {variant_name}')
+                var_variant = f"{native_aa}{residue}{mutant}"
+                mean_saved, repacked_mut_list, counts = checkIfCalculated(var_variant, args.outfile, args.out_add)
+                if mean_saved:
+                    repacked_mut_list_all.append([mutant, repacked_mut_list])
+                else:
+                    for repeat in range(args.repeats-counts):
+                        logger.warning(f'repacking protocol: {args.repack_protocol}')
+                        repacked_mut_list.append(compute_ddG(pose, sfxn, residue, mutant, args.repack_radius, 
+                            repack_protocol=args.repack_protocol, add_file=args.out_add, flag='MUT', dump_pdb=args.dump_pdb, output_dir=args.dump_dir))
+                    repacked_mut_list_all.append([mutant, repacked_mut_list])
+                    
+                    # get variant name
+                    variant_name = []
+                    logger.info(mutant)
+                    for indi, var in enumerate(mutant.split('_')):
+                        variant_name.append(f"{repacked_wt_list[0][0].split('_')[indi]}{residue.split('_')[indi]}{var}")
+                    variant_name = ":".join(variant_name)
+                    logger.info(f'variant_name: {variant_name}')
 
-                #get WT ddGs
-                wt_dgs = [wt[1] for wt in repacked_wt_list]
-                wt_rmsd = [wt[2] for wt in repacked_wt_list]
+                    #get WT ddGs
+                    wt_dgs = [wt[1] for wt in repacked_wt_list]
+                    wt_rmsd = [wt[2] for wt in repacked_wt_list]
 
-                #get MT ddGs
-                mut_dgs = [mut[1] for mut in repacked_mut_list]
-                mut_rmsd = [mut[1] for mut in repacked_mut_list]
-                #calculate mean & std
-                ddg = []
-                for mut_dg in mut_dgs:
-                    ddg.append((mut_dg - np.mean(wt_dgs))/args.rescale)
-                logger.info(f'wt_dgs: {wt_dgs}')
-                logger.info(f'wt_rmsd: {wt_rmsd}')
-                logger.info(f'mut_dgs: {mut_dgs}')
-                logger.info(f'mut_rmsd: {mut_rmsd}')
-                logger.info(f'ddg: {ddg}')
-                logger.info(f"{variant_name},{round(np.mean(ddg), 3)},{round(np.std(ddg), 3)}\n")
+                    #get MT ddGs
+                    mut_dgs = [mut[1] for mut in repacked_mut_list]
+                    mut_rmsd = [mut[2] for mut in repacked_mut_list]
+                    #calculate mean & std
+                    ddg = []
+                    for mut_dg in mut_dgs:
+                        ddg.append((mut_dg - np.mean(wt_dgs))/args.rescale)
+                    logger.info(f'wt_dgs: {wt_dgs}')
+                    logger.info(f'wt_rmsd: {wt_rmsd}')
+                    logger.info(f'mut_dgs: {mut_dgs}')
+                    logger.info(f'mut_rmsd: {mut_rmsd}')
+                    logger.info(f'ddg: {ddg}')
+                    logger.info(f"{variant_name},{round(np.mean(ddg), 3)},{round(np.std(ddg), 3)}\n")
 
 
-                if args.lowest:
-                    ddg = np.array(ddg)
-                    small_k = int(args.repeats/2)+1
-                    smallest_idx = np.argpartition(ddg, small_k)
-                    ddg = ddg[smallest_idx[:small_k]]
-                    logger.info(f'lowest ddg: {ddg}')
+                    if args.lowest:
+                        ddg = np.array(ddg)
+                        small_k = int(args.repeats/2)+1
+                        smallest_idx = np.argpartition(ddg, small_k)
+                        ddg = ddg[smallest_idx[:small_k]]
+                        logger.info(f'lowest ddg: {ddg}')
 
-                fp.write(f"{variant_name},{round(np.mean(ddg), 3)},{round(np.std(ddg), 3)}\n")
+                    fp.write(f"{variant_name},{round(np.mean(ddg), 3)},{round(np.std(ddg), 3)}\n")
 
 
             logger.info(repacked_mut_list_all)

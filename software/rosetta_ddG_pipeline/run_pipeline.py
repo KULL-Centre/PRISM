@@ -237,7 +237,7 @@ def predict_stability(args):
                     is_pH=is_pH, pH_value=pH_value, lipacc_dic=lipacc_file, score_function=args.MP_ENERGY_FUNC,
                     repack_protocol=args.MP_REPACK_PROTOCOL, mutfiles=ddg_input_mutfile_dir)
                 path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
-                        folder, chain_id=args.CHAIN, sys_name=name, output_name='ddG.out', partition=partition, 
+                        folder, chain_id=args.CHAIN, sys_name=name, output_name='ddG.out', add_output_name='ddG_additional.out', partition=partition, 
                         output_gaps=args.GAPS_OUTPUT, zip_files=args.ZIP_FILES, sha_tag=SHA_TAG)
             else:
                 for indi, sub_ddg_folder in enumerate(folder.ddG_input):
@@ -259,7 +259,7 @@ def predict_stability(args):
                 # Parse sbatch ddg parser
                 #folds = [folder.prepare_checking, folder.ddG_run, folder.ddG_output, folder.ddG_input, folder.output]
                 path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
-                    folder, chain_id=args.CHAIN, sys_name=name, output_name='ddG.out', partition=partition, 
+                    folder, chain_id=args.CHAIN, sys_name=name, output_name='ddG.out', add_output_name='ddG_additional.out', partition=partition, 
                     output_gaps=args.GAPS_OUTPUT, mp_multistruc=args.MP_MULTISTRUC_PROTOCOL, zip_files=args.ZIP_FILES, sha_tag=SHA_TAG)
         else:
             # Parse sbatch relax file

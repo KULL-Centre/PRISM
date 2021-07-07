@@ -18,6 +18,7 @@ import pandas as pd
 # Local application imports
 from helper import AttrDict, create_copy, generate_output, runtime_memory_stats
 import rosetta_paths
+import run_modes
 
 
 def rosetta_ddg_mp_pyrosetta(folder_ddG_input, folder_ddG_run, mut_dict, SLURM=True, sys_name='',
@@ -119,7 +120,7 @@ def postprocess_rosetta_ddg_mp_pyrosetta(folder, output_name='ddG.out', sys_name
 
 
 
-def write_parse_rosetta_ddg_mp_pyrosetta_sbatch(folder, chain_id='A', sys_name='input', output_name='ddG.out', 
+def write_parse_rosetta_ddg_mp_pyrosetta_sbatch(folder, chain_id='A', sys_name='input', output_name='ddG.out', add_output_name='ddG_additional.out',
         partition='sbinlab', output_gaps=False, mp_multistruc=0, zip_files=True, sha_tag=''):
     if mp_multistruc != 0:
         ddG_run = ":".join(folder.ddG_run)
@@ -146,34 +147,125 @@ def write_parse_rosetta_ddg_mp_pyrosetta_sbatch(folder, chain_id='A', sys_name='
                   f'{folder.prepare_checking} {ddG_run} {ddG_output} '
                   f'{ddG_input} {folder.output} '
                   f'{chain_id} {zip_files} {sys_name} {output_name} {output_gaps} '
-                  f'{sha_tag}'
+                  f'{sha_tag} '
+                  f'{add_output_name} {folder.prepare_cleaning}'
                   ))
         if mp_multistruc != 0:
             fp.write(f' {mp_multistruc} {folder.ddG_postparse_run} {folder.ddG_postparse_output}')
     return score_sbatch_path
 
 
-if __name__ == '__main__':
-    print(sys.argv)
-    folder = AttrDict()
-    folder.update({'prepare_checking': sys.argv[1], 'ddG_run': sys.argv[2],
-                   'ddG_output': sys.argv[3], 'ddG_input': sys.argv[4], 'output': sys.argv[5]})
+def quickcheck( out, out_add, base_mut ):
+    # the following variants should be calculated
+    arr = []
+    with open(target_calc_mut_clean_file, 'r') as fp:
+        for line in fp:
+            line = line.split()
+            wt = line[0]
+            resi = line[1]
+            varrs = line[2].strip()
+            for var in varrs:
+                if var != wt:
+                    arr.append(f"{wt}{resi}{var}")
+    df_goal = pd.DataFrame(data={'variant':arr})
+    df_goal['target'] = True
+    df_goal['resi'] = df_goal['variant'].apply(lambda x: int(x[1:-1]))
 
-    if len(sys.argv) > 12:
-        folder.update({'ddG_postparse_run': sys.argv[13], 'ddG_postparse_output': sys.argv[14]})
-        print(folder)
-        postprocess_rosetta_ddg_mp_pyrosetta(
-            folder, chain_id=sys.argv[6], zip_files=sys.argv[7], sys_name=sys.argv[8], output_name=sys.argv[9], output_gaps=sys.argv[10], mp_multistruc=sys.argv[12], sha_tag=sys.argv[11] )
-    elif len(sys.argv) > 9:
-        postprocess_rosetta_ddg_mp_pyrosetta(
-            folder, chain_id=sys.argv[6], zip_files=sys.argv[7], sys_name=sys.argv[8], output_name=sys.argv[9], output_gaps=sys.argv[10], sha_tag=sys.argv[11])
-    elif len(sys.argv) > 8:
-        postprocess_rosetta_ddg_mp_pyrosetta(
-            folder, chain_id=sys.argv[6], zip_files=sys.argv[7], sys_name=sys.argv[8], output_name=sys.argv[9], sha_tag=sys.argv[10])
-    elif len(sys.argv) > 7:
-        postprocess_rosetta_ddg_mp_pyrosetta(
-            folder, chain_id=sys.argv[6], zip_files=sys.argv[7], sys_name=sys.argv[8], sha_tag=sys.argv[9])
-    elif len(sys.argv) > 6:
-        postprocess_rosetta_ddg_mp_pyrosetta(folder, chain_id=sys.argv[6], zip_files=sys.argv[7], sha_tag=sys.argv[8])
+    # the following variants are already calculated 5/max-calc times
+    if os.path.getsize(out) > 0:
+        df = pd.read_csv(out, header=None)
+        df = df.rename(columns={0:'variant', 1:'mean_ddG', 2:'std_ddG'})
     else:
-        postprocess_rosetta_ddg_mp_pyrosetta(folder)
+        df = pd.DataFrame(columns=['variant', 'mean_ddG', 'std_ddG'])
+
+    # the following variants are already calculated but not written out in the final file (only upon competen of all runs)
+    if os.path.getsize(out_add) > 0:
+        df_add = pd.read_csv(out_add, header=None)
+        df_add = df_add.rename(columns={0:'variant', 1:'dG', 2:'rmsd', 3: 'resi'})
+    else:
+        df_add = pd.DataFrame(columns=['variant', 'dG', 'rmsd', 'resi'])
+    df_add['base'] = df_add['variant'].apply(lambda x: x.split('_')[0])
+    df_add['variant'] = df_add['variant'].apply(lambda x: x.split('_')[1])
+    df_add['resi'] = df_add['variant'].apply(lambda x: int(x[1:-1]))
+    # calculating the counts
+    df_add_count = df_add.copy()
+    df_add_count = df_add_count.groupby(['variant']).count()['dG']#.unique()
+    df_add_count = pd.DataFrame(df_add_count).reset_index(drop=False)
+    df_add_count = df_add_count.rename(columns={'dG': 'count'})
+    df_add = pd.merge(df_add, df_add_count, on=['variant'], how='outer')
+    df_add
+
+    # merging
+    df_all = pd.merge(df_goal, df_add, on=['variant', 'resi'], how='outer')
+    df_all['target'] = df_all['target'].fillna(False)
+    df_all = pd.merge(df_all, df, on=['variant'], how='outer')
+    df_all
+
+    # do some stats
+    max_written_out = len(df_all.loc[(~df_all.duplicated(subset=['variant'], keep='first')) & (df_all['base']=='MUT')]['variant'])
+    current_written_out = len(df_all.loc[(~df_all.duplicated(subset=['variant'], keep='first')) & (df_all['base']=='MUT') & (~df_all['mean_ddG'].isna())]['variant'])
+    missing_written_out = len(df_all.loc[(~df_all.duplicated(subset=['variant'], keep='first')) & (df_all['base']=='MUT') & (df_all['mean_ddG'].isna())]['variant'])
+    logger.info(f"written out in final file: {current_written_out} / {max_written_out} = {(current_written_out/float(max_written_out)):.1%}")
+    logger.info(f"not yet written out in final file: {missing_written_out} / {max_written_out} = {(missing_written_out/float(max_written_out)):.1%}")
+
+    max_calculated = len(df_all['variant'])
+    current_calculated = len(df_all.loc[(~df_all['dG'].isna())]['variant'])
+    missing_calculated = len(df_all.loc[(df_all['dG'].isna())]['variant'])
+    logger.info(f"currently calculated: {current_calculated} / {max_calculated} = {(current_calculated/float(max_calculated)):.1%}")
+    logger.info(f"not yet calculated: {missing_calculated} / {max_calculated} = {(missing_calculated/float(max_calculated)):.1%}")
+    logger.info(f"not yet calculated variants: {df_all.loc[(df_all['dG'].isna())]['variant'].unique()}")
+
+    if (current_written_out == max_written_out) & (missing_written_out == 0):
+        all_written_out = True
+    else:
+        all_written_out = False
+    if (current_calculated == max_calculated) & (missing_calculated == 0):
+        all_calculated = True
+    else:
+        all_calculated = False
+    
+    return all_written_out, all_calculated, df_all
+
+
+
+
+
+
+if __name__ == '__main__':
+
+    out = os.path.join(sys.argv[2], sys.argv[9])#ddG.out
+    out_add = os.path.join(sys.argv[2], sys.argv[12])#ddG_additional.out
+    base_mut = os.path.join(sys.argv[13], 'mutation_clean.txt')
+    all_written_out, all_calculated, df_all = quickcheck( out, out_add, base_mut )
+
+    if all_written_out:
+        print(sys.argv)
+        folder = AttrDict()
+        folder.update({'prepare_checking': sys.argv[1], 'ddG_run': sys.argv[2],
+                       'ddG_output': sys.argv[3], 'ddG_input': sys.argv[4], 'output': sys.argv[5]})
+
+        if len(sys.argv) > 14:
+            folder.update({'ddG_postparse_run': sys.argv[15], 'ddG_postparse_output': sys.argv[16]})
+            print(folder)
+            postprocess_rosetta_ddg_mp_pyrosetta(
+                folder, chain_id=sys.argv[6], zip_files=sys.argv[7], sys_name=sys.argv[8], output_name=sys.argv[9], output_gaps=sys.argv[10], mp_multistruc=sys.argv[14], sha_tag=sys.argv[11] )
+        elif len(sys.argv) > 9:
+            postprocess_rosetta_ddg_mp_pyrosetta(
+                folder, chain_id=sys.argv[6], zip_files=sys.argv[7], sys_name=sys.argv[8], output_name=sys.argv[9], output_gaps=sys.argv[10], sha_tag=sys.argv[11])
+        elif len(sys.argv) > 8:
+            postprocess_rosetta_ddg_mp_pyrosetta(
+                folder, chain_id=sys.argv[6], zip_files=sys.argv[7], sys_name=sys.argv[8], output_name=sys.argv[9], sha_tag=sys.argv[10])
+        elif len(sys.argv) > 7:
+            postprocess_rosetta_ddg_mp_pyrosetta(
+                folder, chain_id=sys.argv[6], zip_files=sys.argv[7], sys_name=sys.argv[8], sha_tag=sys.argv[9])
+        elif len(sys.argv) > 6:
+            postprocess_rosetta_ddg_mp_pyrosetta(folder, chain_id=sys.argv[6], zip_files=sys.argv[7], sha_tag=sys.argv[8])
+        else:
+            postprocess_rosetta_ddg_mp_pyrosetta(folder)
+    else:
+        folder = AttrDict()
+        folder.update({'ddG_input': sys.argv[4], 'ddG_run': sys.argv[2]})
+        if len(sys.argv) > 14:
+            folder.update({'ddG_postparse_run': sys.argv[15], 'ddG_postparse_output': sys.argv[16]})
+            print(folder)
+        run_modes.ddg_calculation(folder, parse_relax_process_id=None, mp_multistruc=sys.argv[14])
