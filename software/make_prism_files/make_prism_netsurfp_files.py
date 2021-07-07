@@ -20,7 +20,7 @@ base_prism_dir = '/storage1/shared/data/'
 ################################################################################
 parser = argparse.ArgumentParser()
 parser.add_argument('-in_folder', dest='in_folder', help="Folder with the netsurfp csv output to go through. Default location is: "+base_prism_dir+"netsurfp_preds/csv")
-parser.add_argument('-out_folder', dest='out_folder', help="Where the output files should be written. Default location is "+base_prism_dir+"prism_netsurfp/uniprot[0:2]/unipro[2:4]/uniprot[4:6]/")
+parser.add_argument('-out_folder', dest='out_folder', help="Where the output files should be written. Default location is "+base_prism_dir+"prism/uniprot[0:2]/unipro[2:4]/uniprot[4:6]/")
 parser.add_argument("-v","--verbose", action="count", default=0, help="Level of output, default zero is no output")
 #parser.add_argument("--first_res_num", metavar="INT", help="In the output data, assign this number to the first given amino acid of the sequence")
 args = parser.parse_args()
@@ -42,18 +42,18 @@ def read_from_prism(primsfile):
 def make_default_outfolder(uniprot_ID):
 	#sometimes we cannot find the unirpot ID to a transcript. Put them in the none folder then
 	if not uniprot_ID == 'None':
-		if not os.path.exists(base_prism_dir+'prism_netsurfp/'+ uniprot_ID[0:2]):
-			os.makedirs(base_prism_dir+'prism_netsurfp/'+ uniprot_ID[0:2])
-		if not os.path.exists(base_prism_dir+'prism_netsurfp/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]):
-			os.makedirs(base_prism_dir+'prism_netsurfp/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4])
-		if not os.path.exists(base_prism_dir+'prism_netsurfp/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4] + '/' + uniprot_ID[4:6]):
-			os.makedirs(base_prism_dir+'prism_netsurfp/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]+ '/' + uniprot_ID[4:6])
+		if not os.path.exists(base_prism_dir+'prism/'+ uniprot_ID[0:2]):
+			os.makedirs(base_prism_dir+'prism/'+ uniprot_ID[0:2])
+		if not os.path.exists(base_prism_dir+'prism/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]):
+			os.makedirs(base_prism_dir+'prism/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4])
+		if not os.path.exists(base_prism_dir+'prism/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4] + '/' + uniprot_ID[4:6]):
+			os.makedirs(base_prism_dir+'prism/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]+ '/' + uniprot_ID[4:6])
 	
-		return(base_prism_dir+'prism_netsurfp/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]+ '/' + uniprot_ID[4:6])
+		return(base_prism_dir+'prism/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]+ '/' + uniprot_ID[4:6])
 	else:
-		if not os.path.exists(base_prism_dir+'prism_netsurfp/None/'):
-			os.makedirs(base_prism_dir+'prism_netsurfp/None/')
-		return(base_prism_dir+'prism_netsurfp/None/')
+		if not os.path.exists(base_prism_dir+'prism/None/'):
+			os.makedirs(base_prism_dir+'prism/None/')
+		return(base_prism_dir+'prism/None/')
 
 def read_uniprot_datasets(db_path = '/storage1/shared/data/uniprot_datasets/'):
 	'''

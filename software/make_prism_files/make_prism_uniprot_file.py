@@ -121,18 +121,18 @@ def download_pdb(pdb_id, output_dir):
 def make_default_outfolder(uniprot_ID, base_prism_dir = '/storage1/shared/data/'):
 	#sometimes we cannot find the unirpot ID to a transcript. Put them in the none folder then
 	if not uniprot_ID == 'None':
-		if not os.path.exists(base_prism_dir+'prism_uniprot/'+ uniprot_ID[0:2]):
-			os.makedirs(base_prism_dir+'prism_uniprot/'+ uniprot_ID[0:2])
-		if not os.path.exists(base_prism_dir+'prism_uniprot/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]):
-			os.makedirs(base_prism_dir+'prism_uniprot/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4])
-		if not os.path.exists(base_prism_dir+'prism_uniprot/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4] + '/' + uniprot_ID[4:6]):
-			os.makedirs(base_prism_dir+'prism_uniprot/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]+ '/' + uniprot_ID[4:6])
+		if not os.path.exists(base_prism_dir+'prism/'+ uniprot_ID[0:2]):
+			os.makedirs(base_prism_dir+'prism/'+ uniprot_ID[0:2])
+		if not os.path.exists(base_prism_dir+'prism/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]):
+			os.makedirs(base_prism_dir+'prism/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4])
+		if not os.path.exists(base_prism_dir+'prism/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4] + '/' + uniprot_ID[4:6]):
+			os.makedirs(base_prism_dir+'prism/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]+ '/' + uniprot_ID[4:6])
 	
-		return(base_prism_dir+'prism_uniprot/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]+ '/' + uniprot_ID[4:6])
+		return(base_prism_dir+'prism/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]+ '/' + uniprot_ID[4:6])
 	else:
-		if not os.path.exists(base_prism_dir+'prism_uniprot/NA/'):
-			os.makedirs(base_prism_dir+'prism_uniprot/NA/')
-		return(base_prism_dir+'prism_uniprot/NA/')
+		if not os.path.exists(base_prism_dir+'prism/NA/'):
+			os.makedirs(base_prism_dir+'prism/NA/')
+		return(base_prism_dir+'prism/NA/')
 
 def read_uniprot_datasets(db_path = '/storage1/shared/data/uniprot_datasets/'):
 	'''
