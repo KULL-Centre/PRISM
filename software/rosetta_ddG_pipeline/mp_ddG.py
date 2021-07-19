@@ -158,7 +158,7 @@ def write_parse_rosetta_ddg_mp_pyrosetta_sbatch(folder, chain_id='A', sys_name='
 def quickcheck( out, out_add, base_mut ):
     # the following variants should be calculated
     arr = []
-    with open(target_calc_mut_clean_file, 'r') as fp:
+    with open(base_mut, 'r') as fp:
         for line in fp:
             line = line.split()
             wt = line[0]
@@ -263,9 +263,12 @@ if __name__ == '__main__':
         else:
             postprocess_rosetta_ddg_mp_pyrosetta(folder)
     else:
+        print(sys.argv)
         folder = AttrDict()
         folder.update({'ddG_input': sys.argv[4], 'ddG_run': sys.argv[2]})
         if len(sys.argv) > 14:
             folder.update({'ddG_postparse_run': sys.argv[15], 'ddG_postparse_output': sys.argv[16]})
             print(folder)
-        run_modes.ddg_calculation(folder, parse_relax_process_id=None, mp_multistruc=sys.argv[14])
+            run_modes.ddg_calculation(folder, parse_relax_process_id=None, mp_multistruc=sys.argv[14])
+        else:
+            run_modes.ddg_calculation(folder, parse_relax_process_id=None)

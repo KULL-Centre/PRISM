@@ -9,6 +9,7 @@ Date of last major changes: 2020-05-04
 
 # Standard library imports
 import io
+from datetime import timedelta
 import logging as logger
 import glob
 import os
@@ -469,13 +470,23 @@ def generate_emission_stats(test_dir):
     shell_command = f'sacct -j {slurm_ids} --format="JobID,Start,End,CPUTime,NCPUS,Elapsed,ReqMem,MaxRSS,MaxVMSize,AveVMSize,JobName"'
     pipes = subprocess.Popen(shell_command, shell=True, cwd=test_dir,stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
     std_out, std_err = pipes.communicate()
-    merged_memory = pd.read_fwf(io.StringIO(std_out.decode('utf-8')))
+    iostringout = io.StringIO(std_out.decode('utf-8'))
+    iostringout.seek(0)
+    merged_memory = pd.read_fwf(iostringout, colspecs=[(0,12), (12,32), (32,52), (52,65), (65,75), (75,87), (87,98), (98,107), (107,118), (118,130), (130,150)])
+
     merged_memory = merged_memory.iloc[1: , :].reset_index(drop=True)
     merged_memory['JobID_parent'] = merged_memory['JobID'].apply(lambda x: x.split('_')[0])
     merged_memory = merged_memory.loc[(merged_memory['JobID'].str.endswith('+'))].reset_index(drop=True)
-    merged_memory['Elapsed'] = pd.to_timedelta(merged_memory['Elapsed'])
-    merged_memory['MaxRSS_byte'] = merged_memory['MaxRSS'].apply(lambda x: convert_mem(x))
 
+    def make_datetimes(x):
+        s = x.split('-')
+        if len(s)>1:
+            return timedelta(days=int(x.split('-')[0]), hours=int(x.split('-')[1].split(':')[0]), minutes=int(x.split('-')[1].split(':')[1]), seconds=int(x.split('-')[1].split(':')[2]))
+        else:
+            return timedelta(hours=int(x.split('-')[0].split(':')[0]), minutes=int(x.split('-')[0].split(':')[1]), seconds=int(x.split('-')[0].split(':')[2]))
+
+    merged_memory['Elapsed'] = merged_memory['Elapsed'].apply(lambda x: make_datetimes(x))
+    merged_memory['MaxRSS_byte'] = merged_memory['MaxRSS'].apply(lambda x: convert_mem(x))
 
     emission_df = []
     sum_mem =[]
@@ -491,6 +502,8 @@ def generate_emission_stats(test_dir):
         runTime_min = int(df['Elapsed'][0].split(':')[1])
         runTime_sec = int(df['Elapsed'][0].split(':')[2])
         n_cores = int(row['NCPUS'])
+        if (runTime_hours <0) or (runTime_min <0) or(runTime_sec <0):
+            print(runTime_hours, runTime_min, runTime_sec)
         emission_dic = calculate_emissions(memory, runTime_hours, runTime_min, runTime_sec, n_cores=n_cores, coreType='CPU', coreModel='any')
         tmp_df = pd.DataFrame([emission_dic])#data=list(emission_dic.items()), columns = emission_dic.keys())
         emission_df.append(tmp_df)
@@ -507,7 +520,6 @@ def generate_emission_stats(test_dir):
                  f"{emission_df['nkm_drivingEU'].sum():.2f} km of driving a passenger car in Europe or "
                  f"{emission_df['streaming_netflix_perhour'].sum():.2f} h of netflix streaming."))
 
-
     memory = convert_mem_to_GB(merged_memory['MaxRSS_byte'].sum())
     df = pd.DataFrame(data=[merged_memory['Elapsed'].sum()], columns=['Elapsed'])
     d = df['Elapsed'].dt.components[['days', 'hours', 'minutes', 'seconds']]
@@ -523,7 +535,6 @@ def generate_emission_stats(test_dir):
                      f"a train ride of {output['nkm_train']:.2f} km, "
                      f"{output['nkm_drivingEU']:.2f} km of driving a passenger car in Europe or "
                      f"{output['streaming_netflix_perhour']:.2f} h of netflix streaming. (calculated using https://doi.org/10.1002/advs.202100707 v1.1)"))
-
     emission_out_file = os.path.join(test_dir, 'output', 'emission_stats.txt')
     with open(emission_out_file, 'w') as fp:
         fp.write(output_text)
