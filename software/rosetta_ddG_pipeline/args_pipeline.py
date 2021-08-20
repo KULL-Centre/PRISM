@@ -292,6 +292,13 @@ def parse_args2():
                         help=SUPPRESS,
                         #help='MP Energy function (mainly for benchmarking). Examples: franklin2019, mpframework_smooth_fa_2012, ref2015_memb.'
                         )
+    parser.add_argument('--mp_energy_func_weights',
+                        default=os.path.join(
+                            rosetta_paths.path_to_data, 'mp', 'f19_cart_1.5.wts'),
+                        dest='MP_ENERGY_FUNC_WEIGHTS',
+                        help=SUPPRESS,
+                        #help='MP Energy function (mainly for benchmarking). Examples: franklin2019, mpframework_smooth_fa_2012, ref2015_memb.'
+                        )
     parser.add_argument('--mp_repack_protocol',
                         default='MP_flex_relax_ddG',
                         dest='MP_REPACK_PROTOCOL',
@@ -303,6 +310,13 @@ def parse_args2():
                         default=0,
                         type=int,
                         dest='MP_MULTISTRUC_PROTOCOL', 
+                        help=SUPPRESS,
+                        #help="MP generates x relaxed structures and calculates exactly 1 ddG from each structure  (mainly for benchmarking). Default=False "
+                        )
+    parser.add_argument('--mp_cart_ddg',
+                        default=0,
+                        type=int,
+                        dest='MP_CART_DDG', 
                         help=SUPPRESS,
                         #help="MP generates x relaxed structures and calculates exactly 1 ddG from each structure  (mainly for benchmarking). Default=False "
                         )
@@ -327,4 +341,6 @@ def parse_args2():
             parser.error('Please specify a reference PDBid and chain for alginment into membrane plane or switch "MP_ALIGN_MODE" to false')
         if args.MP_ALIGN_REF:
             args.MP_ALIGN_MODE='OPM'
+        if args.MP_CART_DDG:
+            args.RELAX_XML_INPUT = os.path.join(rosetta_paths.path_to_data, 'mp', 'mp_cart_relax.xml')
     return args

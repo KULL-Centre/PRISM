@@ -27,43 +27,46 @@ def rosetta_ddg_mp_pyrosetta(folder_ddG_input, folder_ddG_run, mut_dict, SLURM=T
                              lipids='DLPC', temperature=37.0, repeats=5, lowest=1,
                              score_file_name='scores', is_pH=0, pH_value=7, dump_pdb=0,
                              score_function='franklin2019', repack_protocol='MP_repack', 
-                             lipacc_dic='mp_lipid_acc_dic.json', mutfiles='mutfiles'):
-    ddg_script_exec = os.path.join(
-        rosetta_paths.path_to_stability_pipeline, 'pyrosetta_ddG.py')
+                             lipacc_dic='mp_lipid_acc_dic.json', mutfiles='mutfiles', 
+                             cartesian=0, ddgfile='', score_function_file='f19_cart_1.5.wts'):
+
     input_struc = os.path.join(folder_ddG_input, 'input.pdb')
     for root, dirs, files in os.walk(folder_ddG_input):
         for file in files:
             if file.endswith('.span'):
                 input_span = os.path.join(root, file)
+    if cartesian==0:
+        ddg_script_exec = os.path.join(
+            rosetta_paths.path_to_stability_pipeline, 'pyrosetta_ddG.py')
 
-    ddG_command = (f'python3 {ddg_script_exec}'
-                   f' --in_pdb {input_struc}'
-                   f' --in_span {input_span}'
-                   f' --outdir {folder_ddG_run}'
-                   f' --outfile {output_name}'
-                   f' --out_add {add_output_name}'
-                   f' --repack_radius {repack_radius}'
-                   f' --include_pH {is_pH}'
-                   f' --pH_value {pH_value}'
-                   f' --repeats {repeats}'
-                   f' --lowest {lowest}'
-                   f' --lipids {lipids}'
-                   f' --temperature {temperature}'
-                   f' --score_function {score_function}'
-                   f' --repack_protocol {repack_protocol}'
-                   f' --lip_has_pore {lipacc_dic}'
-                   f' --dump_pdb {dump_pdb}'
-                   '')
+        ddG_command = (f'python3 {ddg_script_exec}'
+                       f' --in_pdb {input_struc}'
+                       f' --in_span {input_span}'
+                       f' --outdir {folder_ddG_run}'
+                       f' --outfile {output_name}'
+                       f' --out_add {add_output_name}'
+                       f' --repack_radius {repack_radius}'
+                       f' --include_pH {is_pH}'
+                       f' --pH_value {pH_value}'
+                       f' --repeats {repeats}'
+                       f' --lowest {lowest}'
+                       f' --lipids {lipids}'
+                       f' --temperature {temperature}'
+                       f' --score_function {score_function}'
+                       f' --repack_protocol {repack_protocol}'
+                       f' --lip_has_pore {lipacc_dic}'
+                       f' --dump_pdb {dump_pdb}'
+                       '')
 
 
-    if SLURM:
-        path_to_sbatch = os.path.join(folder_ddG_input, 'rosetta_ddg.sbatch')
-        if mutfiles == '':
-            mutfiles = os.path.join(folder_ddG_input, 'mutfiles')
-        muts = os.listdir(mutfiles)
+        if SLURM:
+            path_to_sbatch = os.path.join(folder_ddG_input, 'rosetta_ddg.sbatch')
+            if mutfiles == '':
+                mutfiles = os.path.join(folder_ddG_input, 'mutfiles')
+            muts = os.listdir(mutfiles)
 
-        with open(path_to_sbatch, 'w') as fp:
-            fp.write(f'''#!/bin/sh 
+            with open(path_to_sbatch, 'w') as fp:
+                fp.write(f'''#!/bin/sh 
 #SBATCH --job-name={sys_name}_MPddg
 #SBATCH --array=0-{len(muts)-1}
 #SBATCH --time=48:00:00
@@ -77,14 +80,64 @@ echo $INDEX
 
 # launching rosetta 
 ''')
-            new_ddG_command = ddG_command + \
-                ' --mutfile ${LST[$INDEX]} '
-            fp.write(new_ddG_command)
-        logger.info(path_to_sbatch)
+                new_ddG_command = ddG_command + \
+                    ' --mutfile ${LST[$INDEX]} '
+                fp.write(new_ddG_command)
+            logger.info(path_to_sbatch)
+        else:
+            logger.warn("need to write the script!")
+            sys.exit()
+    
+# cartesian mp ddg calculation
     else:
-        logger.warn("need to write the script!")
-        sys.exit()
+        path_to_sbatch = os.path.join(folder_ddG_input, 'rosetta_ddg.sbatch')
+        if ddgfile == '':
+            # path_to_ddgflags = os.path.join(
+            # rosetta_paths.path_to_data, 'sp', 'cartesian_ddg_flagfile')
+            path_to_ddgflags = os.path.join(folder_ddG_input, 'ddg_flagfile')
+        else:
+            path_to_ddgflags = ddgfile
 
+        if mutfiles == '':
+            mutfiles = os.path.join(folder_ddG_input, 'mutfiles')
+        muts = os.listdir(mutfiles)
+
+        with open(path_to_sbatch, 'w') as fp:
+            fp.write(f'''#!/bin/sh 
+#SBATCH --job-name={sys_name}_MPcartddg
+#SBATCH --array=0-{len(muts)-1}
+#SBATCH --time=48:00:00
+#SBATCH --mem 2000
+#SBATCH --partition={partition}
+#SBATCH --nice 
+LST=(`ls {mutfiles}/mutfile*`)
+OFFSET=0 
+INDEX=$((OFFSET+SLURM_ARRAY_TASK_ID))
+echo $INDEX
+
+# launching rosetta 
+''')
+            fp.write((f'{os.path.join(rosetta_paths.path_to_rosetta, f"bin/cartesian_ddg.{rosetta_paths.Rosetta_extension}")} '
+                      f'-database {rosetta_paths.Rosetta_database_path} '
+                      f'-s {input_struc} '
+                      f'-ddg:mut_file ${{LST[$INDEX]}} '
+                      f'-score:weights {score_function_file} '
+                      f'-mp:lipids:composition {lipids} '
+                      f'-ddg:iterations {repeats} '
+                      f'-ddg::dump_pdbs {dump_pdb} '
+                      f'-mp:setup:spanfiles {input_span} '
+                      f'-in:membrane '
+                      f'-fa_max_dis 9 '
+                      f'-missing_density_to_jump '
+                      f'-has_pore 0 '
+                      f'-ddg:legacy true '
+                      f'-ddg:optimize_proline 1 '
+                      f'-ddg:frag_nbrs 4 '
+                      f'-ddg:bbnbrs 1 '
+                      f'-ddg::cartesian '
+                      f'-out:prefix ddg-$SLURM_ARRAY_JOB_ID-$SLURM_ARRAY_TASK_ID '))#@{path_to_ddgflags} '))
+        logger.info(path_to_sbatch)
+        return path_to_sbatch
 
 def postprocess_rosetta_ddg_mp_pyrosetta(folder, output_name='ddG.out', sys_name='', version=1, prism_nr='XXX', chain_id='A', zip_files=True, output_gaps=False, mp_multistruc=0, sha_tag=''):
     print(mp_multistruc, folder)

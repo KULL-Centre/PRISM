@@ -1,0 +1,9 @@
+-in:membrane 
+-fa_max_dis 9 
+-missing_density_to_jump 
+-has_pore 0 
+-ddg:legacy true 
+-ddg:optimize_proline 1 
+-ddg:frag_nbrs 4 
+-ddg:bbnbrs 1 
+-ddg::cartesian 
