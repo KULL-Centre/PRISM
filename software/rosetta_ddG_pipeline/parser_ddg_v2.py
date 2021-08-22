@@ -173,7 +173,8 @@ def quickcheck( run_dir, base_mut ):
             out_add = os.path.join(run_dir, files)
             if os.path.getsize(out_add) > 0:
                 df_add = pd.read_csv(out_add, header=None)
-                df_add = pd.read_csv(out_add, header=None, sep=' ')
+                df_add[4] = df_add[0].apply(lambda x: x.split()[2])
+                df_add[5] = df_add[0].apply(lambda x: x.split()[3])
                 df_add = df_add.loc[df_add[4].str.startswith('MUT')]
                 d1t3 = {'ALA':'A', 'CYS':'C', 'ASP':'D', 'GLU':'E', 'PHE':'F', 'GLY':'G', 'HIS':'H', 'ILE':'I', 'LYS':'K', 'LEU':'L', 
                        'MET':'M', 'ASN':'N', 'PRO':'P', 'GLN':'Q', 'ARG':'R', 'SER':'S', 'THR':'T', 'VAL':'V', 'TRP':'W', 'TYR': 'Y'}
@@ -216,9 +217,9 @@ def quickcheck( run_dir, base_mut ):
     max_calculated = len(df_all['variant'])
     current_calculated = len(df_all.loc[(~df_all['dG'].isna())]['variant'])
     missing_calculated = len(df_all.loc[(df_all['dG'].isna())]['variant'])
-    logger.info(f"currently calculated: {current_calculated} / {max_calculated} = {(current_calculated/float(max_calculated)):.1%}")
-    logger.info(f"not yet calculated: {missing_calculated} / {max_calculated} = {(missing_calculated/float(max_calculated)):.1%}")
-    logger.info(f"not yet calculated variants: {df_all.loc[(df_all['dG'].isna())]['variant'].unique()}")
+    print(f"currently calculated: {current_calculated} / {max_calculated} = {(current_calculated/float(max_calculated)):.1%}")
+    print(f"not yet calculated: {missing_calculated} / {max_calculated} = {(missing_calculated/float(max_calculated)):.1%}")
+    print(f"not yet calculated variants: {df_all.loc[(df_all['dG'].isna())]['variant'].unique()}")
 
     if (current_calculated == max_calculated) & (missing_calculated == 0):
         all_calculated = True
@@ -229,10 +230,11 @@ def quickcheck( run_dir, base_mut ):
 
 
 if __name__ == '__main__':
+    print(sys.argv)
     base_mut = os.path.join(sys.argv[13], 'mutation_clean.txt')
-    all_written_out, all_calculated, df_all = quickcheck( sys.argv[4], base_mut )
+    all_calculated, df_all = quickcheck( sys.argv[4], base_mut )
 
-    if all_written_out:
+    if all_calculated:
         parse_rosetta_ddgs(sys_name=sys.argv[1], chain_id=sys.argv[2], fasta_seq=sys.argv[3], 
             ddG_run=sys.argv[4], ddG_output=sys.argv[5], structure_input=sys.argv[6], 
             ddG_input=sys.argv[7], output=sys.argv[8], prepare_checking=sys.argv[9], output_gaps=sys.argv[10], 
