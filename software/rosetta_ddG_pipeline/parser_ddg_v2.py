@@ -149,9 +149,98 @@ def parse_rosetta_ddgs(sys_name, chain_id, fasta_seq, ddG_run, ddG_output, struc
         read_slurms(ddG_run,printing=True)
     except:
         print('cant print warnings due to error. Please check slurm files manually')
+
+
+def quickcheck( run_dir, base_mut ):
+    # the following variants should be calculated
+    arr = []
+    with open(base_mut, 'r') as fp:
+        for line in fp:
+            line = line.split()
+            wt = line[0]
+            resi = line[1]
+            varrs = line[2].strip()
+            for var in varrs:
+                if var != wt:
+                    arr.append(f"{wt}{resi}{var}")
+    df_goal = pd.DataFrame(data={'variant':arr})
+    df_goal['target'] = True
+    df_goal['resi'] = df_goal['variant'].apply(lambda x: int(x[1:-1]))
+
+    df_add_all = []
+    for files in os.listdir (run_dir):
+        if files.startswith("mutfile"):
+            out_add = os.path.join(run_dir, files)
+            if os.path.getsize(out_add) > 0:
+                df_add = pd.read_csv(out_add, header=None)
+                df_add[4] = df_add[0].apply(lambda x: x.split()[2])
+                df_add[5] = df_add[0].apply(lambda x: x.split()[3])
+                df_add = df_add.loc[df_add[4].str.startswith('MUT')]
+                d1t3 = {'ALA':'A', 'CYS':'C', 'ASP':'D', 'GLU':'E', 'PHE':'F', 'GLY':'G', 'HIS':'H', 'ILE':'I', 'LYS':'K', 'LEU':'L', 
+                       'MET':'M', 'ASN':'N', 'PRO':'P', 'GLN':'Q', 'ARG':'R', 'SER':'S', 'THR':'T', 'VAL':'V', 'TRP':'W', 'TYR': 'Y'}
+                def get_vars(x):
+                    res = x.split('_')[1][:-1]
+                    mut_var = res[-3:]
+                    mut_var = d1t3[mut_var]
+                    resi = int(res[:-3])
+                    wt_var = df_goal.loc[df_goal['resi']==int(resi), 'variant'].to_list()[0][0]
+                    return f"{wt_var}{resi}{mut_var}"
+                df_add['variant'] = df_add[4].apply(lambda x: get_vars(x))
+                df_add['dG'] = df_add[5]
+                df_add = df_add[['variant', 'dG']]
+                df_add['rmsd'] = None
+            else:
+                df_add = pd.DataFrame(columns=['variant', 'dG', 'rmsd', 'resi'])
+            df_add['resi'] = df_add['variant'].apply(lambda x: int(x[1:-1]))
+            df_add_all.append(df_add)
+    df_add = pd.concat(df_add_all)
+    df_add['base'] = 'MUT'
+    df_add['var'] = df_add['variant'].apply(lambda x: x[-1])
+    df_add['wt'] = df_add['variant'].apply(lambda x: x[0])
+    df_add.loc[df_add['var']==df_add['wt'], 'base'] = 'WT'
+    df_add = df_add.drop(columns=['var', 'wt'])
     
+    # calculating the counts
+    df_add_count = df_add.copy()
+    df_add_count = df_add_count.groupby(['variant']).count()['dG']#.unique()
+    df_add_count = pd.DataFrame(df_add_count).reset_index(drop=False)
+    df_add_count = df_add_count.rename(columns={'dG': 'count'})
+    df_add = pd.merge(df_add, df_add_count, on=['variant'], how='outer')
+    df_add
+
+    # merging
+    df_all = pd.merge(df_goal, df_add, on=['variant', 'resi'], how='outer')
+    df_all['target'] = df_all['target'].fillna(False)
+    df_all
+
+    # do some stats
+    max_calculated = len(df_all['variant'])
+    current_calculated = len(df_all.loc[(~df_all['dG'].isna())]['variant'])
+    missing_calculated = len(df_all.loc[(df_all['dG'].isna())]['variant'])
+    print(f"currently calculated: {current_calculated} / {max_calculated} = {(current_calculated/float(max_calculated)):.1%}")
+    print(f"not yet calculated: {missing_calculated} / {max_calculated} = {(missing_calculated/float(max_calculated)):.1%}")
+    print(f"not yet calculated variants: {df_all.loc[(df_all['dG'].isna())]['variant'].unique()}")
+
+    if (current_calculated == max_calculated) & (missing_calculated == 0):
+        all_calculated = True
+    else:
+        all_calculated = False
+    
+    return all_calculated, df_all
+
+
 if __name__ == '__main__':
-    parse_rosetta_ddgs(sys_name=sys.argv[1], chain_id=sys.argv[2], fasta_seq=sys.argv[3], 
-        ddG_run=sys.argv[4], ddG_output=sys.argv[5], structure_input=sys.argv[6], 
-        ddG_input=sys.argv[7], output=sys.argv[8], prepare_checking=sys.argv[9], output_gaps=sys.argv[10], 
-        zip_files=sys.argv[11], sha_tag=sys.argv[12])
+    print(sys.argv)
+    base_mut = os.path.join(sys.argv[13], 'mutation_clean.txt')
+    all_calculated, df_all = quickcheck( sys.argv[4], base_mut )
+
+    if all_calculated:
+        parse_rosetta_ddgs(sys_name=sys.argv[1], chain_id=sys.argv[2], fasta_seq=sys.argv[3], 
+            ddG_run=sys.argv[4], ddG_output=sys.argv[5], structure_input=sys.argv[6], 
+            ddG_input=sys.argv[7], output=sys.argv[8], prepare_checking=sys.argv[9], output_gaps=sys.argv[10], 
+            zip_files=sys.argv[11], sha_tag=sys.argv[12])
+    else:
+        print(sys.argv)
+        folder = AttrDict()
+        folder.update({'ddG_input': sys.argv[7], 'ddG_run': sys.argv[4]})
+        run_modes.ddg_calculation(folder, parse_relax_process_id=None)

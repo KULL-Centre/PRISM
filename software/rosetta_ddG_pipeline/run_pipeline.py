@@ -204,10 +204,15 @@ def predict_stability(args):
 
             # Parse sbatch relax file
             logger.info('Create MP relax sbatch files.')
+            if (args.MP_CART_DDG != 0) and (args.MP_ENERGY_FUNC == 'franklin2019'):
+                relax_weights = args.MP_ENERGY_FUNC_WEIGHTS
+            else:
+                relax_weights = args.MP_ENERGY_FUNC
+                
             path_to_relax_sbatch = mp_prepare.rosetta_relax_mp(
                 folder, SLURM=True, repeats=args.BENCH_MP_RELAX_REPEAT, num_struc=args.BENCH_MP_RELAX_STRUCS, 
                 lipid_type=args.MP_LIPIDS, sys_name=name, partition=partition, mp_thickness=args.MP_THICKNESS, 
-                mp_switch_off=args.MP_IGNORE_RELAX_MP_FLAGS, score_function=args.MP_ENERGY_FUNC)
+                mp_switch_off=args.MP_IGNORE_RELAX_MP_FLAGS, score_function=relax_weights)
 
             # Parse sbatch relax parser
             path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(
@@ -220,6 +225,12 @@ def predict_stability(args):
             else:
                 is_pH = 1
                 pH_value = args.MP_PH
+
+
+            #if (args.MP_CART_DDG != 0) and (args.MP_ENERGY_FUNC == 'franklin2019'):
+            #    score_function_file = os.path.join()
+            #else:
+            #    sys.exit()
 
 
             # Parse sbatch ddg file
@@ -235,8 +246,13 @@ def predict_stability(args):
                     repack_radius=args.BENCH_MP_REPACK, lipids=args.MP_LIPIDS,
                     temperature=args.MP_TEMPERATURE, repeats=args.BENCH_MP_REPEAT, dump_pdb = args.DUMP_PDB,
                     is_pH=is_pH, pH_value=pH_value, lipacc_dic=lipacc_file, score_function=args.MP_ENERGY_FUNC,
-                    repack_protocol=args.MP_REPACK_PROTOCOL, mutfiles=ddg_input_mutfile_dir)
-                path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
+                    repack_protocol=args.MP_REPACK_PROTOCOL, mutfiles=ddg_input_mutfile_dir, 
+                    cartesian=args.MP_CART_DDG, ddgfile=ddg_input_ddgfile, score_function_file=args.MP_ENERGY_FUNC_WEIGHTS)
+                if args.MP_CART_DDG:
+                    path_to_parse_ddg_sbatch = structure_instance.write_parse_cartesian_ddg_sbatch(
+                    folder,  partition=partition, output_gaps=args.GAPS_OUTPUT, zip_files=args.ZIP_FILES, sha_tag=SHA_TAG)
+                else:
+                    path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
                         folder, chain_id=args.CHAIN, sys_name=name, output_name='ddG.out', add_output_name='ddG_additional.out', partition=partition, 
                         output_gaps=args.GAPS_OUTPUT, zip_files=args.ZIP_FILES, sha_tag=SHA_TAG)
             else:
@@ -254,11 +270,16 @@ def predict_stability(args):
                         repack_radius=args.BENCH_MP_REPACK, lipids=args.MP_LIPIDS, lowest=0,
                         temperature=args.MP_TEMPERATURE, repeats=1, dump_pdb = args.DUMP_PDB,
                         is_pH=is_pH, pH_value=pH_value, lipacc_dic=lipacc_file, score_function=args.MP_ENERGY_FUNC,
-                        repack_protocol=args.MP_REPACK_PROTOCOL, mutfiles=ddg_input_mutfile_dir)
+                        repack_protocol=args.MP_REPACK_PROTOCOL, mutfiles=ddg_input_mutfile_dir, 
+                        cartesian=args.MP_CART_DDG, ddgfile=ddg_input_ddgfile, score_function_file=args.MP_ENERGY_FUNC_WEIGHTS)
 
                 # Parse sbatch ddg parser
                 #folds = [folder.prepare_checking, folder.ddG_run, folder.ddG_output, folder.ddG_input, folder.output]
-                path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
+                if args.MP_CART_DDG:
+                    path_to_parse_ddg_sbatch = structure_instance.write_parse_cartesian_ddg_sbatch(
+                    folder,  partition=partition, output_gaps=args.GAPS_OUTPUT, zip_files=args.ZIP_FILES, sha_tag=SHA_TAG)
+                else:
+                    path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
                     folder, chain_id=args.CHAIN, sys_name=name, output_name='ddG.out', add_output_name='ddG_additional.out', partition=partition, 
                     output_gaps=args.GAPS_OUTPUT, mp_multistruc=args.MP_MULTISTRUC_PROTOCOL, zip_files=args.ZIP_FILES, sha_tag=SHA_TAG)
         else:

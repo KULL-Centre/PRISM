@@ -484,5 +484,5 @@ echo $INDEX
 ''')
             fp.write((f'python3 {rosetta_paths.path_to_stability_pipeline}/parser_ddg_v2.py '
                       f'{self.sys_name} {self.chain_id} {self.fasta_seq} {folder.ddG_run} {folder.ddG_output} {structure_input}'
-                      f' {folder.ddG_input} {folder.output} {folder.prepare_checking} {output_gaps} {zip_files} {sha_tag}'))
+                      f' {folder.ddG_input} {folder.output} {folder.prepare_checking} {output_gaps} {zip_files} {sha_tag} {folder.prepare_cleaning}'))
         return score_sbatch_path

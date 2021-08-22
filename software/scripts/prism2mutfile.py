@@ -99,6 +99,11 @@ def parse_args():
         type=lambda s: s.lower() in ['false', 'f', 'no', '0'],
         help="Includes/adds WT variants"
         )
+    parser.add_argument('--resisatu', '-s',
+        default=False,
+        type=lambda s: s.lower() in ['true', 't', 'yes', '1'],
+        help="Residual saturation for all residues which have known variants"
+        )
     parser.add_argument('--mut_output', '-m',
         choices=['all', 'pipeline_combined_mut', 'combined_mut',
                  'residue_files'],
@@ -117,6 +122,7 @@ def parse_args():
     if args.pdb_file == 'None':
         args.pdb_file = None
     args.inclWT = bool(args.inclWT)
+    args.resisatu = bool(args.resisatu)
     args.drop_multi_mut = bool(args.drop_multi_mut)
     args.pdb2rosetta = bool(args.pdb2rosetta)
     if args.pdb2rosetta==True and args.pdb_file==None:
@@ -130,7 +136,17 @@ def parse_args():
     return args
 
 
-def prepare_df(in_df, inclWT=True, drop_multi_mut=False):
+def make_satu(aa_wt_comb, resi_comb, inclWT=False):
+    print(aa_wt_comb, resi_comb)
+    AA_list = ['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y']
+    return_list = []
+    for AA in AA_list:
+        if not ((inclWT==False) and (AA==aa_wt_comb)):
+            return_list.append(f'{aa_wt_comb}{resi_comb}{AA}')
+    return ";".join(return_list)
+
+
+def prepare_df(in_df, inclWT=True, drop_multi_mut=False, resisatu=False):
     df = in_df.copy()
     if drop_multi_mut:
         df = df[df['n_mut']==1]
@@ -141,6 +157,7 @@ def prepare_df(in_df, inclWT=True, drop_multi_mut=False):
 
     df['resi_comb'] = df['resi'].apply(lambda x: ";".join([str(elem) for elem in x]))
     df['aa_wt_comb'] = df['aa_ref'].apply(lambda x: ";".join(x))
+    df['aa_var_comb'] = df['aa_var'].apply(lambda x: ";".join(x))
     df['count'] = 1
 
     
@@ -170,12 +187,25 @@ def prepare_df(in_df, inclWT=True, drop_multi_mut=False):
     df = df.groupby(['resi_comb', 'aa_wt_comb'],as_index=False).agg(lambda x : x.sum() if x.dtype in ['float64', 'int'] else ';'.join(x))
     df['sum_muts'] = df['variant'].apply(lambda x: len([item for subl in [i.split(':') for i in x.split(';')] for item in subl]))
     df['sum_incl_wt'] = df['sum_muts'] + df['sum_muts']/df['count']
+
+    if resisatu:
+        print(df)
+        df['variant'] = df.apply(lambda x: make_satu(x['aa_wt_comb'], x['resi_comb'], inclWT=inclWT), axis=1)
+        if inclWT:
+            df['count'] = 20
+            df['sum_muts'] = 20
+            df['sum_incl_wt'] = 20.0
+        else:
+            df['count'] = 19
+            df['sum_muts'] = 19
+            df['sum_incl_wt'] = 20.0
+
     return df, drops
 
 
-def residue_files_func(output_dir, in_df, inclWT=True, drop_multi_mut=False):
+def residue_files_func(output_dir, in_df, inclWT=True, drop_multi_mut=False, resisatu=False):
 
-    df, drops = prepare_df(in_df, inclWT=inclWT, drop_multi_mut=drop_multi_mut)
+    df, drops = prepare_df(in_df, inclWT=inclWT, drop_multi_mut=drop_multi_mut, resisatu=resisatu)
 
     mut_dir = os.path.join(output_dir, 'mut_files')
     os.makedirs(mut_dir, exist_ok = True)
@@ -211,9 +241,9 @@ def residue_files_func(output_dir, in_df, inclWT=True, drop_multi_mut=False):
                             fp.write(mutant_line)
 
 
-def combined_mut_func(output_dir, in_df, inclWT=True, drop_multi_mut=False):
+def combined_mut_func(output_dir, in_df, inclWT=True, drop_multi_mut=False, resisatu=False):
 
-    df, drops = prepare_df(in_df, inclWT=inclWT, drop_multi_mut=drop_multi_mut)
+    df, drops = prepare_df(in_df, inclWT=inclWT, drop_multi_mut=drop_multi_mut, resisatu=resisatu)
 
     mutfile_all = os.path.join(output_dir, 'mutfile_all')
     with open(mutfile_all, 'w') as fp:
@@ -238,9 +268,9 @@ def combined_mut_func(output_dir, in_df, inclWT=True, drop_multi_mut=False):
                     fp.write("".join(mutant_line))
 
 
-def pipeline_combined_mut_func(output_dir, in_df, inclWT=True, drop_multi_mut=False):
+def pipeline_combined_mut_func(output_dir, in_df, inclWT=True, drop_multi_mut=False, resisatu=False):
 
-    df, drops = prepare_df(in_df, inclWT=inclWT, drop_multi_mut=drop_multi_mut)
+    df, drops = prepare_df(in_df, inclWT=inclWT, drop_multi_mut=drop_multi_mut, resisatu=resisatu)
     
     combined_mut_file = os.path.join(output_dir, 'pipeline_mutfile.txt')
     with open(combined_mut_file, 'w') as fp:
@@ -258,18 +288,18 @@ def pipeline_combined_mut_func(output_dir, in_df, inclWT=True, drop_multi_mut=Fa
             fp.write(f"{' '.join(resstring)}\n")
 
 
-def prism2mut(input_file, output_dir='.', pipeline_combined_mut=True, combined_mut=True, residue_files=False, inclWT=True, drop_multi_mut=False):
+def prism2mut(input_file, output_dir='.', pipeline_combined_mut=True, combined_mut=True, residue_files=False, inclWT=True, resisatu=False, drop_multi_mut=False):
 
     os.makedirs(output_dir, exist_ok = True) 
     meta, df = read_from_prism(input_file)
     df = df[['variant', 'aa_ref', 'resi', 'aa_var', 'n_mut']]
 
     if residue_files:
-        residue_files_func(output_dir, df, inclWT=True, drop_multi_mut=False)
+        residue_files_func(output_dir, df, inclWT=inclWT, drop_multi_mut=drop_multi_mut, resisatu=resisatu)
     if combined_mut:
-        combined_mut_func(output_dir, df, inclWT=True, drop_multi_mut=False)
+        combined_mut_func(output_dir, df, inclWT=inclWT, drop_multi_mut=drop_multi_mut, resisatu=resisatu)
     if pipeline_combined_mut:
-        pipeline_combined_mut_func(output_dir, df, inclWT=True, drop_multi_mut=False)
+        pipeline_combined_mut_func(output_dir, df, inclWT=inclWT, drop_multi_mut=drop_multi_mut, resisatu=resisatu)
         
                 
 def main():
@@ -309,7 +339,7 @@ def main():
         combined_mut = True
 
     prism2mut(args.prism, output_dir=args.output_dir, pipeline_combined_mut=pipeline_combined_mut, 
-              combined_mut=combined_mut, residue_files=residue_files, inclWT=args.inclWT, drop_multi_mut=args.drop_multi_mut)
+              combined_mut=combined_mut, residue_files=residue_files, inclWT=args.inclWT, resisatu=args.resisatu, drop_multi_mut=args.drop_multi_mut)
     logger.info('Conversion sucessful!')
 
 if __name__ == '__main__':
