@@ -1,4 +1,4 @@
-#added cart_bonded 1.0 for cartesian relax
+#added cart_bonded 0.5 for cartesian relax
 #fa_water_to_bilayer set to 1.5
 # franklin2019: A membrane environemt energy function with implicit lipids
 # author: Rebecca F. Alford (raalford3@jhu.edu)
@@ -24,7 +24,7 @@ p_aa_pp 0.6
 fa_dun 0.7
 yhh_planarity 0.625
 ref 1
-fa_water_to_bilayer 0.5
+fa_water_to_bilayer 1.5
 cart_bonded 0.5
 INCLUDE_INTRA_RES_PROTEIN
 NO_HB_ENV_DEP
