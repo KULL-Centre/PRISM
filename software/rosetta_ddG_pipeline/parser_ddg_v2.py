@@ -179,7 +179,11 @@ def quickcheck( run_dir, base_mut ):
                 d1t3 = {'ALA':'A', 'CYS':'C', 'ASP':'D', 'GLU':'E', 'PHE':'F', 'GLY':'G', 'HIS':'H', 'ILE':'I', 'LYS':'K', 'LEU':'L', 
                        'MET':'M', 'ASN':'N', 'PRO':'P', 'GLN':'Q', 'ARG':'R', 'SER':'S', 'THR':'T', 'VAL':'V', 'TRP':'W', 'TYR': 'Y'}
                 def get_vars(x):
-                    res = x.split('_')[1][:-1]
+                    res = x.split('_')
+                    if len(res)>2:
+                        res = res[1]
+                    else:
+                        res = res[1][:-1]
                     mut_var = res[-3:]
                     mut_var = d1t3[mut_var]
                     resi = int(res[:-3])
