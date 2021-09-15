@@ -15,12 +15,42 @@ import os
 import urllib.parse
 import urllib.request
 import xmltodict
+import requests
 
 # Third party imports
 import pandas as pd
+from xml.etree.ElementTree import fromstring, ElementTree
 
+def extract_single_protein_pfam(uniprot_ID, verbose = False):
+	
+	server = "http://pfam.xfam.org/protein/"
+	ext = uniprot_ID+"?output=xml"
+	r = requests.get(server+ext)
+	if not r.ok:
+		r.raise_for_status()
+		sys.exit()
 
-def extract_single_protein_pfam( uniprot_id, verbose=False ):
+	#make tree from the server response
+	tree = ElementTree(fromstring(r.content))
+	root = tree.getroot()
+	
+	return_ls = []
+	#go through all nodes called 'match' that are child nodes of 'entry/matches' 
+	#{https://pfam.xfam.org/} is the namespace
+	#get the accession and ID of the match, then go to the location child node and extract the location of the domain 
+	for item in root.findall("./{https://pfam.xfam.org/}entry/{https://pfam.xfam.org/}matches/{https://pfam.xfam.org/}match"):
+		
+		#make a dict I and append to the return list to keep the format of the previous method
+		subdict = {'accession': item.get('accession'), 'id': item.get('id'), 'start': item.find('{https://pfam.xfam.org/}location').get('start'), 'end': item.find('{https://pfam.xfam.org/}location').get('end')}
+		return_ls.append(subdict)
+
+	if verbose:
+		jsonString = json.dumps(xmltodict.parse(r.content, attr_prefix='', cdata_key='#text'), indent=4)
+		return return_ls, jsonString
+	else:
+		return(return_ls)
+
+def extract_single_protein_pfam_OLD( uniprot_id, verbose=False ):
     """
     Extracts domain information from pfam for present uniprot ID. Return type changed from dictionary to list of dictionaries.
     """
