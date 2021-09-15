@@ -128,8 +128,9 @@ cd /groups/sbinlab/hezscha/.conda/envs/conda_vep/bin
 #get the latest cache you can find, even if it is newer than the vep version. The later scripts are querying Ensembl database for info with gene and transcript IDs from the annotation and those occasionally change between cache versions. The Ensembl database always be on the latest cache version which is why you should also use the latest cache for the anno, otherwise there will be mismatches. The below example is for cache version 100.
 
 #get the cache manually:
+#check documentation here: https://www.ensembl.org/info/docs/tools/vep/script/vep_cache.html#cache
+
 mkdir /groups/sbinlab/hezscha/software/vep/cache_GRCh38_100/
-https://www.ensembl.org/info/docs/tools/vep/script/vep_cache.html#cache
 cd /groups/sbinlab/hezscha/software/vep/cache_GRCh38_100/
 curl -O ftp://ftp.ensembl.org/pub/release-100/variation/indexed_vep_cache/homo_sapiens_vep_100_GRCh38.tar.gz
 #start interactive node because the untar may be computionally heavy
