@@ -266,6 +266,17 @@ The reason it has to be this sucky and you can't just specific isoform 1 is that
 
 2.3. proteome wide data
 
+now:
+I later discovered that the approach below caused issues during merge because sometimes we are more interested in gnomad data on isoforms other than isoform 1, i.e. when there is clinvar data on another isoform. Therefore, I decided to instead make all possible files per uniprot ID in the human proteome. Re-ran make_prism_gnomad_file_all.py with only the uniprot ID as a bash oneliner:
+
+while read line; do echo $line; python3 make_prism_gnomad_file_all.py -uniprot $line -e mis -v; done </storage1/shared/data/uniprot_datasets/human_proteome_UP000005640_9606.list
+
+make_prism_gnomad_file_all.py includes a check if the output file already exists and skips if so (change this behavior by changing the mode to overwrite with -m overwrite). Therefore, you can just run this and it will only make the files that are missing.
+
+--
+first approach (has been superseeded!):
+You can use this to make gnomad file only for isoform 1 but it turned out that was not so useful.
+
 For generating this data I have downloaded the human proteome with one sequence per protein from uniprot from here: https://www.uniprot.org/proteomes/UP000005640 (click on "Download one protein sequence per gene")
 resulting in: UP000005640_9606.fasta.gz
 
@@ -276,8 +287,8 @@ The following wrapper script reads in the space separated list and attempts to p
 human_proteome_gnomad_wrapper.sh
 
 Some proteins have no gnomad variants or are not on the main assembly. This means their genomic location is on what is called a patch. We do not have data for those locations since gnomad maps only to the main assembly. Therefore these protein do not have corresponding prism_gnomad files.
+--
 
-I later discovered that approached caused issues during merge because sometimes we are more interested in gnomad data on isoforms other than isoform 1, so I decided to instead make all possible files per uniprot ID. Re-ran make_prism_gnomad_file_all.py with only the uniprot ID.
 
 ------
 3. Creating prism clinvar files
