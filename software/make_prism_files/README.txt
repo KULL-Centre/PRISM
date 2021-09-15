@@ -32,6 +32,8 @@ For the purpose of merging with other prism files you need to first expand it to
 
 ./FillVariants.py prism_uniprot_XXX_P00374.txt
 
+The merge wrapper detailed below does that automatically.
+
 File Format
 ------
 
