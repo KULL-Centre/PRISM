@@ -426,7 +426,13 @@ python3 make_prism_netsurfp_files.py
 6. Merging prism files
 ------
 
-Since each prism file can only have one sequence WT and the sequences in clinvar, uniprot, gnomad and spliceAI file can differ due to coming from different data sources as well as potentially being different isoforms, we need to choose one target sequence to merge all other sequences to. Variants that do not conform to the WT stated in the target sequence (that will be in the metadata of the output prism file) are dropped during merge.
+Merging is done with a wrapper around the prism parser. The procedure is roughly:
+1. start with uniprot ID
+2. choose target seq
+3. pick files
+4. attempt to resolve SNPs
+
+Choosing the target seq happens automatically.Since each prism file can only have one sequence WT and the sequences in clinvar, uniprot, gnomad and spliceAI file can differ due to coming from different data sources as well as potentially being different isoforms, we need to choose one target sequence to merge all other sequences to. Variants that do not conform to the WT stated in the target sequence (the seq that will be in the metadata of the output prism file) are dropped during merge.
 
 The target sequence is selected with the following hierarchy:
 1. the sequence with the most non-VUS clinvar variants
@@ -434,10 +440,8 @@ The target sequence is selected with the following hierarchy:
 3. the sequence with the most spliceAI variants
 4. uniprot isoform 1
 
-python3 merge_wrapper_v003.py
-
-usage: merge_wrapper_v003.py [-h] [-all] [-list FILELIST] [-uniprot UNIPROT]
-                             [-ffs FFS] [-ff FF] [-out_folder OUT_FOLDER]
+usage: merge_wrapper_v005.py [-h] [--typeslog] [-uniprot UNIPROT] [-ff FF]
+                             [-out_folder OUT_FOLDER] [-swiss]
                              [-m {overwrite,leave}] [-v] [-allow]
                              [-check_uniprot] [-cleanup] [-fail]
                              [-min_id MIN_ID] [-min_cov MIN_COV]
@@ -445,31 +449,28 @@ usage: merge_wrapper_v003.py [-h] [-all] [-list FILELIST] [-uniprot UNIPROT]
 
 optional arguments:
   -h, --help            show this help message and exit
-  -all                  Run on all gnomad files
-  -list FILELIST        Run only on this list of files
-  -uniprot UNIPROT      The uniprot ID for which to merge files. The sequence
-                        of isoform 1 will be the authorative sequence for
-                        merging unless otherwise specified with -seq
-  -ffs FFS, --fromfileseq FFS
-                        A file containing a header line specifying 'uniprot'
-                        and 'seq' columns. You can also run a bash loop over
-                        your list, calling this script once per line, and
-                        supply -uniprot and -seq as arguments.
+  --typeslog            Write a log file listing the components of every merge
+                        file for stats later.
+  -uniprot UNIPROT      The uniprot ID for which to merge files. The
+                        authorative sequence for merging is selected with
+                        following hierarchy: 1. transcript with most clinvar
+                        vars 2. transcript with most gnomad vars 3. transcript
+                        with most spliceAI vars 4. uniprot isoform 1, unless
+                        otherwise specified with -seq
   -ff FF, --fromfile FF
                         A file from which to read uniprot IDs (one per line).
   -out_folder OUT_FOLDER
                         Where the output files should be written. Default
                         location is /storage1/shared/data/prism_merge/uniprot[
-                        0:2]/unipro[2:4]/uniprot[4:6]/
+                        0:2]/uniprot[2:4]/uniprot[4:6]/
+  -swiss                Put a folder substructure into the designated output
+                        folder (only for -out_folder, it's done automatically
+                        for the default output folder).
   -m {overwrite,leave}  What do when the output file already exists. Leave
                         (default) or overwrite
   -v, --verbose         Level of output, default zero is no output
   -allow                Allow merging with files that do not have the exact
-                        same sequence (but still the same uniprot ID). This
-                        feature is under development while I figure out how to
-                        select the closest sequence (by using the aligner in
-                        the parser so we don't have another layer of
-                        complexity).
+                        same sequence (but still the same uniprot ID).
   -check_uniprot        If there is no prism_uniprot file, check if this ID is
                         on the fail list (if it's not we can try to make a
                         prism_uniprot file to this ID).
@@ -496,10 +497,28 @@ optional arguments:
                         target seq by inverting those SNPs, also for uniprot
                         and netsurfp files.
 
-additional information: The options -uniprot, -ffs and -ff are mutually
-exlusive. Use only one of them. -seq only pairs with the special case of a
-single uniprot ID passed to -uniprot. Otherwise use -ffs if you have a list of
-uniprot IDs and associated sequences.
+additional information: The options -uniprot and -ff are mutually exlusive.
+Use only one of them.
+
 
 You should always use --fill_invert unless you have a specific reason not to. It will not affect the merging of files that do not have SNPs. It will attempt to resolved mismatches in WT that originate from common variants between the target seq and other sequences by matching the target seq WT. In the case of gnomad data the variant line is inverted (i.e. from T546A to A546T) to conform to the target seq WT and allel frequency estimates are calc as 1 - orig AF. In the case of uniprot nad netsurfp files which carry information per position, not per variant, the WT is simply switchen to conform to the target seq WT (i.e. from T546= to A546=). This only occurs if the variant has an allel freq of at least 1% in the gnomad data.
+
+some typical ways of using the merge wrapper are: 
+
+#whole proteome: 
+output goes into /storage1/shared/data/prism_merge
+!remember to cd into the directory where you want the log files before running since they are created in current working dir!
+
+cd /storage1/hezscha/genome_proteome_map/results/proteome_merge_log_files
+python3 /storage1/hezscha/genome_proteome_map/scripts/merge_wrapper_v005.py -ff /storage1/shared/data/uniprot_datasets/human_proteome_UP000005640_9606.list -allow -cleanup --fill_invert --typeslog
+
+#marks genes: specific output folder w swiss structure
+
+cd /storage1/hezscha/marks_disease_genes/data
+(summary file and typeslog will be saved here)
+python3 /storage1/hezscha/genome_proteome_map/scripts/merge_wrapper_v005.py -ff /storage1/shared/data/uniprot_datasets/marks_disease_genes.list -out_folder /storage1/hezscha/marks_disease_genes/data/clinvar_priority_merge_mismatch_match -allow -cleanup --fill_invert --typeslog -swiss -v
+
+#single protein run
+python3 /storage1/hezscha/genome_proteome_map/scripts/merge_wrapper_v005.py -uniprot Q9Y6B7 -out_folder /storage1/hezscha/marks_disease_genes/data/clinvar_priority_merge/ -allow -cleanup -vv -m overwrite --fill_invert -swiss
+
 
