@@ -35,7 +35,7 @@ def span_multi(x, region):
     return ":".join(out_tms)
 
 def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=1, sys_name='', 
-    first_residue_number=1, sha_tag='', MP=False, span_file='', lipid_file=''):
+    first_residue_number=1, sha_tag='', MP=False, span_file='', lipid_file='', scale=2.9):
     
     sequence = sequence.replace('-', 'X')
     # create prism file with rosetta values
@@ -93,9 +93,12 @@ def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=
         }
 
     if MP:
-        units = ') REU'
+        if scale==1.0:
+            units = f') REU'
+        else:
+            units = f'/{scale}) REU'
     else:
-        units = '/2.9) kcal/mol'
+        units = f'/{scale}) kcal/mol'
 
     metadata = {
         # new version always when the data is edited or major changes are made

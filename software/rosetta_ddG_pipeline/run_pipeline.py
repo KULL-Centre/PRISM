@@ -250,7 +250,7 @@ def predict_stability(args):
                     cartesian=args.MP_CART_DDG, ddgfile=ddg_input_ddgfile, score_function_file=args.MP_ENERGY_FUNC_WEIGHTS)
                 if args.MP_CART_DDG:
                     path_to_parse_ddg_sbatch = structure_instance.write_parse_cartesian_ddg_sbatch(
-                    folder,  partition=partition, output_gaps=args.GAPS_OUTPUT, zip_files=args.ZIP_FILES, sha_tag=SHA_TAG)
+                    folder,  partition=partition, output_gaps=args.GAPS_OUTPUT, zip_files=args.ZIP_FILES, sha_tag=SHA_TAG, is_MP=args.IS_MP, scale_factor=args.SCALE_FACTOR)
                 else:
                     path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
                         folder, chain_id=args.CHAIN, sys_name=name, output_name='ddG.out', add_output_name='ddG_additional.out', partition=partition, 
@@ -277,7 +277,7 @@ def predict_stability(args):
                 #folds = [folder.prepare_checking, folder.ddG_run, folder.ddG_output, folder.ddG_input, folder.output]
                 if args.MP_CART_DDG:
                     path_to_parse_ddg_sbatch = structure_instance.write_parse_cartesian_ddg_sbatch(
-                    folder,  partition=partition, output_gaps=args.GAPS_OUTPUT, zip_files=args.ZIP_FILES, sha_tag=SHA_TAG)
+                    folder,  partition=partition, output_gaps=args.GAPS_OUTPUT, zip_files=args.ZIP_FILES, sha_tag=SHA_TAG, is_MP=args.IS_MP, scale_factor=args.SCALE_FACTOR)
                 else:
                     path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
                     folder, chain_id=args.CHAIN, sys_name=name, output_name='ddG.out', add_output_name='ddG_additional.out', partition=partition, 
@@ -304,7 +304,7 @@ def predict_stability(args):
                 folder, ddg_input_mutfile_dir, ddgfile=ddg_input_ddgfile, sys_name=name,  partition=partition)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = structure_instance.write_parse_cartesian_ddg_sbatch(
-                folder,  partition=partition, output_gaps=args.GAPS_OUTPUT, zip_files=args.ZIP_FILES, sha_tag=SHA_TAG)
+                folder,  partition=partition, output_gaps=args.GAPS_OUTPUT, zip_files=args.ZIP_FILES, sha_tag=SHA_TAG, is_MP=args.IS_MP, scale_factor=args.SCALE_FACTOR)
 
 
     # Execution

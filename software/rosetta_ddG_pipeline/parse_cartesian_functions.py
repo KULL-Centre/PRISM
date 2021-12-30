@@ -53,7 +53,7 @@ def rosetta_cartesian_read(pathtofile, protein_seq='abcd'):
     return cartesian_scores
 
 
-def ddgs_from_dg(dictionary_of_dGs):
+def ddgs_from_dg(dictionary_of_dGs, scale_factor=2.9):
     """This scripts take a dictionaru of dGs and first creates a dictionary of WT dGS and then substract the variants dGs. After all substractions the ddG score is divided by 2.9 to convert to kcal/mol """
     
     #Creating dictionary of WT dGs
@@ -90,14 +90,14 @@ def ddgs_from_dg(dictionary_of_dGs):
         residue_number = ":".join(residue_numbers)
         ddg = []
         for indi in range(len(dgs_as_floats[mutation])):
-            ddg.append((dgs_as_floats[mutation][indi]-np.mean(wt_dGs[residue_number]))/2.9)
+            ddg.append((dgs_as_floats[mutation][indi]-np.mean(wt_dGs[residue_number]))/scale_factor)
         ddgs_array.append([mutation, np.mean(ddg), np.std(ddg)])
-        ddgs[mutation] = np.divide((np.mean(dgs_as_floats[mutation]) - np.mean(wt_dGs[residue_number])), 2.9)
+        ddgs[mutation] = np.divide((np.mean(dgs_as_floats[mutation]) - np.mean(wt_dGs[residue_number])), scale_factor)
 
     return ddgs, ddgs_array
 
 
-def postprocess_rosetta_ddg_prism_copy(folder, output_name='ddG.out', sys_name='', uniprot='', version=1, prism_nr='XXX'):
+def postprocess_rosetta_ddg_prism_copy(folder, output_name='ddG.out', sys_name='', uniprot='', version=1, prism_nr='XXX', scale=2.9):
     # The ddg_file should only contain the data, looking like this:
     # M1T,-0.52452 # first value=variant, second=mean([var1-WT1,var2-WT2, ...]) - comma separated
     # M1Y,0.2352,0.2342,.... # it may contain more values like the var-mut of
@@ -108,7 +108,7 @@ def postprocess_rosetta_ddg_prism_copy(folder, output_name='ddG.out', sys_name='
         fp.readline()
         sequence = fp.readline().strip()
     rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None,
-                     version=version, uniprot=uniprot, sys_name=sys_name)
+                     version=version, uniprot=uniprot, sys_name=sys_name, scale=scale)
     create_copy(os.path.join(folder.ddG_input, 'input.pdb'), folder.output, name=f'{sys_name}_final.pdb')
     create_copy(os.path.join(folder.prepare_checking, 'fasta_file.fasta'), folder.output, name=f'{sys_name}_seq.fasta')
     create_copy(prism_file, folder.output)

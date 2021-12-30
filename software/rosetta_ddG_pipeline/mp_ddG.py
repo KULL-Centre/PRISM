@@ -139,11 +139,11 @@ echo $INDEX
         logger.info(path_to_sbatch)
         return path_to_sbatch
 
-def postprocess_rosetta_ddg_mp_pyrosetta(folder, output_name='ddG.out', sys_name='', version=1, prism_nr='XXX', chain_id='A', zip_files=True, output_gaps=False, mp_multistruc=0, sha_tag=''):
+def postprocess_rosetta_ddg_mp_pyrosetta(folder, output_name='ddG.out', sys_name='', version=1, prism_nr='XXX', chain_id='A', zip_files=True, output_gaps=False, mp_multistruc=0, sha_tag='', scale=2.9):
     print(mp_multistruc, folder)
     if mp_multistruc == 0:
         runtime_memory_stats(folder.ddG_run)
-        generate_output(folder, output_name=output_name, sys_name=sys_name, version=version, prism_nr=prism_nr, chain_id=chain_id, output_gaps=output_gaps, zip_files=zip_files, sha_tag=sha_tag, MP=True)
+        generate_output(folder, output_name=output_name, sys_name=sys_name, version=version, prism_nr=prism_nr, chain_id=chain_id, output_gaps=output_gaps, zip_files=zip_files, sha_tag=sha_tag, MP=True, scale=scale)
     else:
         dfs = [['variant', 'ddG', 'std']]
         for sub_ddG_folder in folder.ddG_run.split(":"):
