@@ -198,7 +198,13 @@ def parse_args2():
                         help=SUPPRESS,
                         #help='Uniprot accession ID'
                         )
-
+    parser.add_argument('--scale', '-sc',
+                        default=2.9,
+                        type=float,
+                        dest='SCALE_FACTOR',
+                        help=SUPPRESS,
+                        #help='scaling of ∆∆G to kcal/mol (default for both pipelines)'
+                        )
 
 
     #influence of features not tested for ddG calculation
