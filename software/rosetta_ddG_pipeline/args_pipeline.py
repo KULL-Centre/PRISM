@@ -171,8 +171,12 @@ def parse_args2():
                               'Default value: OPM'
                               )
                         )
-
-
+    parser.add_argument('--superpose_onTM', '-spTM',
+                        default=True,
+                        type=lambda s: s.lower() in ['false', 'f', 'no', '0'],
+                        dest='SUPERPOSE_ONTM',
+                        help='Set to false if you want to align on the complete structure'
+                        )
     #additional flags for benchmark or changes to protocol
     parser.add_argument('--ddgflags', '-d',
                         default=os.path.join(

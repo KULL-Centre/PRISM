@@ -17,6 +17,9 @@ import json
 
 # Third party imports
 from Bio import PDB
+from Bio.Seq import Seq 
+from Bio import pairwise2
+import io
 import numpy as np
 
 
@@ -26,7 +29,178 @@ import rosetta_paths
 from mp_helper import extract_from_opm
 
 
-def mp_superpose_opm(reference_chain, target, filename, target_chain='A',
+def mp_superpose_opm_onTM(reference_chain, target, filename, target_chain='A',
+                     ref_model_id=0, target_model_id=0, write_opm=True):
+    # Adapted from https://gist.github.com/andersx/6354971
+    # Copyright (c) 2010-2016 Anders S. Christensen
+
+    # Get reference structure e.g. from OPM
+    def get_ref_struc(keyword):
+        try:
+            ref_struc = extract_from_opm(keyword)
+        except:
+            logger.error("no OPM - id found - add a workaround, e.g. PDBTM")
+            return
+        else:
+            logger.info("Obtain structure from OPM: successful")
+        return ref_struc
+    reference = reference_chain.split('_')[0]
+    ref_chain = reference_chain.split('_')[1]
+    ref_struc = get_ref_struc(reference)
+    # Parse reference (from string) and target structure (from file)
+    parser = PDB.PDBParser(QUIET=True)
+    bio_ref_struc_raw = parser.get_structure(
+        "reference", io.StringIO(ref_struc))
+    bio_target_struc_raw = parser.get_structure("target", target)
+
+    #get sequence info about TM region and where best to align
+    def getnums(seq, seqnum):
+        i = 0
+        numseq = []
+        for elem in seq:
+            if elem != '-':
+                numseq.append(seqnum[i])
+                i = i + 1
+            else:
+                numseq.append(None)
+        return numseq
+
+    d3to1 = {'CYS': 'C', 'ASP': 'D', 'SER': 'S', 'GLN': 'Q', 'LYS': 'K',
+         'ILE': 'I', 'PRO': 'P', 'THR': 'T', 'PHE': 'F', 'ASN': 'N', 
+         'GLY': 'G', 'HIS': 'H', 'LEU': 'L', 'ARG': 'R', 'TRP': 'W', 
+         'ALA': 'A', 'VAL':'V', 'GLU': 'E', 'TYR': 'Y', 'MET': 'M'}
+
+    def get_seq(file_pointer, isfile=True):
+        i = 0
+        if isfile:
+            fp = open(file_pointer)
+        else:
+            fp = file_pointer.split('\n')
+        for line in fp:
+            if line.startswith('ATOM'):
+                resseq = int(line[22:26])
+                if line[12:16].strip() == 'CA':
+                    if resseq > i:
+                        i = resseq
+        seq = ["-"]*i
+        seq2 = []
+        if isfile:
+            fp.close()
+            fp = open(file_pointer)
+        else:
+            fp = file_pointer.split('\n')
+        for line in fp:
+            if line.startswith('ATOM'):
+                resseq = int(line[22:26])
+                resname = line[17:20].strip()
+                if line[12:16].strip() == 'CA':
+                    seq[resseq-1] = d3to1[resname]
+                    seq2.append(resseq)
+        return "".join(seq), seq2, i
+
+    def get_res_in_mem(file_pointer, isfile=False):
+        all_z=[]
+        if isfile:
+            fp = open(file_pointer)
+        else:
+            fp = file_pointer.split('\n')
+        for line in fp:
+            if line.startswith('HETATM') and line[17:20]=='DUM':
+                z = float(line[46:54])
+                all_z.append(z)
+        all_z = sorted(list(set(all_z)))
+
+        residues_in_membrane = []
+        ca_atoms_in_membrane = []
+        if isfile:
+            fp.close()
+            fp = open(file_pointer)
+        else:
+            fp = file_pointer.split('\n')
+        for line in fp:
+            if line.startswith('ATOM'):
+                z = float(line[46:54])
+                resseq = int(line[22:26])
+                atomnum = int(line[6:11])
+                if (z >= all_z[0]) and (z <= all_z[1]):
+                    residues_in_membrane.append(resseq)
+                    if line[12:16].strip() == 'CA':
+                        ca_atoms_in_membrane.append(atomnum)
+        residues_in_membrane = sorted(list(set(residues_in_membrane)))
+
+        return residues_in_membrane
+
+
+    residues_in_membrane = get_res_in_mem(ref_struc, isfile=False)
+
+    seq1, seq1num, maxi1 = get_seq(input_file, isfile=True)
+    seq2, seq2num, maxi2 = get_seq(ref_struc, isfile=False)
+    seq1 = Seq(seq1)
+    seq2 = Seq(seq2)
+    alignments = pairwise2.align.globalxx(seq1, seq2)
+    maxx = maxi2 if maxi1 < maxi2 else maxi1
+    for align in alignments:
+        if maxx == align[-1]:
+            break
+    align
+    align[0]
+    seq1 = [align[0][i:i+1] for i in range(0, len(align[0]), 1)]
+    seqnum1 = getnums(seq1, seq1num)
+    seq2 = [align[1][i:i+1] for i in range(0, len(align[1]), 1)]
+    seqnum2 = getnums(seq2, seq2num)
+
+    df = pd.DataFrame(np.array([seq1, seqnum1, seq2, seqnum2]).T, columns=['infile', 'infile_num', 'opm', 'opm_num'])
+    df
+    target_align_atoms = []
+    for res in residues_in_membrane:
+        target_align_atoms.append(df.loc[(df['opm_num']==res), 'infile_num'].tolist()[0])
+
+
+
+
+    # Select the model number - normally always the first
+    bio_ref_struc = bio_ref_struc_raw[ref_model_id]
+    bio_target_struc = bio_target_struc_raw[target_model_id]
+
+    # List of residues to align
+    align_ref_atoms = []
+    for ind, chain in enumerate(bio_ref_struc_raw.get_chains()):
+        if chain.id == ref_chain:
+            for res in chain.get_residues():  # bio_ref_struc.get_residues():
+                if ref_align_atoms == [] or res.get_id()[1] in ref_align_atoms:
+                    for atom in res:
+                        if atom.get_name() == 'CA':
+                            align_ref_atoms.append(atom)
+    align_target_atoms = []
+    for ind, chain in enumerate(bio_target_struc.get_chains()):
+        if chain.id == target_chain:
+            for res in chain.get_residues():  # bio_target_struc.get_residues():
+                if target_align_atoms == [] or res.get_id()[1] in target_align_atoms:
+                    for atom in res:
+                        if atom.get_name() == 'CA':
+                            align_target_atoms.append(atom)
+    # Superposer
+    super_imposer = PDB.Superimposer()
+    super_imposer.set_atoms(align_ref_atoms, align_target_atoms)
+    super_imposer.apply(bio_target_struc)
+
+    logger.info(f"RMSD of superimposed structures: {super_imposer.rms}")
+    if super_imposer.rms > 10:
+        print(f'Structural alignment too bad ({super_imposer.rms} > 10) - align structure manually')
+        sys.exit()
+
+    bioio = PDB.PDBIO()
+    bioio.set_structure(bio_target_struc)
+    bioio.save(filename)
+    logger.info(f"Aligned structure saved")
+
+    if write_opm:
+        with open(os.path.join(os.path.dirname(filename), 'ref_opm.pdb'), 'w') as fp:
+            fp.write(ref_struc)
+        logger.info(f"write_opm set to true - OPM structure saved")
+
+
+def mp_superpose_opm_overall(reference_chain, target, filename, target_chain='A',
                      ref_model_id=0, target_model_id=0,
                      ref_align_atoms=[], target_align_atoms=[], write_opm=True):
     # Adapted from https://gist.github.com/andersx/6354971
