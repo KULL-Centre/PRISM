@@ -328,6 +328,13 @@ def rosetta_relax_mp(folder, SLURM=False, num_struc=20, sys_name='mp', partition
                       f'-database {rosetta_paths.Rosetta_database_path} '
                       '-ignore_unrecognized_res true '
                       f'-score:weights {score_function} '
+                      '-fa_max_dis 9 '
+                      '-ex1 '
+                      '-ex2 '
+                      '-flip_HNQ '
+                      '-missing_density_to_jump '
+                      '-relax:coord_constrain_sidechains '
+                      '-relax:constrain_relax_to_start_coords '
                       #                        '-ignore_zero_occupancy false '
                       '')
     logger.info(f'MP relax call function: {relax_command}')
