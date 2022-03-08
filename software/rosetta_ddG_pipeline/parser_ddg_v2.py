@@ -13,6 +13,7 @@ import os
 import pandas as pd
 
 from helper import AttrDict, generate_output
+import run_modes
 
 
 def csv_to_prism(data,structure_input,chain_id):
@@ -237,14 +238,15 @@ if __name__ == '__main__':
     print(sys.argv)
     base_mut = os.path.join(sys.argv[13], 'mutation_clean.txt')
     all_calculated, df_all = quickcheck( sys.argv[4], base_mut )
+    print(f'all calculated: {all_calculated}')
 
     if all_calculated:
         parse_rosetta_ddgs(sys_name=sys.argv[1], chain_id=sys.argv[2], fasta_seq=sys.argv[3], 
             ddG_run=sys.argv[4], ddG_output=sys.argv[5], structure_input=sys.argv[6], 
-            ddG_input=sys.argv[7], output=sys.argv[8], prepare_checking=sys.argv[9], output_gaps=sys.argv[10], 
-            zip_files=sys.argv[11], sha_tag=sys.argv[12], is_MP=sys.argv[14], scale_factor=float(sys.argv[15]))
+            ddG_input=sys.argv[7], output=sys.argv[8], prepare_checking=sys.argv[9], output_gaps=eval(sys.argv[10]), 
+            zip_files=eval(sys.argv[11]), sha_tag=sys.argv[12], is_MP=eval(sys.argv[14]), scale_factor=float(sys.argv[15]))
     else:
-        print(sys.argv)
+        print(f"sys args before rerun: {sys.argv}")
         folder = AttrDict()
         folder.update({'ddG_input': sys.argv[7], 'ddG_run': sys.argv[4]})
         run_modes.ddg_calculation(folder, parse_relax_process_id=None)

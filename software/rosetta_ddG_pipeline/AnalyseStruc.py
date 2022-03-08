@@ -84,7 +84,8 @@ def get_structure_parameters(outpath,structure_id,printing=True):
   
     for record in SeqIO.parse(structure_id, "pdb-seqres"):
         seq=str(record.seq)
-        strucdata[str(record.annotations["chain"])] = [strucdata[str(record.annotations["chain"])][0],seq,''] 
+        if str(record.annotations["chain"]) in strucdata.keys():
+            strucdata[str(record.annotations["chain"])] = [strucdata[str(record.annotations["chain"])][0],seq,''] 
         
     with open(structure_id, 'r') as pdblines:
         fasta_seq_full = ''
@@ -127,9 +128,10 @@ def get_structure_parameters(outpath,structure_id,printing=True):
         if len(line) > 1:
             line_fields = line.split()
             if line_fields[0] == 'DBREF' :
-                refs=line_fields
-                ref_count+=1
-                dbref[ref_count] = refs
+                if str(line_fields[2]) in strucdata.keys():
+                    refs=line_fields
+                    ref_count+=1
+                    dbref[ref_count] = refs
     
     #Making alignments using pairwise2
     align ={}

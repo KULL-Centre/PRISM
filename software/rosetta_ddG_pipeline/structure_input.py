@@ -54,7 +54,7 @@ class structure:
         if  ligand == None:           
             self.path_to_clean_pdb = rosetta_paths.path_to_clean_pdb
             #Runs shell script
-            shell_command = f'python2 {self.path_to_clean_pdb} {self.prep_struc} {self.run_struc}'
+            shell_command = f'python2 {self.path_to_clean_pdb} {self.prep_struc} {self.run_struc}  --keepzeroocc'
             self.logger.info('Running clean_pdb.py script')
             subprocess.call(shell_command, cwd=self.folder.prepare_cleaning, shell=True)
             self.logger.info('end of output from clean_pdb.py')
@@ -75,7 +75,7 @@ class structure:
         if ligand == True:
             self.path_to_clean_pdb = rosetta_paths.path_to_clean_keep_ligand
             #Runs shell script
-            shell_command = f'python2 {self.path_to_clean_pdb} {self.prep_struc} {self.chain_id}'
+            shell_command = f'python2 {self.path_to_clean_pdb} {self.prep_struc} {self.chain_id}  --keepzeroocc'
             self.logger.info('Running clean_pdb_keep_ligand.py script')
             subprocess.call(shell_command, cwd=self.folder.prepare_cleaning, shell=True)
             self.logger.info('end of output from clean_pdb_keep_ligand.py')
