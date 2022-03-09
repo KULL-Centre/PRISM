@@ -97,13 +97,8 @@ def predict_stability(args):
                         folder.prepare_mp_superpose, f'{run_name}.pdb')
                     try:
                         logger.info('Run OPM alignment with superpose')
-                        if args.SUPERPOSE_ONTM:
-                            mp_prepare.mp_superpose_opm_onTM(
-                                args.MP_ALIGN_REF, prep_struc, structure_instance.path, target_chain=structure_instance.chain_id, write_opm=True)
-                        else:
-                            mp_prepare.mp_superpose_opm_overall(
-                                args.MP_ALIGN_REF, prep_struc, structure_instance.path, target_chain=structure_instance.chain_id, write_opm=True)
-
+                        mp_prepare.mp_superpose_opm(
+                            args.MP_ALIGN_REF, prep_struc, structure_instance.path, target_chain=structure_instance.chain_id, write_opm=True, inTM=args.SUPERPOSE_ONTM)
                     except:
                         logger.info('Run OPM alignment with TM align')
                         mp_prepare.mp_TMalign_opm(

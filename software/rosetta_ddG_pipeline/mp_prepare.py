@@ -19,8 +19,8 @@ import json
 from Bio import PDB
 from Bio.Seq import Seq 
 from Bio import pairwise2
-import io
 import numpy as np
+import pandas as pd
 
 
 # Local application imports
@@ -29,8 +29,8 @@ import rosetta_paths
 from mp_helper import extract_from_opm
 
 
-def mp_superpose_opm_onTM(reference_chain, target, filename, target_chain='A',
-                     ref_model_id=0, target_model_id=0, write_opm=True):
+def mp_superpose_opm(reference_chain, target, filename, target_chain='A',
+                     ref_model_id=0, target_model_id=0, write_opm=True, inTM=True):
     # Adapted from https://gist.github.com/andersx/6354971
     # Copyright (c) 2010-2016 Anders S. Christensen
 
@@ -39,10 +39,10 @@ def mp_superpose_opm_onTM(reference_chain, target, filename, target_chain='A',
         try:
             ref_struc = extract_from_opm(keyword)
         except:
-            logger.error("no OPM - id found - add a workaround, e.g. PDBTM")
+            print("no OPM - id found - add a workaround, e.g. PDBTM")
             return
         else:
-            logger.info("Obtain structure from OPM: successful")
+            print("Obtain structure from OPM: successful")
         return ref_struc
     reference = reference_chain.split('_')[0]
     ref_chain = reference_chain.split('_')[1]
@@ -130,10 +130,38 @@ def mp_superpose_opm_onTM(reference_chain, target, filename, target_chain='A',
 
         return residues_in_membrane
 
+    def get_res_in_all(file_pointer, isfile=False):
+        all_z=[]
+        if isfile:
+            fp = open(file_pointer)
+        else:
+            fp = file_pointer.split('\n')
 
-    residues_in_membrane = get_res_in_mem(ref_struc, isfile=False)
+        residues_in_all = []
+        ca_atoms_in_all = []
+        if isfile:
+            fp.close()
+            fp = open(file_pointer)
+        else:
+            fp = file_pointer.split('\n')
+        for line in fp:
+            if line.startswith('ATOM'):
+                resseq = int(line[22:26])
+                atomnum = int(line[6:11])
+                residues_in_all.append(resseq)
+                if line[12:16].strip() == 'CA':
+                    ca_atoms_in_all.append(atomnum)
+        residues_in_all = sorted(list(set(residues_in_all)))
 
-    seq1, seq1num, maxi1 = get_seq(input_file, isfile=True)
+        return residues_in_all
+
+
+    if inTM:
+        ref_align_atoms = get_res_in_mem(ref_struc, isfile=False)
+    else:
+        ref_align_atoms = get_res_in_all(ref_struc, isfile=False)
+
+    seq1, seq1num, maxi1 = get_seq(target, isfile=True)
     seq2, seq2num, maxi2 = get_seq(ref_struc, isfile=False)
     seq1 = Seq(seq1)
     seq2 = Seq(seq2)
@@ -152,7 +180,7 @@ def mp_superpose_opm_onTM(reference_chain, target, filename, target_chain='A',
     df = pd.DataFrame(np.array([seq1, seqnum1, seq2, seqnum2]).T, columns=['infile', 'infile_num', 'opm', 'opm_num'])
     df
     target_align_atoms = []
-    for res in residues_in_membrane:
+    for res in ref_align_atoms:
         target_align_atoms.append(df.loc[(df['opm_num']==res), 'infile_num'].tolist()[0])
 
 
@@ -184,7 +212,7 @@ def mp_superpose_opm_onTM(reference_chain, target, filename, target_chain='A',
     super_imposer.set_atoms(align_ref_atoms, align_target_atoms)
     super_imposer.apply(bio_target_struc)
 
-    logger.info(f"RMSD of superimposed structures: {super_imposer.rms}")
+    print(f"RMSD of superimposed structures: {super_imposer.rms}")
     if super_imposer.rms > 10:
         print(f'Structural alignment too bad ({super_imposer.rms} > 10) - align structure manually')
         sys.exit()
@@ -192,75 +220,12 @@ def mp_superpose_opm_onTM(reference_chain, target, filename, target_chain='A',
     bioio = PDB.PDBIO()
     bioio.set_structure(bio_target_struc)
     bioio.save(filename)
-    logger.info(f"Aligned structure saved")
+    print(f"Aligned structure saved")
 
     if write_opm:
         with open(os.path.join(os.path.dirname(filename), 'ref_opm.pdb'), 'w') as fp:
             fp.write(ref_struc)
-        logger.info(f"write_opm set to true - OPM structure saved")
-
-
-def mp_superpose_opm_overall(reference_chain, target, filename, target_chain='A',
-                     ref_model_id=0, target_model_id=0,
-                     ref_align_atoms=[], target_align_atoms=[], write_opm=True):
-    # Adapted from https://gist.github.com/andersx/6354971
-    # Copyright (c) 2010-2016 Anders S. Christensen
-
-    # Get reference structure e.g. from OPM
-    def get_ref_struc(keyword):
-        try:
-            ref_struc = extract_from_opm(keyword)
-        except:
-            logger.error("no OPM - id found - add a workaround, e.g. PDBTM")
-            return
-        else:
-            logger.info("Obtain structure from OPM: successful")
-        return ref_struc
-    reference = reference_chain.split('_')[0]
-    ref_chain = reference_chain.split('_')[1]
-    ref_struc = get_ref_struc(reference)
-    # Parse reference (from string) and target structure (from file)
-    parser = PDB.PDBParser(QUIET=True)
-    bio_ref_struc_raw = parser.get_structure(
-        "reference", io.StringIO(ref_struc))
-    bio_target_struc_raw = parser.get_structure("target", target)
-    # Select the model number - normally always the first
-    bio_ref_struc = bio_ref_struc_raw[ref_model_id]
-    bio_target_struc = bio_target_struc_raw[target_model_id]
-
-    # List of residues to align
-    align_ref_atoms = []
-    for ind, chain in enumerate(bio_ref_struc_raw.get_chains()):
-        if chain.id == ref_chain:
-            for res in chain.get_residues():  # bio_ref_struc.get_residues():
-                if ref_align_atoms == [] or res.get_id()[1] in ref_align_atoms:
-                    for atom in res:
-                        if atom.get_name() == 'CA':
-                            align_ref_atoms.append(atom)
-    align_target_atoms = []
-    for ind, chain in enumerate(bio_target_struc.get_chains()):
-        if chain.id == target_chain:
-            for res in chain.get_residues():  # bio_target_struc.get_residues():
-                if target_align_atoms == [] or res.get_id()[1] in target_align_atoms:
-                    for atom in res:
-                        if atom.get_name() == 'CA':
-                            align_target_atoms.append(atom)
-    # Superposer
-    super_imposer = PDB.Superimposer()
-    super_imposer.set_atoms(align_ref_atoms, align_target_atoms)
-    super_imposer.apply(bio_target_struc)
-
-    logger.info(f"RMSD of superimposed structures: {super_imposer.rms}")
-
-    bioio = PDB.PDBIO()
-    bioio.set_structure(bio_target_struc)
-    bioio.save(filename)
-    logger.info(f"Aligned structure saved")
-
-    if write_opm:
-        with open(os.path.join(os.path.dirname(filename), 'ref_opm.pdb'), 'w') as fp:
-            fp.write(ref_struc)
-        logger.info(f"write_opm set to true - OPM structure saved")
+        print(f"write_opm set to true - OPM structure saved")
 
 
 def mp_TMalign_opm(reference_chain, target, filename, target_chain='A',
@@ -271,10 +236,10 @@ def mp_TMalign_opm(reference_chain, target, filename, target_chain='A',
         try:
             ref_struc = extract_from_opm(keyword)
         except:
-            logger.error("no OPM - id found - add a workaround, e.g. PDBTM")
+            print("no OPM - id found - add a workaround, e.g. PDBTM")
             return
         else:
-            logger.info("Obtain structure from OPM: successful")
+            print("Obtain structure from OPM: successful")
         return ref_struc
     reference = reference_chain.split('_')[0]
     ref_chain = reference_chain.split('_')[1]
@@ -283,14 +248,14 @@ def mp_TMalign_opm(reference_chain, target, filename, target_chain='A',
     ref_struc_dest = os.path.join(os.path.dirname(filename), 'ref_opm.pdb')
     with open(ref_struc_dest, 'w') as fp:
         fp.write(ref_struc)
-    logger.info(f"OPM structure saved")
+    print(f"OPM structure saved")
 
 
     path_to_TMalign = rosetta_paths.path_to_TMalign
     shell_call = f'{path_to_TMalign} {target} {ref_struc_dest} -o {filename.split(".pdb")[0]}'
     subprocess.call(shell_call, shell=True)
 
-    logger.info(f"Aligned structure saved")
+    print(f"Aligned structure saved")
 
 
 
@@ -299,7 +264,7 @@ def mp_span_from_pdb_octopus(pdbinput, outdir_path, SLURM=False):
     Rosetta_span_exec = os.path.join(
         rosetta_paths.path_to_rosetta, f'bin/spanfile_from_pdb.{rosetta_paths.Rosetta_extension}')
     span_command = f'{Rosetta_span_exec} -in:file:s {pdbinput}'
-    logger.info(f"Span call function: {span_command}")
+    print(f"Span call function: {span_command}")
 
     if SLURM:
         logger.warn("need to write the slurm script!")
@@ -307,7 +272,7 @@ def mp_span_from_pdb_octopus(pdbinput, outdir_path, SLURM=False):
                                      stderr=subprocess.STDOUT, shell=True, cwd=outdir_path)
         span_process_id_info = span_call.communicate()
         span_process_id = str(span_process_id_info[0]).split()[3][0:-3]
-        logger.info(span_process_id_info)
+        print(span_process_id_info)
     else:
         span_call = subprocess.Popen(
             span_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, cwd=outdir_path)
@@ -317,7 +282,7 @@ def mp_span_from_pdb_octopus(pdbinput, outdir_path, SLURM=False):
         fp.writelines(span_process_id_info[0].decode())
 
     if not any(fname.endswith('.span') for fname in os.listdir(outdir_path)):
-        logger.error("Span file not created. Check log file.")
+        print("Span file not created. Check log file.")
     else:
         spanfiles = []
         for fname in os.listdir(outdir_path):
@@ -326,7 +291,7 @@ def mp_span_from_pdb_octopus(pdbinput, outdir_path, SLURM=False):
                 os.rename(os.path.join(outdir_path, fname),
                           os.path.join(outdir_path, new_filename))
                 spanfiles.append(os.path.join(outdir_path, new_filename))
-        logger.info("Span process done")
+        print("Span process done")
         return spanfiles
 
 
@@ -348,7 +313,7 @@ def mp_lipid_acc_resi(pdbinput, outdir_path, folder_spanfile, thickness=15, SLUR
                     f'-database {rosetta_paths.Rosetta_database_path} '
                     f'-mp:setup:spanfiles {spanfile} '
                     '')
-    logger.info(f"Lipid_acc_resi call function: {lipacc_command}")
+    print(f"Lipid_acc_resi call function: {lipacc_command}")
 
     if SLURM:
         logger.warn("need to write the slurm script!")
@@ -357,7 +322,7 @@ def mp_lipid_acc_resi(pdbinput, outdir_path, folder_spanfile, thickness=15, SLUR
                                      stderr=subprocess.STDOUT, shell=True, cwd=outdir_path)
         lipacc_process_id_info = lipacc_call.communicate()
         lipacc_process_id = str(lipacc_process_id_info[0]).split()[3][0:-3]
-        logger.info(lipacc_process_id_info)
+        print(lipacc_process_id_info)
     else:
         lipacc_call = subprocess.Popen(
             lipacc_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, cwd=outdir_path)
@@ -396,7 +361,7 @@ def mp_span_from_pdb_dssp(pdbinput, outdir_path, thickness=15, SLURM=False):
                     '-ignore_unrecognized_res true '
                     '-ignore_zero_occupancy false '
                     '')
-    logger.info(f"Span call function: {span_command}")
+    print(f"Span call function: {span_command}")
 
     if SLURM:
         logger.warn("need to write the slurm script!")
@@ -405,7 +370,7 @@ def mp_span_from_pdb_dssp(pdbinput, outdir_path, thickness=15, SLURM=False):
                                      stderr=subprocess.STDOUT, shell=True, cwd=outdir_path)
         span_process_id_info = span_call.communicate()
         span_process_id = str(span_process_id_info[0]).split()[3][0:-3]
-        logger.info(span_process_id_info)
+        print(span_process_id_info)
     else:
         span_call = subprocess.Popen(
             span_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, cwd=outdir_path)
@@ -415,7 +380,7 @@ def mp_span_from_pdb_dssp(pdbinput, outdir_path, thickness=15, SLURM=False):
         fp.writelines(span_process_id_info[0].decode())
     pdbinput_dir = os.path.dirname(pdbinput)
     if not any(fname.endswith('.span') for fname in os.listdir(pdbinput_dir)):
-        logger.error("Span file not created. Check log file.")
+        print("Span file not created. Check log file.")
     else:
         spanfiles = []
         for fname in os.listdir(pdbinput_dir):
@@ -424,7 +389,7 @@ def mp_span_from_pdb_dssp(pdbinput, outdir_path, thickness=15, SLURM=False):
                 os.rename(os.path.join(pdbinput_dir, fname),
                           os.path.join(outdir_path, new_filename))
                 spanfiles.append(os.path.join(outdir_path, new_filename))
-        logger.info("Span process done")
+        print("Span process done")
         return spanfiles
 
 
@@ -511,7 +476,7 @@ def rosetta_relax_mp(folder, SLURM=False, num_struc=20, sys_name='mp', partition
                       '-relax:constrain_relax_to_start_coords '
                       #                        '-ignore_zero_occupancy false '
                       '')
-    logger.info(f'MP relax call function: {relax_command}')
+    print(f'MP relax call function: {relax_command}')
 
     if SLURM:
         path_to_sbatch = os.path.join(
@@ -527,7 +492,7 @@ def rosetta_relax_mp(folder, SLURM=False, num_struc=20, sys_name='mp', partition
 # launching rosetta relax 
 ''')
             fp.write(f'{relax_command} ')
-        logger.info(f'Location of relax sbatch file: {path_to_sbatch}')
+        print(f'Location of relax sbatch file: {path_to_sbatch}')
         return(path_to_sbatch)
     else:
         relax_call = subprocess.Popen(relax_command,

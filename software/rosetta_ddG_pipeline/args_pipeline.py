@@ -347,6 +347,8 @@ def parse_args2():
     if args.IS_MP == False:
         args.MP_MULTISTRUC_PROTOCOL == 0
     if args.IS_MP:
+        if args.SUPERPOSE_ONTM != True:
+            args.SUPERPOSE_ONTM = False
         if (args.MP_ALIGN_MODE=='OPM') and not (args.MP_ALIGN_REF):
             parser.error('Please specify a reference PDBid and chain for alginment into membrane plane or switch "MP_ALIGN_MODE" to false')
         if args.MP_ALIGN_REF:
