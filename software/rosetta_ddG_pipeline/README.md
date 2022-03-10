@@ -119,9 +119,24 @@ Flags for modifying the protocol/pipeline (mostly development, partly not visibl
 ```
 
 
-## Please be aware of
-### missing atoms
-If your input structure contains missing non-heavy atoms, those will (likely) be remodeled during relax. We advice everyone to compare their input and output structure for consistency.
+### Recommendations & caveats
+#### missing atoms
+If your input structure contains missing non-heavy atoms, those will (likely) be remodeled during relax. It might happen that clashes due to rebuilding are not resolved during the minimization (although not expected). We advice everyone to compare their input and output structure for consistency.
+
+
+#### missing residues
+Missing residues are ignored and open loops are also not closed.
+
+
+#### deviating values and consitency checks
+Values that differ from normal runs, like a large fraction of high-scoring ddGs are not automatically detected and should be kept in mind for the user. 
+
+If a relaxed structure has Eres for a residue >0 REU, all varianats of that base residue should be interpreted with care. You can calculate those values with the following function: ../software/scripts/pdb_to_prism - rosetta_energy_to_prism function with the input parameters: relaxed_pdb_file (output from the pipeline), temp_dir (for calculations and information for the prism parser: pdbID, pdbchain, uniprot_id; and outputs: pdb_prism_file
+It extracts the energies from the final output pdb of the relaxation (summed up as comments at the bottom of the file).
+
+
+#### (automatic) download of PDBs and general recommendations
+An automatic download of pdb-ids is not possible and also not recommended. We highly recommend to pre-process first the pdb before handing it to the pipeline (e.g. with [PDB-redo](https://pdb-redo.eu/)) to reduce errors.
 
 
 
