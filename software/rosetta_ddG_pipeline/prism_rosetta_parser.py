@@ -52,15 +52,33 @@ def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=
             std_ddG_value.append(split_line[2].strip())
      #       ddG_value.append(split_line[1])
 
+    def split_multiple(variant):
+        aa_ref = []
+        resi = []
+        aa_var = []
+        for variants in variant:
+            tmp_aa_ref = []
+            tmp_resi = []
+            tmp_aa_var = []
+            for seg in variants.split(':'):
+                tmp_aa_ref.append(seg[0])
+                tmp_resi.append(seg[1:-1])
+                tmp_aa_var.append(seg[-1])
+            aa_ref.append(tmp_aa_ref)
+            resi.append(tmp_resi)
+            aa_var.append(tmp_aa_var)
+        return aa_ref, resi, aa_var
+
+    aa_ref, resi, aa_var = split_multiple(variant)
     data = {
         'variant': pd.Series(variant),
         'mean_ddG': pd.Series(norm_ddG_value),
         'std_ddG': pd.Series(std_ddG_value),
         #      'ddG': pd.Series(ddG_value),
         'n_mut': 1,  # pd.Series([1 for x in range(len(variant))]),
-        'aa_ref': [[seg[0]] for seg in variant],
-        "resi": [[seg[1:-1]] for seg in variant],
-        "aa_var": [[seg[-1]] for seg in variant],
+        'aa_ref': aa_ref,
+        "resi": resi,
+        "aa_var": aa_var,
     }
     dataframeset = pd.DataFrame(data)
 
