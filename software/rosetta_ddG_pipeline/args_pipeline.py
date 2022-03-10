@@ -203,11 +203,11 @@ def parse_args2():
                         #help='Uniprot accession ID'
                         )
     parser.add_argument('--scale', '-sc',
-                        default=2.9,
+                        default=-999,
                         type=float,
                         dest='SCALE_FACTOR',
                         help=SUPPRESS,
-                        #help='scaling of ∆∆G to kcal/mol (default for both pipelines)'
+                        #help='scaling of ∆∆G to kcal/mol (default for soluble pipeline: 2.9, for membrane pipeline 1.0)'
                         )
 
 
@@ -324,11 +324,11 @@ def parse_args2():
                         #help="MP generates x relaxed structures and calculates exactly 1 ddG from each structure  (mainly for benchmarking). Default=False "
                         )
     parser.add_argument('--mp_cart_ddg',
-                        default=0,
+                        default=1,
                         type=int,
                         dest='MP_CART_DDG', 
                         help=SUPPRESS,
-                        #help="MP generates x relaxed structures and calculates exactly 1 ddG from each structure  (mainly for benchmarking). Default=False "
+                        #help="MP cartesian space. Default=1 "
                         )
     
 
@@ -353,6 +353,11 @@ def parse_args2():
             parser.error('Please specify a reference PDBid and chain for alginment into membrane plane or switch "MP_ALIGN_MODE" to false')
         if args.MP_ALIGN_REF:
             args.MP_ALIGN_MODE='OPM'
-        if args.MP_CART_DDG:
+        if args.MP_CART_DDG == 1:
             args.RELAX_XML_INPUT = os.path.join(rosetta_paths.path_to_data, 'mp', 'mp_cart_relax.xml')
+    if args.SCALE_FACTOR == -999:
+        if args.IS_MP:
+            args.SCALE_FACTOR = 1
+        else:
+            args.SCALE_FACTOR = 2.9
     return args
