@@ -105,10 +105,12 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
             'MP_CALC_SPAN_MODE': 'DSSP',
             'MP_ALIGN_REF': '6xro_A',
             'MP_ALIGN_MODE': 'OPM',
+            'SUPERPOSE_ONTM': True,
             'DDG_FLAG_FILE': os.path.join(rosetta_paths.path_to_data, 'sp', 'cartesian_ddg_flagfile'),
             'RELAX_FLAG_FILE': os.path.join(rosetta_paths.path_to_data, 'sp', 'relax_flagfile'),
-            'RELAX_XML_INPUT': os.path.join(rosetta_paths.path_to_data, 'mp', 'mp_relax.xml'),
+            'RELAX_XML_INPUT': os.path.join(rosetta_paths.path_to_data, 'mp', 'mp_cart_relax.xml'),
             'UNIPROT_ID': '',
+            'SCALE_FACTOR': 1,
             'MP_THICKNESS': 15,
             'MP_LIPIDS': 'DLPC',
             'MP_TEMPERATURE': 20.0,
@@ -119,8 +121,10 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
             'BENCH_MP_RELAX_STRUCS': 20,
             'MP_IGNORE_RELAX_MP_FLAGS': False,
             'MP_ENERGY_FUNC': 'franklin2019',
+            'MP_ENERGY_FUNC_WEIGHTS': os.path.join(rosetta_paths.path_to_data, 'mp', 'f19_cart_1.5.wts'),
             'MP_REPACK_PROTOCOL': 'MP_flex_relax_ddG',
             'MP_MULTISTRUC_PROTOCOL': 0 ,
+            'MP_CART_DDG': 1,
         }
         input_args = Namespace(**inputdict)
         self.create = run_pipeline.predict_stability(input_args)
@@ -210,8 +214,9 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
             'MP_ALIGN_MODE': 'OPM',
             'DDG_FLAG_FILE': os.path.join(rosetta_paths.path_to_data, 'sp', 'cartesian_ddg_flagfile'),
             'RELAX_FLAG_FILE': os.path.join(rosetta_paths.path_to_data, 'sp', 'relax_flagfile'),
-            'RELAX_XML_INPUT': os.path.join(rosetta_paths.path_to_data, 'mp', 'mp_relax.xml'),
+            'RELAX_XML_INPUT': os.path.join(rosetta_paths.path_to_data, 'mp', 'mp_cart_relax.xml'),
             'UNIPROT_ID': '',
+            'SCALE_FACTOR': 1,
             'MP_THICKNESS': 15,
             'MP_LIPIDS': 'DLPC',
             'MP_TEMPERATURE': 20.0,
@@ -222,8 +227,10 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
             'BENCH_MP_RELAX_STRUCS': 20,
             'MP_IGNORE_RELAX_MP_FLAGS': False,
             'MP_ENERGY_FUNC': 'franklin2019',
+            'MP_ENERGY_FUNC_WEIGHTS': os.path.join(rosetta_paths.path_to_data, 'mp', 'f19_cart_1.5.wts'),
             'MP_REPACK_PROTOCOL': 'MP_flex_relax_ddG',
             'MP_MULTISTRUC_PROTOCOL': 0 ,
+            'MP_CART_DDG': 1,
         }
         input_args = Namespace(**inputdict)
         self.create = run_pipeline.predict_stability(input_args)
@@ -312,8 +319,9 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
             'MP_ALIGN_MODE': 'OPM',
             'DDG_FLAG_FILE': os.path.join(rosetta_paths.path_to_data, 'sp', 'cartesian_ddg_flagfile'),
             'RELAX_FLAG_FILE': os.path.join(rosetta_paths.path_to_data, 'sp', 'relax_flagfile'),
-            'RELAX_XML_INPUT': os.path.join(rosetta_paths.path_to_data, 'mp', 'mp_relax.xml'),
+            'RELAX_XML_INPUT': os.path.join(rosetta_paths.path_to_data, 'mp', 'mp_cart_relax.xml'),
             'UNIPROT_ID': '',
+            'SCALE_FACTOR': 1,
             'MP_THICKNESS': 15,
             'MP_LIPIDS': 'DLPC',
             'MP_TEMPERATURE': 20.0,
@@ -324,8 +332,10 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
             'BENCH_MP_RELAX_STRUCS': 20,
             'MP_IGNORE_RELAX_MP_FLAGS': False,
             'MP_ENERGY_FUNC': 'franklin2019',
+            'MP_ENERGY_FUNC_WEIGHTS': os.path.join(rosetta_paths.path_to_data, 'mp', 'f19_cart_1.5.wts'),
             'MP_REPACK_PROTOCOL': 'MP_flex_relax_ddG',
             'MP_MULTISTRUC_PROTOCOL': 0 ,
+            'MP_CART_DDG': 1,
         }
         input_args = Namespace(**inputdict)
         self.create = run_pipeline.predict_stability(input_args)
@@ -413,10 +423,12 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
             'MP_CALC_SPAN_MODE': 'DSSP',
             'MP_ALIGN_REF': '1AFO_A',
             'MP_ALIGN_MODE': 'OPM',
+            'SUPERPOSE_ONTM': True,
             'DDG_FLAG_FILE': os.path.join(rosetta_paths.path_to_data, 'sp', 'cartesian_ddg_flagfile'),
             'RELAX_FLAG_FILE': os.path.join(rosetta_paths.path_to_data, 'sp', 'relax_flagfile'),
-            'RELAX_XML_INPUT': os.path.join(rosetta_paths.path_to_data, 'mp', 'mp_relax.xml'),
+            'RELAX_XML_INPUT': os.path.join(rosetta_paths.path_to_data, 'mp', 'mp_cart_relax.xml'),
             'UNIPROT_ID': '',
+            'SCALE_FACTOR': 1,
             'MP_THICKNESS': 15,
             'MP_LIPIDS': 'DLPC',
             'MP_TEMPERATURE': 20.0,
@@ -427,8 +439,10 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
             'BENCH_MP_RELAX_STRUCS': 20,
             'MP_IGNORE_RELAX_MP_FLAGS': False,
             'MP_ENERGY_FUNC': 'franklin2019',
+            'MP_ENERGY_FUNC_WEIGHTS': os.path.join(rosetta_paths.path_to_data, 'mp', 'f19_cart_1.5.wts'),
             'MP_REPACK_PROTOCOL': 'MP_flex_relax_ddG',
             'MP_MULTISTRUC_PROTOCOL': 0 ,
+            'MP_CART_DDG': 1,
         }
         input_args = Namespace(**inputdict)
         self.create = run_pipeline.predict_stability(input_args)

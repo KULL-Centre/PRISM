@@ -113,10 +113,12 @@ class MPpipelineFullrunGlpGTestCase(unittest.TestCase):
             'MP_CALC_SPAN_MODE': 'DSSP',
             'MP_ALIGN_REF': '6xro_A',
             'MP_ALIGN_MODE': 'OPM',
+            'SUPERPOSE_ONTM': True,
             'DDG_FLAG_FILE': os.path.join(rosetta_paths.path_to_data, 'sp', 'cartesian_ddg_flagfile'),
             'RELAX_FLAG_FILE': os.path.join(rosetta_paths.path_to_data, 'sp', 'relax_flagfile'),
-            'RELAX_XML_INPUT': os.path.join(rosetta_paths.path_to_data, 'mp', 'mp_relax.xml'),
+            'RELAX_XML_INPUT': os.path.join(rosetta_paths.path_to_data, 'mp', 'mp_cart_relax.xml'),
             'UNIPROT_ID': '',
+            'SCALE_FACTOR': 1,
             'MP_THICKNESS': 15,
             'MP_LIPIDS': 'DLPC',
             'MP_TEMPERATURE': 20.0,
@@ -127,8 +129,10 @@ class MPpipelineFullrunGlpGTestCase(unittest.TestCase):
             'BENCH_MP_RELAX_STRUCS': 20,
             'MP_IGNORE_RELAX_MP_FLAGS': False,
             'MP_ENERGY_FUNC': 'franklin2019',
+            'MP_ENERGY_FUNC_WEIGHTS': os.path.join(rosetta_paths.path_to_data, 'mp', 'f19_cart_1.5.wts'),
             'MP_REPACK_PROTOCOL': 'MP_flex_relax_ddG',
             'MP_MULTISTRUC_PROTOCOL': 0 ,
+            'MP_CART_DDG': 1,
         }
         input_args = Namespace(**inputdict)
         self.create = run_pipeline.predict_stability(input_args)
@@ -145,7 +149,8 @@ class MPpipelineFullrunGlpGTestCase(unittest.TestCase):
         prism_file_test = os.path.join(self.output_dir, 'output', 'prism_rosetta_XXX_6xro_final_renum.txt')
         date_time = pd.Timestamp.today()
         date_time += timedelta(hours = 2)
-        print(f"Please wait for ~ 2h ({date_time.strftime('%Y-%m-%d %H:%M')}) for the calculation to finish.")
+        if not os.path.isfile(prism_file_test):
+            print(f"Please wait for ~ 2h ({date_time.strftime('%Y-%m-%d %H:%M')}) for the calculation to finish.")
         while not os.path.isfile(prism_file_test):
             time.sleep(20)
 
@@ -201,6 +206,7 @@ class MPpipelineFullrunGlpGTestCase(unittest.TestCase):
         correlations_list = pd.DataFrame(data=correlations_list[1:], columns=correlations_list[0])
         correlation_merged = pd.concat([correlation_all_list, correlations_list], ignore_index=True)
         correlation_merged.to_csv(correlation_list_file, index=False)
+        print(correlation_merged)
 
 
         result_dic = dict()
@@ -224,6 +230,7 @@ class MPpipelineFullrunGlpGTestCase(unittest.TestCase):
 
         prism_file1 = os.path.join(self.output_dir, 'output', 'prism_rosetta_XXX_6xro_final_renum.txt')
         dataframe1 = read_prism(prism_file1).dataframe[['variant', 'mean_ddG']]
+        dataframe1['mean_ddG'] = dataframe1['mean_ddG'].round(3)
         date_time = pd.Timestamp.today().strftime('%Y-%m-%d-%H-%M')
         df = pd.merge(ref_ddG_df, dataframe1[['variant', 'mean_ddG']], on='variant')
         df = df.rename(columns={'mean_ddG':date_time})

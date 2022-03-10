@@ -113,10 +113,12 @@ class SPpipelineFullrunDHFRTestCase(unittest.TestCase):
             'MP_CALC_SPAN_MODE': 'False',
             'MP_ALIGN_REF': '',
             'MP_ALIGN_MODE': 'False',
+            'SUPERPOSE_ONTM': False,
             'DDG_FLAG_FILE': os.path.join(rosetta_paths.path_to_data, 'sp', 'cartesian_ddg_flagfile'),
             'RELAX_FLAG_FILE': os.path.join(rosetta_paths.path_to_data, 'sp', 'relax_flagfile'),
             'RELAX_XML_INPUT': os.path.join(rosetta_paths.path_to_data, 'mp', 'mp_relax.xml'),
             'UNIPROT_ID': '',
+            'SCALE_FACTOR': 2.9,
             'MP_THICKNESS': 15,
             'MP_LIPIDS': 'DLPC',
             'MP_TEMPERATURE': 20.0,
@@ -127,8 +129,10 @@ class SPpipelineFullrunDHFRTestCase(unittest.TestCase):
             'BENCH_MP_RELAX_STRUCS': 20,
             'MP_IGNORE_RELAX_MP_FLAGS': False,
             'MP_ENERGY_FUNC': 'franklin2019',
+            'MP_ENERGY_FUNC_WEIGHTS': os.path.join(rosetta_paths.path_to_data, 'mp', 'f19_cart_1.5.wts'),
             'MP_REPACK_PROTOCOL': 'MP_flex_relax_ddG',
             'MP_MULTISTRUC_PROTOCOL': 0 ,
+            'MP_CART_DDG': 1,
         }
         input_args = Namespace(**inputdict)
         self.create = run_pipeline.predict_stability(input_args)
@@ -216,10 +220,11 @@ class SPpipelineFullrunDHFRTestCase(unittest.TestCase):
         self.output_dir = tmp('fullrun_rosettamutfile_DHFR_prov_flag')
         self.reference_dir_out = data('sp-pipeline/output/SPpipelineFullrunDHFRTestCase_rosettamutfile')
 
-        prism_file_test = os.path.join(self.output_dir, 'output', 'prism_rosetta_XXX_4M6J_gap-shifted.txt')
+        prism_file_test = os.path.join(self.output_dir, 'output', 'prism_rosetta_XXX_4M6J.txt')
         date_time = pd.Timestamp.today()
         date_time += timedelta(hours = 2)
-        print(f"Please wait for ~ 2h ({date_time.strftime('%Y-%m-%d %H:%M')}) for the calculation to finish.")
+        if not os.path.isfile(prism_file_test):
+            print(f"Please wait for ~ 2h ({date_time.strftime('%Y-%m-%d %H:%M')}) for the calculation to finish.")
         while not os.path.isfile(prism_file_test):
             time.sleep(20)
 
@@ -227,7 +232,7 @@ class SPpipelineFullrunDHFRTestCase(unittest.TestCase):
         ref_ddG_df = pd.read_csv(ref_ddG_file, header=[0])
         ref_ddG_df['median_refs'] = ref_ddG_df.median(axis = 1)
 
-        prism_file1 = os.path.join(self.output_dir, 'output', 'prism_rosetta_XXX_4M6J_gap-shifted.txt')
+        prism_file1 = os.path.join(self.output_dir, 'output', 'prism_rosetta_XXX_4M6J.txt')
         dataframe1 = read_prism(prism_file1).dataframe[['variant', 'mean_ddG']]
         date_time = pd.Timestamp.today().strftime('%Y-%m-%d-%H-%M')
         df = pd.merge(ref_ddG_df, dataframe1[['variant', 'mean_ddG']], on='variant')
