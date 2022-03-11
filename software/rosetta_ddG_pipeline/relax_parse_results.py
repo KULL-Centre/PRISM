@@ -222,14 +222,14 @@ def check_struc_alignment(reference_chain, target, target_chain='A',
         super_imposer = PDB.Superimposer()
         super_imposer.set_atoms(align_ref_atoms, align_target_atoms)
         print(f"RMSD of not yet superimposed structures of TM residues: {super_imposer.rms}")
-        super_imposer.apply(bio_target_struc)
-        print(f"RMSD of superimposed structures of TM residues: {super_imposer.rms}")
+        #super_imposer.apply(bio_target_struc)
+        #print(f"RMSD of superimposed structures of TM residues: {super_imposer.rms}")
     else:
         super_imposer = PDB.Superimposer()
         super_imposer.set_atoms(align_ref_atoms, align_target_atoms)
         print(f"RMSD of not yet superimposed structures of all residues: {super_imposer.rms}")
-        super_imposer.apply(bio_target_struc)
-        print(f"RMSD of superimposed structures of all residues: {super_imposer.rms}")
+        #super_imposer.apply(bio_target_struc)
+        #print(f"RMSD of superimposed structures of all residues: {super_imposer.rms}")
 
     if super_imposer.rms > 10:
         print(f'Structural alignment too bad ({super_imposer.rms} > 10) - align structure manually')
