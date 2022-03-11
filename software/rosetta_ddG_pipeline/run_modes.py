@@ -10,8 +10,31 @@ Date of last major changes: 2020-04-15
 # Standard library imports
 import logging as logger
 from os.path import join
+import glob
 import subprocess
 from get_memory_stats import check_memory
+
+
+def check_relax_done_launch_rest(folder):
+
+    if len(glob.glob(join(folder.relax_output, '*.pdb'))) > 0:
+        print('Relaxation finalized')
+        return None
+    else:
+        if len(glob.glob(join(folder.relax_run, '*.pdb'))) > 0:
+            print('Relaxation done but postprocessing missing')
+            #Launching parse_relax.sbatch
+            parse_relaxation_call = subprocess.Popen(f'sbatch {join(folder.relax_input, "parse_relax.sbatch")}', stdout=subprocess.PIPE, shell=True, cwd=folder.relax_run)
+                                                                                                    
+            #Gettin process ID                                          
+            parse_relax_process_id_info = parse_relaxation_call.communicate()
+            parse_relax_process_id = str(parse_relax_process_id_info[0]).split()[3][0:-3]
+            logger.info(f'ddG process ID info: {parse_relax_process_id}')
+            return parse_relax_process_id
+        else:
+            print('Relaxation not performed. Starting run now.')
+            return relaxation(folder)
+
 
 def relaxation(folder):
     """Runs relax scripts and parsing of the relax results. Output parse_relax_process_id, that can be used to run ddg_calculation right after"""

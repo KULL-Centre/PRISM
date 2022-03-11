@@ -201,7 +201,10 @@ def rosetta_energy_to_prism(infile, prism_file, pdbID, chain, tmp_base_dir, unip
         else:
             wt = x[0].split('_')[0]
             resi = x[0].split('_')[-1]
-        return f"{d3d1[wt]}{resi}="
+        if wt in d3d1.keys():
+            return f"{d3d1[wt]}{resi}="
+        else:
+            return f"X{resi}="
         
     
     df['variant'] = df['label'].apply(lambda x: convert_resi(x))

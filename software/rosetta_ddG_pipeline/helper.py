@@ -29,6 +29,8 @@ from scipy import stats
 # Local application imports
 from get_memory_stats import check_memory
 from prism_rosetta_parser import rosetta_to_prism
+sys.path.insert(1, os.path.join(os.path.dirname(__file__), '../scripts/'))
+from pdb_to_prism import rosetta_energy_to_prism
 
 
 def create_symlinks(source_file, dist_folder, name=''):
@@ -59,7 +61,7 @@ def create_copy(source_file, dist_folder, name='', directory=False):
             logger.warn(f'Directory {dist_file} already exists. No files will be copied.')
     else:
         shutil.copy(source_file, dist_file)
-    logger.info(f'Hardcopy created: {dist_file} --> {source_file}')
+    logger.info(f'Hardcopy created: {source_file} --> {dist_file}')
 
     return dist_file
 
@@ -545,6 +547,13 @@ def generate_emission_stats(test_dir):
     logger.info(output_text)
     logger.info(output_text2)
 
+def parse_rosetta_Eres_to_mut(folder, sys_name, prism_nr='XXX', chain='A', uniprot_id='', organism='', version=1, count=True):
+    # generate Eres file
+    prism_file = os.path.join(folder.ddG_output, f'prism_rosettapdb_{prism_nr}_{sys_name}.txt')
+    infile = os.path.join(folder.ddG_input, 'input.pdb')
+    rosetta_energy_to_prism(infile, prism_file, sys_name, chain, folder.ddG_run, 
+        uniprot_id=uniprot_id, organism=organism, version=version, count=count)
+    create_copy(prism_file, folder.output)
 
 def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism_nr='XXX', chain_id='A', output_gaps=False, bfac=True, zip_files=True, sha_tag='', MP=False, scale=2.9):
     # generate emission stats
@@ -586,6 +595,8 @@ def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism
                      span_file=span_file, lipid_file=lipid_file, scale=scale)
     create_copy(prism_file, folder.output)
     create_copy(pdb_file, folder.output, name=f'{sys_name}_final.pdb')
+
+    parse_rosetta_Eres_to_mut(folder, sys_name, prism_nr=prism_nr, chain=chain_id, version=version)
 
     if output_gaps:
         ini_d = True

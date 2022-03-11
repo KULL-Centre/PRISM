@@ -26,8 +26,12 @@ import pandas as pd
 # Local application imports
 import pdb_to_fasta_seq
 import rosetta_paths
-from mp_helper import extract_from_opm
+from mp_helper import extract_from_opm, get_res_in_all, get_res_in_mem, get_seq, getnums 
 
+d3to1 = {'CYS': 'C', 'ASP': 'D', 'SER': 'S', 'GLN': 'Q', 'LYS': 'K',
+     'ILE': 'I', 'PRO': 'P', 'THR': 'T', 'PHE': 'F', 'ASN': 'N', 
+     'GLY': 'G', 'HIS': 'H', 'LEU': 'L', 'ARG': 'R', 'TRP': 'W', 
+     'ALA': 'A', 'VAL':'V', 'GLU': 'E', 'TYR': 'Y', 'MET': 'M'}
 
 def mp_superpose_opm(reference_chain, target, filename, target_chain='A',
                      ref_model_id=0, target_model_id=0, write_opm=True, inTM=True):
@@ -54,107 +58,6 @@ def mp_superpose_opm(reference_chain, target, filename, target_chain='A',
     bio_target_struc_raw = parser.get_structure("target", target)
 
     #get sequence info about TM region and where best to align
-    def getnums(seq, seqnum):
-        i = 0
-        numseq = []
-        for elem in seq:
-            if elem != '-':
-                numseq.append(seqnum[i])
-                i = i + 1
-            else:
-                numseq.append(None)
-        return numseq
-
-    d3to1 = {'CYS': 'C', 'ASP': 'D', 'SER': 'S', 'GLN': 'Q', 'LYS': 'K',
-         'ILE': 'I', 'PRO': 'P', 'THR': 'T', 'PHE': 'F', 'ASN': 'N', 
-         'GLY': 'G', 'HIS': 'H', 'LEU': 'L', 'ARG': 'R', 'TRP': 'W', 
-         'ALA': 'A', 'VAL':'V', 'GLU': 'E', 'TYR': 'Y', 'MET': 'M'}
-
-    def get_seq(file_pointer, isfile=True):
-        i = 0
-        if isfile:
-            fp = open(file_pointer)
-        else:
-            fp = file_pointer.split('\n')
-        for line in fp:
-            if line.startswith('ATOM'):
-                resseq = int(line[22:26])
-                if line[12:16].strip() == 'CA':
-                    if resseq > i:
-                        i = resseq
-        seq = ["-"]*i
-        seq2 = []
-        if isfile:
-            fp.close()
-            fp = open(file_pointer)
-        else:
-            fp = file_pointer.split('\n')
-        for line in fp:
-            if line.startswith('ATOM'):
-                resseq = int(line[22:26])
-                resname = line[17:20].strip()
-                if line[12:16].strip() == 'CA':
-                    seq[resseq-1] = d3to1[resname]
-                    seq2.append(resseq)
-        return "".join(seq), seq2, i
-
-    def get_res_in_mem(file_pointer, isfile=False):
-        all_z=[]
-        if isfile:
-            fp = open(file_pointer)
-        else:
-            fp = file_pointer.split('\n')
-        for line in fp:
-            if line.startswith('HETATM') and line[17:20]=='DUM':
-                z = float(line[46:54])
-                all_z.append(z)
-        all_z = sorted(list(set(all_z)))
-
-        residues_in_membrane = []
-        ca_atoms_in_membrane = []
-        if isfile:
-            fp.close()
-            fp = open(file_pointer)
-        else:
-            fp = file_pointer.split('\n')
-        for line in fp:
-            if line.startswith('ATOM'):
-                z = float(line[46:54])
-                resseq = int(line[22:26])
-                atomnum = int(line[6:11])
-                if (z >= all_z[0]) and (z <= all_z[1]):
-                    residues_in_membrane.append(resseq)
-                    if line[12:16].strip() == 'CA':
-                        ca_atoms_in_membrane.append(atomnum)
-        residues_in_membrane = sorted(list(set(residues_in_membrane)))
-
-        return residues_in_membrane
-
-    def get_res_in_all(file_pointer, isfile=False):
-        all_z=[]
-        if isfile:
-            fp = open(file_pointer)
-        else:
-            fp = file_pointer.split('\n')
-
-        residues_in_all = []
-        ca_atoms_in_all = []
-        if isfile:
-            fp.close()
-            fp = open(file_pointer)
-        else:
-            fp = file_pointer.split('\n')
-        for line in fp:
-            if line.startswith('ATOM'):
-                resseq = int(line[22:26])
-                atomnum = int(line[6:11])
-                residues_in_all.append(resseq)
-                if line[12:16].strip() == 'CA':
-                    ca_atoms_in_all.append(atomnum)
-        residues_in_all = sorted(list(set(residues_in_all)))
-
-        return residues_in_all
-
 
     if inTM:
         ref_align_atoms = get_res_in_mem(ref_struc, isfile=False)
@@ -170,15 +73,14 @@ def mp_superpose_opm(reference_chain, target, filename, target_chain='A',
     for align in alignments:
         if maxx == align[-1]:
             break
-    align
-    align[0]
+
     seq1 = [align[0][i:i+1] for i in range(0, len(align[0]), 1)]
     seqnum1 = getnums(seq1, seq1num)
     seq2 = [align[1][i:i+1] for i in range(0, len(align[1]), 1)]
     seqnum2 = getnums(seq2, seq2num)
 
     df = pd.DataFrame(np.array([seq1, seqnum1, seq2, seqnum2]).T, columns=['infile', 'infile_num', 'opm', 'opm_num'])
-    df
+
     target_align_atoms = []
     for res in ref_align_atoms:
         target_align_atoms.append(df.loc[(df['opm_num']==res), 'infile_num'].tolist()[0])

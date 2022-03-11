@@ -154,7 +154,7 @@ def parse_args2():
                         dest='MP_ALIGN_REF',
                         help=('Reference PDB-id to membrane protein alignment.'
                               'Required for --mp_prep_align_mode options [OPM]'
-                              'Format: PDBid_chain'
+                              'Format: {PDBid}_{chain}'
                               )
                         )
     parser.add_argument('--mp_prep_align_mode',

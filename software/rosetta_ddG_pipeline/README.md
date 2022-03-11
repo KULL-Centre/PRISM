@@ -53,7 +53,7 @@ Run modes:
 Run modes directs the actions of the pipeline
     print: prints default flag files 
     create: Creates all run files
-    proceed: Starts calculations with created run files (incl. relax and ddG calculation) 
+    proceed: Restarts calculations with created run files (incl. relax and ddG calculation) - does not rerun already calculated files
     relax: Starts relax calculations with created run files 
     ddg_calculation: Starts ddg_calculation calculations with created run files
     fullrun: runs full pipeline                              
@@ -131,7 +131,7 @@ Missing residues are ignored and open loops are also not closed.
 #### deviating values and consitency checks
 Values that differ from normal runs, like a large fraction of high-scoring ddGs are not automatically detected and should be kept in mind for the user. 
 
-If a relaxed structure has Eres for a residue >0 REU, all varianats of that base residue should be interpreted with care. You can calculate those values with the following function: ../software/scripts/pdb_to_prism - rosetta_energy_to_prism function with the input parameters: relaxed_pdb_file (output from the pipeline), temp_dir (for calculations and information for the prism parser: pdbID, pdbchain, uniprot_id; and outputs: pdb_prism_file
+If a relaxed structure has Eres for a residue >0 REU, all varianats of that base residue should be interpreted with care. You can see those values in your output folder "prism_rosettapdb_....txt", including the contacting residues, or calculate those values with the following function: ../software/scripts/pdb_to_prism - rosetta_energy_to_prism function with the input parameters: relaxed_pdb_file (output from the pipeline), temp_dir (for calculations and information for the prism parser: pdbID, pdbchain, uniprot_id; and outputs: pdb_prism_file
 It extracts the energies from the final output pdb of the relaxation (summed up as comments at the bottom of the file).
 
 

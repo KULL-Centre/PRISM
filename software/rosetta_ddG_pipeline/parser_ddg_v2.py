@@ -198,6 +198,10 @@ def quickcheck( run_dir, base_mut ):
                 df_add = pd.DataFrame(columns=['variant', 'dG', 'rmsd', 'resi'])
             df_add['resi'] = df_add['variant'].apply(lambda x: int(x[1:-1]))
             df_add_all.append(df_add)
+        else:
+            df_add = pd.DataFrame(columns=['variant', 'dG', 'rmsd', 'resi'])
+            df_add['resi'] = df_add['variant'].apply(lambda x: int(x[1:-1]))
+            df_add_all.append(df_add)
     df_add = pd.concat(df_add_all)
     df_add['base'] = 'MUT'
     df_add['var'] = df_add['variant'].apply(lambda x: x[-1])

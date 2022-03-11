@@ -99,8 +99,9 @@ def predict_stability(args):
                         logger.info('Run OPM alignment with superpose')
                         mp_prepare.mp_superpose_opm(
                             args.MP_ALIGN_REF, prep_struc, structure_instance.path, target_chain=structure_instance.chain_id, write_opm=True, inTM=args.SUPERPOSE_ONTM)
+                        logger.info('Superpose successful')
                     except:
-                        logger.info('Run OPM alignment with TM align')
+                        logger.info('Superpose failed - Run OPM alignment with TM align')
                         mp_prepare.mp_TMalign_opm(
                             args.MP_ALIGN_REF, prep_struc, structure_instance.path, target_chain=structure_instance.chain_id, write_opm=True)                        
                     prep_struc = create_copy(
@@ -216,8 +217,8 @@ def predict_stability(args):
 
             # Parse sbatch relax parser
             path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(
-                folder, sys_name=f'{name}_relax', partition=args.SLURM_PARTITION, sc_name='relax_scores', mp_multistruc=args.MP_MULTISTRUC_PROTOCOL)
-
+                folder, sys_name=f'{name}_relax', partition=args.SLURM_PARTITION, sc_name='relax_scores', 
+                mp_multistruc=args.MP_MULTISTRUC_PROTOCOL, is_MP=args.IS_MP, ref_pdb=args.MP_ALIGN_REF)
 
             if args.MP_PH == -1:
                 is_pH = 0
@@ -225,13 +226,6 @@ def predict_stability(args):
             else:
                 is_pH = 1
                 pH_value = args.MP_PH
-
-
-            #if (args.MP_CART_DDG != 0) and (args.MP_ENERGY_FUNC == 'franklin2019'):
-            #    score_function_file = os.path.join()
-            #else:
-            #    sys.exit()
-
 
             # Parse sbatch ddg file
             if  args.MP_MULTISTRUC_PROTOCOL == 0:
@@ -290,10 +284,7 @@ def predict_stability(args):
                 folder, relaxfile=relax_input_relaxfile, sys_name=name,  partition=partition)
             # Parse sbatch relax parser
             path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(
-                folder,  partition=partition)
-            # Parse sbatch relax parser
-            path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(
-                folder, partition=args.SLURM_PARTITION)
+                folder, partition=args.SLURM_PARTITION, is_MP=args.IS_MP, ref_pdb='-')
 
             # Parse sbatch ddg file
             ddg_input_ddgfile = check_path(create_copy(
@@ -319,10 +310,17 @@ def predict_stability(args):
 #        ddg_output_score = find_copy(
 #            folder.ddG_run, '.sc', folder.ddG_output, 'output.sc')
 
+    if mode == 'proceed':
+        # Check if relax calculation is finished
+        parse_relax_process_id = run_modes.check_relax_done_launch_rest(folder)
+        # Start ddG calculations (by checking if it did run already)
+        run_modes.ddg_calculation(folder, parse_relax_process_id=parse_relax_process_id, mp_multistruc=args.MP_MULTISTRUC_PROTOCOL)
+
     # Full SLURM execution
-    if mode == 'proceed' or mode == 'fullrun':
+    if mode == 'fullrun':
         # Start relax calculation
         parse_relax_process_id = run_modes.relaxation(folder)
+        # Start ddG calculations (by checking if it did run already)
         run_modes.ddg_calculation(folder, parse_relax_process_id=parse_relax_process_id, mp_multistruc=args.MP_MULTISTRUC_PROTOCOL)
 
 
