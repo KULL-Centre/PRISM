@@ -139,6 +139,10 @@ It extracts the energies from the final output pdb of the relaxation (summed up 
 An automatic download of pdb-ids is not possible and also not recommended. We highly recommend to pre-process first the pdb before handing it to the pipeline (e.g. with [PDB-redo](https://pdb-redo.eu/)) to reduce errors.
 
 
+#### web services to align membrane proteins into the membrane plane
+If no OPM file is available, you can use http://sunshine.phar.umich.edu/server.php to put the structure into the membrane plane.
+
+
 
 ### Usage examples
 #### Case 1 - Creating files for inspection
