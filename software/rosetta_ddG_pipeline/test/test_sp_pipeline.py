@@ -19,6 +19,7 @@ import unittest
 DIR = os.path.split(os.path.abspath(__file__))[0]
 PARENT_DIR = os.path.split(DIR)[0]
 sys.path.insert(1, sys.path.insert(0, PARENT_DIR))
+os.environ['ddG_pipeline'] = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 
 # Local application imports
 import run_pipeline
@@ -95,7 +96,7 @@ class SPpipelineCreateDHFRTestCase(unittest.TestCase):
             'RUN_STRUC': None,
             'LIGAND': None,
             'OVERWRITE_PATH': True,
-            'SLURM_PARTITION': 'sbinlab_ib2',
+            'SLURM_PARTITION': 'sbinlab',
             'GAPS_OUTPUT': False,
             'DUMP_PDB': 0,
             'ZIP_FILES': True,

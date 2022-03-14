@@ -3,7 +3,7 @@
 #SBATCH --array=0-2
 #SBATCH --time=48:00:00
 #SBATCH --mem 2000
-#SBATCH --partition=sbinlab_ib2
+#SBATCH --partition=sbinlab
 #SBATCH --nice 
 LST=(`ls /ddG/input/mutfiles/mutfile*`)
 OFFSET=0 

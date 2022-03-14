@@ -19,6 +19,7 @@ import unittest
 DIR = os.path.split(os.path.abspath(__file__))[0]
 PARENT_DIR = os.path.split(DIR)[0]
 sys.path.insert(1, sys.path.insert(0, PARENT_DIR))
+os.environ['ddG_pipeline'] = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 
 # Local application imports
 import run_pipeline

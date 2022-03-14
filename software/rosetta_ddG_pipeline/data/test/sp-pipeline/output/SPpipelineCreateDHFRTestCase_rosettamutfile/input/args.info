@@ -8,7 +8,7 @@
     "RUN_STRUC": null,
     "LIGAND": null,
     "OVERWRITE_PATH": true,
-    "SLURM_PARTITION": "sbinlab_ib2",
+    "SLURM_PARTITION": "sbinlab",
     "GAPS_OUTPUT": false,
     "DUMP_PDB": 0,
     "ZIP_FILES": true,

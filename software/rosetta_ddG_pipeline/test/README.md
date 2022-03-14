@@ -79,6 +79,9 @@ Or run in this order
 
 wait until calculations have finished (ca. 2h)
 
+
+This algorithm runs on 60 CPU (any) for ~ 0 h and 27 min each, for a total runtime of 20 h and 58 min, with a memory usage of 10.05 GB, drawing 0.42 kWh. Based in Denmark, this program produces 65.30 g of CO2e, which is equivalent to 0.07 tree-months carbon sequestration, a train ride of 1.59 km, 0.37 km of driving a passenger car in Europe or 0.76 h of netflix streaming.
+
 > python -m unittest sci_test_sp_pipeline.SPpipelineFullrunDHFRTestCase.test_c_analyze_comp_rosettamutfile_prov_flag
 
 > python -m unittest sci_test_sp_pipeline.SPpipelineFullrunDHFRTestCase.test_d_deleteFolder
