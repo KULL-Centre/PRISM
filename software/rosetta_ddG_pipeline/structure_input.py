@@ -21,7 +21,7 @@ import numpy as np
 import pdb_to_fasta_seq
 import rosetta_paths
 from AnalyseStruc import get_structure_parameters
-from helper import read_fasta
+from helper import read_fasta, remove_hetatms, create_copy
 
 class structure:
     
@@ -51,8 +51,11 @@ class structure:
         """This script is for cleaning the pdb file from unwanted entities"""
         
         #This cleans the protein and removes ligands
-        if  ligand == None:           
+        if  ligand == None:
             self.path_to_clean_pdb = rosetta_paths.path_to_clean_pdb
+            #remove all HETATM
+            self.tmp_prep_struc = create_copy(self.prep_struc, self.folder.prepare_cleaning, name='withHETATM.pdb')
+            self.prep_struc = remove_hetatms(self.tmp_prep_struc , self.prep_struc)
             #Runs shell script
             shell_command = f'python2 {self.path_to_clean_pdb} {self.prep_struc} {self.run_struc}  --keepzeroocc'
             self.logger.info('Running clean_pdb.py script')

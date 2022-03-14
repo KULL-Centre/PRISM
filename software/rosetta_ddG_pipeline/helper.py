@@ -33,6 +33,17 @@ sys.path.insert(1, os.path.join(os.path.dirname(__file__), '../scripts/'))
 from pdb_to_prism import rosetta_energy_to_prism
 
 
+def remove_hetatms(input, output):
+    with open(input) as fp, open(output, 'w') as fp2:
+        for line in fp:
+            if not line.startswith('HETATM'):
+                if line.startswith('ATOM'):
+                    if line[16] in [' ', 'A']:
+                        fp2.write(line)
+                else:
+                    fp2.write(line)
+    return output
+
 def create_symlinks(source_file, dist_folder, name=''):
     # WIP
     # import stat
