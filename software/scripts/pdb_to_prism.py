@@ -406,7 +406,7 @@ def pdb_renumb(pdb_input, output_dir=None, keepchain='all', chainorder=None, kee
         with open(pdb_input, 'r') as fp:
             if keep_ligand:
                 for line in fp:
-                    if line.split()[0]=='MODEL' and line.split()[0]=='2':
+                    if line.split()[0]=='MODEL' and line.split()[1]=='2':
                         break
                     if (line[17:20] == keep_ligand) and (line[:6] in ['HETATM', 'ATOM  ']):
                         resstring = line[22:27]
@@ -427,7 +427,7 @@ def pdb_renumb(pdb_input, output_dir=None, keepchain='all', chainorder=None, kee
                         fp2.write(new_line)
             else:
                 for line in fp:
-                    if line.split()[0]=='MODEL' and line.split()[0]=='2':
+                    if line.split()[0]=='MODEL' and line.split()[1]=='2':
                         break
                     if line[0:4] == "ATOM":
                         chain = line[21]
