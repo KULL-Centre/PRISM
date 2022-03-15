@@ -6,10 +6,10 @@ import time
 default_path = {
     'muscle_exec': '/groups/sbinlab/software/muscle/muscle3.8.31_i86linux64',
     'TMalign_exec': '/groups/sbinlab/software/TMalign/TMalign',
-    'ddG_pipeline': '/groups/sbinlab/software/PRISM_tools/rosetta_stability-v0.1/software/rosetta_ddG_pipeline',
-    'Rosetta_main_path': '/sbinlab/software/Rosetta_2020_July_dc83fa/source/',
+    'ddG_pipeline': '/groups/sbinlab/software/PRISM_tools/rosetta_stability-v0.2/software/rosetta_ddG_pipeline',
+    'Rosetta_main_path': '/sbinlab/software/Rosetta_2021_Aug_c7009b3/source/',
     'Rosetta_tools_path': '/sbinlab/software/Rosetta_tools/tools/',
-    'Rosetta_database_path': '/sbinlab/software/Rosetta_2020_July_dc83fa/database/',
+    'Rosetta_database_path': '/sbinlab/software/Rosetta_2021_Aug_c7009b3/database/',
     'Rosetta_extension': 'linuxgccrelease',
     'prism_parser': '/groups/sbinlab/software/PRISM_tools/prism_parser/scripts',
 }
@@ -42,8 +42,8 @@ try:
     sha = std_out.strip().decode('UTF-8').split()[1]
     tag = std_out2.strip().decode('UTF-8').split()[0]
 except:
-    sha = 'v0.1'
-    tag = '09edce8ae74dceca2a79d20b2e8d0bbb5c0813e3'
+    sha = 'v0.2'
+    tag = '53bbea7d6c525f5770359145f6e4c532fc7b0996'
 
 
 print('current env paths & exec:', TMalign_exec, muscle_exec, ddG_pipeline, Rosetta_main_path,
