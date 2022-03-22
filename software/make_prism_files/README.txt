@@ -92,11 +92,14 @@ https://gnomad.broadinstitute.org/faq
 The FAQ details that: 
 "The gnomAD v2.1 data set contains data from 125,748 exomes and 15,708 whole genomes, all mapped to the GRCh37/hg19 reference sequence. The gnomAD v3.1 data set contains 76,156 whole genomes (and no exomes), all mapped to the GRCh38 reference sequence. Most of the genomes from v2 are included in v3.1." 
 
-I therefore used exome data from gnomad v2, but the liftover to GRCh38, not the the plain gnomAD v2, and genome data from gnomad v3 to get the best available coverage in terms of both variants seen and their allel frequencies in the population.
+I therefore used exome data from gnomad v2, but the liftover to GRCh38 !, not the the plain gnomAD v2, and genome data from gnomad v3 to get the best available coverage in terms of both variants seen and their allel frequencies in the population.
+
+If gnomAD has been updated and we should only use v3, then downlaod the exomes and genomes from that. This should be written in the FAQ/help: https://gnomad.broadinstitute.org/help
 
 2.0.2. annotation with Ensembl's Variant Effect Predictor
 
-However, gnomad v2 vcfs are only annotated for protein variants for the transcript set of GRCh37. Since we aim to combine the v2 and v3 data, we used the GRCh38 liftover of the v2 exome vcf (also downloaded from gnomad) and then annotated with Variant Effect Predictor (VEP) for GRCh38. At the time the project was started there were also vital fields missing from the VEP annotation of the gnomad v3 genome data, so I re-annotated those vcfs as well for GRCh38, same VEP version and same transcript set as used for the v2 exome liftover.
+However, gnomad v2 vcfs are only annotated for protein variants for the transcript set of GRCh37. At the time the project was started there were also vital fields missing from the VEP annotation of the gnomad v3 genome data, so I re-annotated those vcfs as well for GRCh38, same VEP version and same transcript set as used for the v2 exome liftover.
+In conlcusion, since we aim to combine the v2 and v3 data, we need to use the GRCh38 liftover of the v2 exome vcf and annotate both the v2 liftover exomes and v3 genomes with Variant Effect Predictor (VEP) for GRCh38. 
 
 I managed to install vep on deic using the following procedure:
 
@@ -107,15 +110,18 @@ $ echo ". /lustre/hpc/sbinlab/software/anaconda2/etc/profile.d/conda.sh" >> ~/.b
 
 This instruction installs a conda package which is version 95 of vep. No other method worked when I tried. The current version is 100 and some transcripts have changed between releases 95 and 100, see https://www.ensembl.org/info/docs/tools/vep/script/vep_download.html
 
+The conda package has been updated since then, so you will hopefully get a newer version now.
+
 #make env:
 conda create -n conda_vep
 environment location: /groups/sbinlab/hezscha/.conda/envs/conda_vep
 
 #activate env
-#source .bashrc #if it can't find the conda command, source the .bashrc
+#if it can't find the conda command, source the .bashrc:
+source .bashrc 
 conda activate conda_vep
 
-#install the vep package. Might want to search for a newer one than version 95
+#install the vep package:
 conda install -c bioconda/label/cf201901 ensembl-vep
 
 #find where this was actually installed
@@ -127,22 +133,25 @@ which vep_install
 cd /groups/sbinlab/hezscha/.conda/envs/conda_vep/bin
 ./vep
 
-#get the latest cache you can find, even if it is newer than the vep version. The later scripts are querying Ensembl database for info with gene and transcript IDs from the annotation and those occasionally change between cache versions. The Ensembl database always be on the latest cache version which is why you should also use the latest cache for the anno, otherwise there will be mismatches. The below example is for cache version 100.
+This is very important:
+Get the latest cache version you can find, even if it is newer than the vep version. The later scripts are querying the Ensembl database for info with gene and transcript IDs from the annotation and those occasionally change between cache versions. The Ensembl database always be on the latest cache version which is why you should also use the latest cache for the anno, otherwise there will be mismatches. The below example is for installing cache version 100. You should get the newest version you can (probably higher than 100).
 
 #get the cache manually:
 #check documentation here: https://www.ensembl.org/info/docs/tools/vep/script/vep_cache.html#cache
 
+#download the cache. Keep the naming consistent, i.e. if you download version 105, name the directory and the file verion 105
 mkdir /groups/sbinlab/hezscha/software/vep/cache_GRCh38_100/
 cd /groups/sbinlab/hezscha/software/vep/cache_GRCh38_100/
+#'release-100' is the part where you specify the version of the cache
 curl -O ftp://ftp.ensembl.org/pub/release-100/variation/indexed_vep_cache/homo_sapiens_vep_100_GRCh38.tar.gz
-#start interactive node because the untar may be computionally heavy
+#start interactive node because the untar is computionally heavy
 srun -p sbinlab_ib --pty bash
 #load conda env
 conda activate conda_vep
 cd /groups/sbinlab/hezscha/software/vep/cache_GRCh38_100
 tar xzf homo_sapiens_vep_100_GRCh38.tar.gz
 
-#I checked and there is no fasta for the HGVS notation, so try to get that
+#I checked and there is no fasta for the HGVS notation, so also manually get that:
 vep_install -a f -s homo_sapiens -y GRCh38 --CACHE_VERSION [put version here] -c /groups/sbinlab/hezscha/software/vep/cache_GRCh38_100
 
 #now test the manual cache
@@ -152,7 +161,7 @@ vep_install -a f -s homo_sapiens -y GRCh38 --CACHE_VERSION [put version here] -c
 
 To avoid reading in the huge vcf files every time, I made a directory with sub directories per chromosome that contains temporary files for each transcript. 
 
-Specifically per transcript ID there are:
+Specifically per transcript ID there are a maximum of 6 files:
 1 file with missense mutations in exome data: .mis.exomes.tmp
 1 file with missense mutations in genome data: .mis.genomes.tmp
 1 file with synonymous mutations in exome data: .syn.exomes.tmp
@@ -171,7 +180,7 @@ required arguments:
 
 optional arguments:
   -filter FILTER        The complex variant types to extract, given as a comma
-                        separeted list (no whitespace!). Missense and
+                        separated list (no whitespace!). Missense and
                         synonymous variants are always extracted (unless
                         omitted in -e option). The currently available types
                         are: stop gained : sg, start lost : sl, inframe
@@ -219,6 +228,17 @@ time
 
 To generate prism compatible files with gnomad data, run either make_prism_gnomad_file_seq.py or make_prism_gnomad_file_all.py. 
 
+BEFORE you run this script, go in and change these lines at the top to point to the Ensembl release you used to annotate the gnomAD vcf files. This is the same as the cache version, i.e. if you annotated with cache version 105, you need release 105. You need to find out the api server address for your release. I.e. release 100 was published in April 2020 and it's server address is https://apr2020.rest.ensembl.org. 
+
+ensembl_server = "https://apr2020.rest.ensembl.org"
+ensembl_release = '100' 
+
+If you don't do the above, the file generation will not work or produce wrong files!
+
+To generate prism_gnomad files for the entire human proteome, get a list of uniprot IDs that covers the human proteome and run once for each ID. There are some datasets in /storage1/shared/data/uniprot_datasets. Read the README.txt. See also the section below, proteome wide data.
+
+Some proteins have no gnomad variants or are not on the main assembly. This means their genomic location is on what is called a patch. We do not have data for those locations since gnomad maps only to the main assembly. Therefore these protein do not have corresponding prism_gnomad files.
+
 usage: make_prism_gnomad_file_all.py [-h] [-e {mis,syn,complex,all}]
                                      [-m {overwrite,leave}]
                                      [-tmp_folder TMP_FOLDER]
@@ -243,8 +263,8 @@ optional arguments:
                         tep1_files/+args.chromosome/
   -out_folder OUT_FOLDER
                         Where the output files should be written. Default
-                        location is /storage1/shared/data/prism_gnomad/uniprot
-                        [0:2]/unipro[2:4]/uniprot[4:6]/
+                        location is /storage1/shared/data/prism/
+                        uniprotID[0:2]/uniprotID[2:4]/uniprotID[4:6]/
   -d                    Debug mode.
   -v, --verbose         Level of output, default zero is no output
 
@@ -269,27 +289,27 @@ The reason it has to be this sucky and you can't just specific isoform 1 is that
 
 2.3. proteome wide data
 
-now:
-I later discovered that the approach below caused issues during merge because sometimes we are more interested in gnomad data on isoforms other than isoform 1, i.e. when there is clinvar data on another isoform. Therefore, I decided to instead make all possible files per uniprot ID in the human proteome. Re-ran make_prism_gnomad_file_all.py with only the uniprot ID as a bash oneliner:
+We make all possible prism_gnomad files per uniprot ID in the human proteome list. Bash oneliner:
 
 while read line; do echo $line; python3 make_prism_gnomad_file_all.py -uniprot $line -e mis -v; done </storage1/shared/data/uniprot_datasets/human_proteome_UP000005640_9606.list
 
 make_prism_gnomad_file_all.py includes a check if the output file already exists and skips if so (change this behavior by changing the mode to overwrite with -m overwrite). Therefore, you can just run this and it will only make the files that are missing.
 
---
-first approach (has been superseeded!):
-You can use this to make gnomad file only for isoform 1 but it turned out that was not so useful.
+2.4 Obtaining protein lists from uniprot
 
-For generating this data I have downloaded the human proteome with one sequence per protein from uniprot from here: https://www.uniprot.org/proteomes/UP000005640 (click on "Download one protein sequence per gene")
+For generating the data described above, I have downloaded the human proteome with one sequence per protein from uniprot from here: https://www.uniprot.org/proteomes/UP000005640 (click on "Download one protein sequence per gene")
 resulting in: UP000005640_9606.fasta.gz
 
-The fasta file was then converted into a white space separated file listing the full identifier, uniprotID and sequence like so:
->tr|A0A024R1R8|A0A024R1R8_HUMAN A0A024R1R8 MSSHEGGKKKALKQPKKQAKEMDEEEKAFKQKQKEEQKKLEVLKAKVVGKGPLATGGIKKSGKK
+Extract the uniprot IDs from that file and write them into a list. 
+It is the second field in the first field:
+>tr|A0A024R1R8|A0A024R1R8_HUMAN Coiled-coil domain-containing protein 72 OS=Homo sapiens (Human) OX=9606 GN=ENSG00000225528 PE=3 SV=1
+MSSHEGGKKKALKQPKKQAKEMDEEEKAFKQKQKEEQKKLEVLKAKVVGKGPLATGGIKK
+SGKK
 
-The following wrapper script reads in the space separated list and attempts to produce one prism_gnomad file per entry:
-human_proteome_gnomad_wrapper.sh
+-> uniprot ID: A0A024R1R8
 
-Some proteins have no gnomad variants or are not on the main assembly. This means their genomic location is on what is called a patch. We do not have data for those locations since gnomad maps only to the main assembly. Therefore these protein do not have corresponding prism_gnomad files.
+How to do this is left as an exercise for the reader.
+
 --
 
 
@@ -305,8 +325,10 @@ You should not have to unless there are large scale changes.
 download a flat file with clinvar summary information to parse:
 https://ftp.ncbi.nlm.nih.gov/pub/clinvar/tab_delimited/variant_summary.txt.gz
 
-unzip and sort the file by te symbol column (important!):
+#unzip and sort the file by the symbol column
+#This is VERY important, otherwise the extraction will not work!
 gunzip variant_summary.txt.gz
+#BEFORE running this, verify that symbol is still in column 5 and the file is tab separated by having a look at the file with i.e. head or less:
 sort variant_summary.txt -k5 -t$'\t' > variant_summary.sort.symbol
 
 other pages or interest
@@ -322,7 +344,7 @@ https://ftp.ncbi.nlm.nih.gov/pub/clinvar/tab_delimited/
 3.1.1.
 run: 
 make_prism_clinvar.py
-, making sure line 526 is pointed to the flat file sorted by symbol! This is very important, otherwise it will not work properly. The file I've used is /storage1/hezscha/data/clinvar/variant_summary.sort.symbol . The script will go through the file and process it symbol by symbol, producing one prism_clinvar file per named refseq transcript (within the same symbol) and per uniprot ID associated to the refseq transcript, or to the HGNC if there are no uniprot IDs directly cross-referenced to the transcript.
+, making sure line 526 is pointed to the text file sorted by symbol! This is very important, otherwise it will not work properly. The file I've used is /storage1/hezscha/data/clinvar/variant_summary.sort.symbol . The script will go through the file and process it symbol by symbol, producing one prism_clinvar file per named refseq transcript (within the same symbol) and per uniprot ID associated to the refseq transcript, or to the HGNC if there are no uniprot IDs directly cross-referenced to the transcript.
 
 ------
 4. Creating prism spliceAI files
