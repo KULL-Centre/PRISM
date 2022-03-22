@@ -92,7 +92,7 @@ https://gnomad.broadinstitute.org/faq
 The FAQ details that: 
 "The gnomAD v2.1 data set contains data from 125,748 exomes and 15,708 whole genomes, all mapped to the GRCh37/hg19 reference sequence. The gnomAD v3.1 data set contains 76,156 whole genomes (and no exomes), all mapped to the GRCh38 reference sequence. Most of the genomes from v2 are included in v3.1." 
 
-I therefore used exome data from gnomad v2 and genome data from gnomad v3 to get the best available coverage in terms of both variants seen and their allel frequencies in the population.
+I therefore used exome data from gnomad v2, but the liftover to GRCh38, not the the plain gnomAD v2, and genome data from gnomad v3 to get the best available coverage in terms of both variants seen and their allel frequencies in the population.
 
 2.0.2. annotation with Ensembl's Variant Effect Predictor
 
