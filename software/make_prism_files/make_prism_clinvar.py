@@ -132,18 +132,18 @@ def make_default_outfolder(uniprot_ID, base_prism_dir = '/storage1/shared/data/'
 #def make_default_outfolder(uniprot_ID, base_prism_dir = '/storage1/hezscha/pos_spec_prism_files/results/'):
 	#sometimes we cannot find the unirpot ID to a transcript. Put them in the none folder then
 	if not uniprot_ID == 'None':
-		if not os.path.exists(base_prism_dir+'prism_clinvar/'+ uniprot_ID[0:2]):
-			os.makedirs(base_prism_dir+'prism_clinvar/'+ uniprot_ID[0:2])
-		if not os.path.exists(base_prism_dir+'prism_clinvar/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]):
-			os.makedirs(base_prism_dir+'prism_clinvar/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4])
-		if not os.path.exists(base_prism_dir+'prism_clinvar/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4] + '/' + uniprot_ID[4:6]):
-			os.makedirs(base_prism_dir+'prism_clinvar/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]+ '/' + uniprot_ID[4:6])
+		if not os.path.exists(base_prism_dir+'prism/'+ uniprot_ID[0:2]):
+			os.makedirs(base_prism_dir+'prism/'+ uniprot_ID[0:2])
+		if not os.path.exists(base_prism_dir+'prism/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]):
+			os.makedirs(base_prism_dir+'prism/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4])
+		if not os.path.exists(base_prism_dir+'prism/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4] + '/' + uniprot_ID[4:6]):
+			os.makedirs(base_prism_dir+'prism/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]+ '/' + uniprot_ID[4:6])
 	
-		return(base_prism_dir+'prism_clinvar/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]+ '/' + uniprot_ID[4:6])
+		return(base_prism_dir+'prism/'+ uniprot_ID[0:2]+ '/' + uniprot_ID[2:4]+ '/' + uniprot_ID[4:6])
 	else:
-		if not os.path.exists(base_prism_dir+'prism_clinvar/NA/'):
-			os.makedirs(base_prism_dir+'prism_clinvar/NA/')
-		return(base_prism_dir+'prism_clinvar/NA/')
+		if not os.path.exists(base_prism_dir+'prism/NA/'):
+			os.makedirs(base_prism_dir+'prism/NA/')
+		return(base_prism_dir+'prism/NA/')
 
 def get_var_name(input_string):
 	res = re.search('[(]p[.]([A-Za-z]+)(\d+)([A-Za-z]+)[)]',input_string)
