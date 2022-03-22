@@ -1,5 +1,4 @@
 
-#UNDER CONSTRUCTION!!!
 #make prism_gnomad files by requesting a uniprot ID and make one file for each unique protein product of this uniprot ID by comparing the protein products of all Ensembl transcripts associated to the uniprot 
 
 #v04: only use variant data with AN > 100 (both for exome and genome samples)
