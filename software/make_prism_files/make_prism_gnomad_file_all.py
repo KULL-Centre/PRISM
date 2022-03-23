@@ -727,6 +727,7 @@ for t_ID in transcript_info:
 			"build": 'GRCh38',
 			"ensembl_gene_id": transcript_info[t_ID]['ensg'],
 			"extracted variant type": filter_set,
+			"ensemble_transcript_release": ensembl_release,
 			},
 			"columns": descr,
 		}
