@@ -433,7 +433,8 @@ class structure:
         return path_to_sbatch
 
 
-    def write_rosetta_cartesian_ddg_sbatch(self, folder, input_mutfiles='', ddgfile='', sys_name='', partition='sbinlab'):
+    def write_rosetta_cartesian_ddg_sbatch(self, folder, input_mutfiles='', ddgfile='', sys_name='', 
+        partition='sbinlab', dump_pdb=0):
         """This script creates the rosetta_dddg.sbatch script"""
                                   
         path_to_sbatch = os.path.join(self.folder.ddG_input, 'rosetta_ddg.sbatch')
@@ -467,7 +468,8 @@ echo $INDEX
 ''')
             fp.write((f'{os.path.join(rosetta_paths.path_to_rosetta, f"bin/cartesian_ddg.{rosetta_paths.Rosetta_extension}")} '
                       f'-s {structure_path} -ddg:mut_file ${{LST[$INDEX]}} '
-                      f' -out:prefix ddg-$SLURM_ARRAY_JOB_ID-$SLURM_ARRAY_TASK_ID @{path_to_ddgflags}'))
+                      f' -out:prefix ddg-$SLURM_ARRAY_JOB_ID-$SLURM_ARRAY_TASK_ID @{path_to_ddgflags}'
+                      f' -ddg::dump_pdbs {dump_pdb} '))
         self.logger.info(path_to_sbatch)
         return path_to_sbatch
 

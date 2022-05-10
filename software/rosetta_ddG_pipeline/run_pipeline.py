@@ -275,8 +275,8 @@ def predict_stability(args):
                     folder,  partition=partition, output_gaps=args.GAPS_OUTPUT, zip_files=args.ZIP_FILES, sha_tag=SHA_TAG, is_MP=args.IS_MP, scale_factor=args.SCALE_FACTOR)
                 else:
                     path_to_parse_ddg_sbatch = mp_ddG.write_parse_rosetta_ddg_mp_pyrosetta_sbatch(
-                    folder, chain_id=args.CHAIN, sys_name=name, output_name='ddG.out', add_output_name='ddG_additional.out', partition=partition, 
-                    output_gaps=args.GAPS_OUTPUT, mp_multistruc=args.MP_MULTISTRUC_PROTOCOL, zip_files=args.ZIP_FILES, sha_tag=SHA_TAG)
+                        folder, chain_id=args.CHAIN, sys_name=name, output_name='ddG.out', add_output_name='ddG_additional.out', partition=partition, 
+                        output_gaps=args.GAPS_OUTPUT, mp_multistruc=args.MP_MULTISTRUC_PROTOCOL, zip_files=args.ZIP_FILES, sha_tag=SHA_TAG)
         else:
             # Parse sbatch relax file
             relax_input_relaxfile = check_path(create_copy(
@@ -294,7 +294,8 @@ def predict_stability(args):
             ddg_input_mutfile_dir = create_copy(
                 prepare_output_ddg_mutfile_dir, folder.ddG_input, name='mutfiles', directory=True)
             path_to_ddg_calc_sbatch = structure_instance.write_rosetta_cartesian_ddg_sbatch(
-                folder, ddg_input_mutfile_dir, ddgfile=ddg_input_ddgfile, sys_name=name,  partition=partition)
+                folder, ddg_input_mutfile_dir, ddgfile=ddg_input_ddgfile, sys_name=name,  
+                partition=partition, dump_pdb=args.DUMP_PDB)
             # Parse sbatch ddg parser
             path_to_parse_ddg_sbatch = structure_instance.write_parse_cartesian_ddg_sbatch(
                 folder,  partition=partition, output_gaps=args.GAPS_OUTPUT, zip_files=args.ZIP_FILES, sha_tag=SHA_TAG, is_MP=args.IS_MP, scale_factor=args.SCALE_FACTOR)
