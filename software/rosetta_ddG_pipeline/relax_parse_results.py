@@ -195,6 +195,13 @@ def check_struc_alignment(reference_chain, target, target_chain='A',
     for res in ref_align_atoms:
         target_align_atoms.append(df.loc[(df['opm_num']==res), 'infile_num'].tolist()[0])
 
+    tmp_ref_align_atoms = []
+    for ind, res in enumerate(target_align_atoms):
+        if res:
+            tmp_ref_align_atoms.append(ref_align_atoms[ind])
+    ref_align_atoms = tmp_ref_align_atoms
+    target_align_atoms = list(filter(None, target_align_atoms))
+
     # Select the model number - normally always the first
     bio_ref_struc = bio_ref_struc_raw[ref_model_id]
     bio_target_struc = bio_target_struc_raw[target_model_id]
