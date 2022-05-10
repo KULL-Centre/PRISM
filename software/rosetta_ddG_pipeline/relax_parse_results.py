@@ -36,7 +36,7 @@ d3to1 = {'CYS': 'C', 'ASP': 'D', 'SER': 'S', 'GLN': 'Q', 'LYS': 'K',
      'GLY': 'G', 'HIS': 'H', 'LEU': 'L', 'ARG': 'R', 'TRP': 'W', 
      'ALA': 'A', 'VAL':'V', 'GLU': 'E', 'TYR': 'Y', 'MET': 'M'}
 
-def parse_relax_results(folder, pdb_id='', sc_name='score_bn15_calibrated', logger_mode='info', keep=1, is_MP=False):
+def parse_relax_results(folder, pdb_id='', sc_name='score_bn15_calibrated', logger_mode='info', keep=1, is_MP=False, do_checking=True):
     '''This function parses the scorefile from a rosetta
     pre-relaxation, and selects the lowest scoring one'''
     print(sc_name, keep, logger_mode, folder)
@@ -84,14 +84,21 @@ def parse_relax_results(folder, pdb_id='', sc_name='score_bn15_calibrated', logg
     logger.info(f'most relaxed structure is {most_relaxed}.')
 
     # checking for consitency
-    input_pdb = glob.glob(os.path.join(folder.input, '*.pdb'))[0]
-    output_pdb = os.path.join(folder.relax_run, f'{most_relaxed}.pdb')
-    consistency = check_consitency(input_pdb, output_pdb, chain='A', is_MP=is_MP, pdb_id=pdb_id)
-    if consistency == False:
-        print('input and relaxed structures are not consitent or too different')
-        sys.stderr()
-        sys.exit()
-        return
+    if do_checking:
+        input_pdb = glob.glob(os.path.join(folder.input, '*.pdb'))[0]
+        output_pdb = os.path.join(folder.relax_run, f'{most_relaxed}.pdb')
+        chain = 'A'
+        with open(output_pdb, 'r') as fp:
+            for line in fp:
+                if line.startswith('ATOM'):
+                    chain = line[21]
+                    break
+        consistency = check_consitency(input_pdb, output_pdb, chain=chain, is_MP=is_MP, pdb_id=pdb_id)
+        if consistency == False:
+            print('input and relaxed structures are not consitent or too different')
+            sys.stderr()
+            sys.exit()
+            return
 
     for key in relax_models:
         if not key in most_relaxed_models:
@@ -143,39 +150,19 @@ def check_seq_completeness(input_pdb, output_pdb):
         print('Sequences are the same')
         return True
 
-def check_struc_alignment(reference_chain, target, target_chain='A',
-                     ref_model_id=0, target_model_id=0, inTM=False):
+def check_struc_alignment(ref_pdb, target, target_chain='A', ref_model_id=0, target_model_id=0):
     # Adapted from https://gist.github.com/andersx/6354971
     # Copyright (c) 2010-2016 Anders S. Christensen
 
-    # Get reference structure e.g. from OPM
-    def get_ref_struc(keyword):
-        try:
-            ref_struc = extract_from_opm(keyword)
-        except:
-            print("no OPM - id found - add a workaround, e.g. PDBTM")
-            return
-        else:
-            print("Obtain structure from OPM: successful")
-        return ref_struc
-    reference = reference_chain.split('_')[0]
-    ref_chain = reference_chain.split('_')[1]
-    ref_struc = get_ref_struc(reference)
-    # Parse reference (from string) and target structure (from file)
+    # Parse reference (from file) and target structure (from file)
     parser = PDB.PDBParser(QUIET=True)
-    bio_ref_struc_raw = parser.get_structure(
-        "reference", io.StringIO(ref_struc))
+    bio_ref_struc_raw = parser.get_structure("reference", ref_pdb)
     bio_target_struc_raw = parser.get_structure("target", target)
 
-    #get sequence info about TM region and where best to align
-
-    if inTM:
-        ref_align_atoms = get_res_in_mem(ref_struc, isfile=False)
-    else:
-        ref_align_atoms = get_res_in_all(ref_struc, isfile=False)
+    ref_align_atoms = get_res_in_all(ref_pdb, isfile=True)
 
     seq1, seq1num, maxi1 = get_seq(target, isfile=True)
-    seq2, seq2num, maxi2 = get_seq(ref_struc, isfile=False)
+    seq2, seq2num, maxi2 = get_seq(ref_pdb, isfile=True)
     seq1 = Seq(seq1)
     seq2 = Seq(seq2)
     alignments = pairwise2.align.globalxx(seq1, seq2)
@@ -190,10 +177,11 @@ def check_struc_alignment(reference_chain, target, target_chain='A',
     seqnum2 = getnums(seq2, seq2num)
 
     df = pd.DataFrame(np.array([seq1, seqnum1, seq2, seqnum2]).T, columns=['infile', 'infile_num', 'opm', 'opm_num'])
+    df = df.replace(to_replace='None', value=np.nan).dropna(subset=['infile_num', 'opm_num'], how='all').reset_index(drop=True)
+    df = df.replace(to_replace='None', value=np.nan).dropna(subset=['infile_num', 'opm_num'], how='any').reset_index(drop=True)
 
-    target_align_atoms = []
-    for res in ref_align_atoms:
-        target_align_atoms.append(df.loc[(df['opm_num']==res), 'infile_num'].tolist()[0])
+    ref_align_atoms = df['opm_num'].astype(int).unique().tolist()
+    target_align_atoms = df['infile_num'].astype(int).unique().tolist()
 
     # Select the model number - normally always the first
     bio_ref_struc = bio_ref_struc_raw[ref_model_id]
@@ -202,7 +190,7 @@ def check_struc_alignment(reference_chain, target, target_chain='A',
     # List of residues to align
     align_ref_atoms = []
     for ind, chain in enumerate(bio_ref_struc_raw.get_chains()):
-        if chain.id == ref_chain:
+        if chain.id == target_chain:
             for res in chain.get_residues():  # bio_ref_struc.get_residues():
                 if ref_align_atoms == [] or res.get_id()[1] in ref_align_atoms:
                     for atom in res:
@@ -218,21 +206,14 @@ def check_struc_alignment(reference_chain, target, target_chain='A',
                             align_target_atoms.append(atom)
 
     # Superposer
-    if inTM:
-        super_imposer = PDB.Superimposer()
-        super_imposer.set_atoms(align_ref_atoms, align_target_atoms)
-        print(f"RMSD of not yet superimposed structures of TM residues: {super_imposer.rms}")
-        #super_imposer.apply(bio_target_struc)
-        #print(f"RMSD of superimposed structures of TM residues: {super_imposer.rms}")
-    else:
-        super_imposer = PDB.Superimposer()
-        super_imposer.set_atoms(align_ref_atoms, align_target_atoms)
-        print(f"RMSD of not yet superimposed structures of all residues: {super_imposer.rms}")
-        #super_imposer.apply(bio_target_struc)
-        #print(f"RMSD of superimposed structures of all residues: {super_imposer.rms}")
+    super_imposer = PDB.Superimposer()
+    super_imposer.set_atoms(align_ref_atoms, align_target_atoms)
+    print(f"RMSD of not yet superimposed structures of all residues: {super_imposer.rms}")
+    #super_imposer.apply(bio_target_struc)
+    #print(f"RMSD of superimposed structures of all residues: {super_imposer.rms}")
 
-    if super_imposer.rms > 10:
-        print(f'Structural alignment too bad ({super_imposer.rms} > 10) - align structure manually')
+    if super_imposer.rms > 7.5:
+        print(f'Structural alignment too bad ({super_imposer.rms} > 75.) - align structure manually')
         return False
     else:
         return True
@@ -240,7 +221,7 @@ def check_struc_alignment(reference_chain, target, target_chain='A',
 def check_consitency(input_pdb, output_pdb, chain='A', is_MP=True, pdb_id='-'):
     complete = check_seq_completeness(input_pdb, output_pdb)
     if is_MP:
-        aligned = check_struc_alignment(pdb_id, output_pdb, target_chain=chain, inTM=is_MP)
+        aligned = check_struc_alignment(input_pdb, output_pdb, target_chain=chain)
     else:
         aligned = True
     if (complete == True) and (aligned == True):
@@ -252,25 +233,29 @@ if __name__ == '__main__':
     folder = AttrDict()
     print(sys.argv)
     if sys.argv[1]=='True':
+        do_checking = True
+    else:
+        do_checking = False
+    if sys.argv[2]=='True':
         is_MP = True
     else:
         is_MP = False
-    if sys.argv[2]=='-':
+    if sys.argv[3]=='-':
         pdb_id = ''
     else:
-        pdb_id = sys.argv[2]
+        pdb_id = sys.argv[3]
 
-    if len(sys.argv) <= 8:
-        folder.update({'input': sys.argv[3], 'relax_run': sys.argv[4], 'relax_output': sys.argv[5], 
-            'ddG_input': sys.argv[6]})
+    if len(sys.argv) <= 9:
+        folder.update({'input': sys.argv[4], 'relax_run': sys.argv[5], 'relax_output': sys.argv[6], 
+            'ddG_input': sys.argv[7]})
     else:
-        folder.update({'input': sys.argv[3], 'relax_run': sys.argv[4], 'relax_output': sys.argv[5], 
-            'ddG_input': [sys.argv[x] for x in range(6, len(sys.argv)-2)]})
+        folder.update({'input': sys.argv[4], 'relax_run': sys.argv[5], 'relax_output': sys.argv[6], 
+            'ddG_input': [sys.argv[x] for x in range(7, len(sys.argv)-2)]})
     print(sys.argv)
     print(folder)
-    if len(sys.argv) == 8:
-        parse_relax_results(folder, sc_name=sys.argv[7], is_MP=is_MP, pdb_id=pdb_id)
-    elif len(sys.argv) > 8:
-        parse_relax_results(folder, sc_name=sys.argv[-2], keep=int(sys.argv[-1]), is_MP=is_MP, pdb_id=pdb_id)
+    if len(sys.argv) == 9:
+        parse_relax_results(folder, sc_name=sys.argv[8], is_MP=is_MP, pdb_id=pdb_id, do_checking=do_checking)
+    elif len(sys.argv) > 9:
+        parse_relax_results(folder, sc_name=sys.argv[-2], keep=int(sys.argv[-1]), is_MP=is_MP, pdb_id=pdb_id, do_checking=do_checking)
     else:
         parse_relax_results(folder)

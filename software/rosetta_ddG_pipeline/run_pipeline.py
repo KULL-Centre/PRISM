@@ -218,7 +218,8 @@ def predict_stability(args):
             # Parse sbatch relax parser
             path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(
                 folder, sys_name=f'{name}_relax', partition=args.SLURM_PARTITION, sc_name='relax_scores', 
-                mp_multistruc=args.MP_MULTISTRUC_PROTOCOL, is_MP=args.IS_MP, ref_pdb=args.MP_ALIGN_REF)
+                mp_multistruc=args.MP_MULTISTRUC_PROTOCOL, is_MP=args.IS_MP, ref_pdb=args.MP_ALIGN_REF, 
+                do_checking=args.DO_CHECKING)
 
             if args.MP_PH == -1:
                 is_pH = 0
@@ -284,7 +285,8 @@ def predict_stability(args):
                 folder, relaxfile=relax_input_relaxfile, sys_name=name,  partition=partition)
             # Parse sbatch relax parser
             path_to_parse_relax_results_sbatch = structure_instance.parse_relax_sbatch(
-                folder, partition=args.SLURM_PARTITION, is_MP=args.IS_MP, ref_pdb='-')
+                folder, partition=args.SLURM_PARTITION, is_MP=args.IS_MP, ref_pdb='-', 
+                do_checking=args.DO_CHECKING)
 
             # Parse sbatch ddg file
             ddg_input_ddgfile = check_path(create_copy(
