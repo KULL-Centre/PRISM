@@ -87,7 +87,14 @@ def parse_relax_results(folder, pdb_id='', sc_name='score_bn15_calibrated', logg
     if do_checking:
         input_pdb = glob.glob(os.path.join(folder.input, '*.pdb'))[0]
         output_pdb = os.path.join(folder.relax_run, f'{most_relaxed}.pdb')
-        consistency = check_consitency(input_pdb, output_pdb, chain=pdb_id.split('_')[-1], is_MP=is_MP, pdb_id=pdb_id)
+        chain = 'A'
+        with open(output_pdb, 'r') as fp:
+            for line in fp:
+                if line.startswith('ATOM'):
+                    chain = line[21]
+                    print(chain)
+                    break
+        consistency = check_consitency(input_pdb, output_pdb, chain=chain, is_MP=is_MP, pdb_id=pdb_id)
         if consistency == False:
             print('input and relaxed structures are not consitent or too different')
             sys.stderr()
