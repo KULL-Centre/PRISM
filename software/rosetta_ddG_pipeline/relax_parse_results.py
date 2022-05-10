@@ -92,7 +92,6 @@ def parse_relax_results(folder, pdb_id='', sc_name='score_bn15_calibrated', logg
             for line in fp:
                 if line.startswith('ATOM'):
                     chain = line[21]
-                    print(chain)
                     break
         consistency = check_consitency(input_pdb, output_pdb, chain=chain, is_MP=is_MP, pdb_id=pdb_id)
         if consistency == False:
@@ -151,39 +150,19 @@ def check_seq_completeness(input_pdb, output_pdb):
         print('Sequences are the same')
         return True
 
-def check_struc_alignment(reference_chain, target, target_chain='A',
-                     ref_model_id=0, target_model_id=0, inTM=False):
+def check_struc_alignment(ref_pdb, target, target_chain='A', ref_model_id=0, target_model_id=0):
     # Adapted from https://gist.github.com/andersx/6354971
     # Copyright (c) 2010-2016 Anders S. Christensen
 
-    # Get reference structure e.g. from OPM
-    def get_ref_struc(keyword):
-        try:
-            ref_struc = extract_from_opm(keyword)
-        except:
-            print("no OPM - id found - add a workaround, e.g. PDBTM")
-            return
-        else:
-            print("Obtain structure from OPM: successful")
-        return ref_struc
-    reference = reference_chain.split('_')[0]
-    ref_chain = reference_chain.split('_')[1]
-    ref_struc = get_ref_struc(reference)
-    # Parse reference (from string) and target structure (from file)
+    # Parse reference (from file) and target structure (from file)
     parser = PDB.PDBParser(QUIET=True)
-    bio_ref_struc_raw = parser.get_structure(
-        "reference", io.StringIO(ref_struc))
+    bio_ref_struc_raw = parser.get_structure("reference", ref_pdb)
     bio_target_struc_raw = parser.get_structure("target", target)
 
-    #get sequence info about TM region and where best to align
-
-    if inTM:
-        ref_align_atoms = get_res_in_mem(ref_struc, isfile=False)
-    else:
-        ref_align_atoms = get_res_in_all(ref_struc, isfile=False)
+    ref_align_atoms = get_res_in_all(ref_pdb, isfile=True)
 
     seq1, seq1num, maxi1 = get_seq(target, isfile=True)
-    seq2, seq2num, maxi2 = get_seq(ref_struc, isfile=False)
+    seq2, seq2num, maxi2 = get_seq(ref_pdb, isfile=True)
     seq1 = Seq(seq1)
     seq2 = Seq(seq2)
     alignments = pairwise2.align.globalxx(seq1, seq2)
@@ -198,17 +177,11 @@ def check_struc_alignment(reference_chain, target, target_chain='A',
     seqnum2 = getnums(seq2, seq2num)
 
     df = pd.DataFrame(np.array([seq1, seqnum1, seq2, seqnum2]).T, columns=['infile', 'infile_num', 'opm', 'opm_num'])
+    df = df.replace(to_replace='None', value=np.nan).dropna(subset=['infile_num', 'opm_num'], how='all').reset_index(drop=True)
+    df = df.replace(to_replace='None', value=np.nan).dropna(subset=['infile_num', 'opm_num'], how='any').reset_index(drop=True)
 
-    target_align_atoms = []
-    for res in ref_align_atoms:
-        target_align_atoms.append(df.loc[(df['opm_num']==res), 'infile_num'].tolist()[0])
-
-    tmp_ref_align_atoms = []
-    for ind, res in enumerate(target_align_atoms):
-        if res:
-            tmp_ref_align_atoms.append(ref_align_atoms[ind])
-    ref_align_atoms = tmp_ref_align_atoms
-    target_align_atoms = list(filter(None, target_align_atoms))
+    ref_align_atoms = df['opm_num'].astype(int).unique().tolist()
+    target_align_atoms = df['infile_num'].astype(int).unique().tolist()
 
     # Select the model number - normally always the first
     bio_ref_struc = bio_ref_struc_raw[ref_model_id]
@@ -217,7 +190,7 @@ def check_struc_alignment(reference_chain, target, target_chain='A',
     # List of residues to align
     align_ref_atoms = []
     for ind, chain in enumerate(bio_ref_struc_raw.get_chains()):
-        if chain.id == ref_chain:
+        if chain.id == target_chain:
             for res in chain.get_residues():  # bio_ref_struc.get_residues():
                 if ref_align_atoms == [] or res.get_id()[1] in ref_align_atoms:
                     for atom in res:
@@ -233,21 +206,14 @@ def check_struc_alignment(reference_chain, target, target_chain='A',
                             align_target_atoms.append(atom)
 
     # Superposer
-    if inTM:
-        super_imposer = PDB.Superimposer()
-        super_imposer.set_atoms(align_ref_atoms, align_target_atoms)
-        print(f"RMSD of not yet superimposed structures of TM residues: {super_imposer.rms}")
-        #super_imposer.apply(bio_target_struc)
-        #print(f"RMSD of superimposed structures of TM residues: {super_imposer.rms}")
-    else:
-        super_imposer = PDB.Superimposer()
-        super_imposer.set_atoms(align_ref_atoms, align_target_atoms)
-        print(f"RMSD of not yet superimposed structures of all residues: {super_imposer.rms}")
-        #super_imposer.apply(bio_target_struc)
-        #print(f"RMSD of superimposed structures of all residues: {super_imposer.rms}")
+    super_imposer = PDB.Superimposer()
+    super_imposer.set_atoms(align_ref_atoms, align_target_atoms)
+    print(f"RMSD of not yet superimposed structures of all residues: {super_imposer.rms}")
+    #super_imposer.apply(bio_target_struc)
+    #print(f"RMSD of superimposed structures of all residues: {super_imposer.rms}")
 
-    if super_imposer.rms > 10:
-        print(f'Structural alignment too bad ({super_imposer.rms} > 10) - align structure manually')
+    if super_imposer.rms > 7.5:
+        print(f'Structural alignment too bad ({super_imposer.rms} > 75.) - align structure manually')
         return False
     else:
         return True
@@ -255,7 +221,7 @@ def check_struc_alignment(reference_chain, target, target_chain='A',
 def check_consitency(input_pdb, output_pdb, chain='A', is_MP=True, pdb_id='-'):
     complete = check_seq_completeness(input_pdb, output_pdb)
     if is_MP:
-        aligned = check_struc_alignment(pdb_id, output_pdb, target_chain=chain, inTM=is_MP)
+        aligned = check_struc_alignment(input_pdb, output_pdb, target_chain=chain)
     else:
         aligned = True
     if (complete == True) and (aligned == True):
