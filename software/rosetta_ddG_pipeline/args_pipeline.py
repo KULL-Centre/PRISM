@@ -350,6 +350,8 @@ def parse_args2():
         args.DUMP_PDB = 1
     if args.ZIP_FILES != True:
         args.ZIP_FILES = False
+    if args.LIGAND != None:
+        args.LIGAND = True
     if args.IS_MP == False:
         args.MP_MULTISTRUC_PROTOCOL == 0
     if args.IS_MP:

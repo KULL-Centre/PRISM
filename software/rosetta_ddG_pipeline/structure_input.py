@@ -77,12 +77,13 @@ class structure:
         #This cleans the protein but keeps the ligands          
         if ligand == True:
             self.path_to_clean_pdb = rosetta_paths.path_to_clean_keep_ligand
+            self.tmp_prep_struc = create_copy(self.prep_struc, self.folder.prepare_cleaning, name='withHETATM.pdb')
             #Runs shell script
-            shell_command = f'python2 {self.path_to_clean_pdb} {self.prep_struc} {self.chain_id}  --keepzeroocc'
+            shell_command = f'python2 {self.path_to_clean_pdb} {self.tmp_prep_struc} {self.chain_id}  --keepzeroocc'
             self.logger.info('Running clean_pdb_keep_ligand.py script')
             subprocess.call(shell_command, cwd=self.folder.prepare_cleaning, shell=True)
             self.logger.info('end of output from clean_pdb_keep_ligand.py')
-            path_to_cleaned_pdb = os.path.join(self.folder.prepare_cleaning, f'{name}.pdb{self.chain_id}.pdb')
+            path_to_cleaned_pdb = f'{self.tmp_prep_struc}{self.chain_id}.pdb'
         #Creates struc.json from cleaned pdb file           
         struc_dic_cleaned= get_structure_parameters(
             self.folder.prepare_cleaning, path_to_cleaned_pdb,printing=False)
