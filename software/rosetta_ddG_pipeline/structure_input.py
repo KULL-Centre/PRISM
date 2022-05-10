@@ -405,7 +405,8 @@ class structure:
         return(path_to_sbatch)
 
 
-    def parse_relax_sbatch(self, folder, sys_name='', partition='sbinlab', sc_name='score_bn15_calibrated', mp_multistruc=0, is_MP=False, ref_pdb='-'):
+    def parse_relax_sbatch(self, folder, sys_name='', partition='sbinlab', sc_name='score_bn15_calibrated', 
+        mp_multistruc=0, is_MP=False, ref_pdb='-', do_checking=True):
         """This script creates the parse_relax.sbatch script"""
                                   
         path_to_parse_relax_script = os.path.join(
@@ -421,9 +422,9 @@ class structure:
 # launching parsing script 
 ''')
             if mp_multistruc == 0:
-                fp.write(f'python {path_to_parse_relax_script} {is_MP} {ref_pdb} {folder.input} {folder.relax_run} {folder.relax_output} {folder.ddG_input} {sc_name}')
+                fp.write(f'python {path_to_parse_relax_script} {do_checking} {is_MP} {ref_pdb} {folder.input} {folder.relax_run} {folder.relax_output} {folder.ddG_input} {sc_name}')
             else:
-                fp.write(f'python {path_to_parse_relax_script} {is_MP} {ref_pdb} {folder.input} {folder.relax_run} {folder.relax_output}' )
+                fp.write(f'python {path_to_parse_relax_script} {do_checking} {is_MP} {ref_pdb} {folder.input} {folder.relax_run} {folder.relax_output}' )
                 for ddg_subfolder in folder.ddG_input:
                     fp.write(f' {ddg_subfolder}')
                 fp.write(f' {sc_name} {mp_multistruc}')

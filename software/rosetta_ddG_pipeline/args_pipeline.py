@@ -114,6 +114,12 @@ def parse_args2():
                         dest='ZIP_FILES',
                         help='Switch folder zipping off. default on'
                         )
+    parser.add_argument('--do_checks',
+                        default=True,
+                        type=lambda s: s.lower() in ['false', 'f', 'no', '0'],
+                        dest='DO_CHECKING',
+                        help='Does consistency checkings after relax and before (might be good to set of for HM structures). default on'
+                        )
     parser.add_argument('--verbose',
                         default=False,
                         dest='VERBOSE',

@@ -36,7 +36,7 @@ d3to1 = {'CYS': 'C', 'ASP': 'D', 'SER': 'S', 'GLN': 'Q', 'LYS': 'K',
      'GLY': 'G', 'HIS': 'H', 'LEU': 'L', 'ARG': 'R', 'TRP': 'W', 
      'ALA': 'A', 'VAL':'V', 'GLU': 'E', 'TYR': 'Y', 'MET': 'M'}
 
-def parse_relax_results(folder, pdb_id='', sc_name='score_bn15_calibrated', logger_mode='info', keep=1, is_MP=False):
+def parse_relax_results(folder, pdb_id='', sc_name='score_bn15_calibrated', logger_mode='info', keep=1, is_MP=False, do_checking=True):
     '''This function parses the scorefile from a rosetta
     pre-relaxation, and selects the lowest scoring one'''
     print(sc_name, keep, logger_mode, folder)
@@ -84,14 +84,15 @@ def parse_relax_results(folder, pdb_id='', sc_name='score_bn15_calibrated', logg
     logger.info(f'most relaxed structure is {most_relaxed}.')
 
     # checking for consitency
-    input_pdb = glob.glob(os.path.join(folder.input, '*.pdb'))[0]
-    output_pdb = os.path.join(folder.relax_run, f'{most_relaxed}.pdb')
-    consistency = check_consitency(input_pdb, output_pdb, chain='A', is_MP=is_MP, pdb_id=pdb_id)
-    if consistency == False:
-        print('input and relaxed structures are not consitent or too different')
-        sys.stderr()
-        sys.exit()
-        return
+    if do_checking:
+        input_pdb = glob.glob(os.path.join(folder.input, '*.pdb'))[0]
+        output_pdb = os.path.join(folder.relax_run, f'{most_relaxed}.pdb')
+        consistency = check_consitency(input_pdb, output_pdb, chain='A', is_MP=is_MP, pdb_id=pdb_id)
+        if consistency == False:
+            print('input and relaxed structures are not consitent or too different')
+            sys.stderr()
+            sys.exit()
+            return
 
     for key in relax_models:
         if not key in most_relaxed_models:
@@ -259,25 +260,29 @@ if __name__ == '__main__':
     folder = AttrDict()
     print(sys.argv)
     if sys.argv[1]=='True':
+        do_checking = True
+    else:
+        do_checking = False
+    if sys.argv[2]=='True':
         is_MP = True
     else:
         is_MP = False
-    if sys.argv[2]=='-':
+    if sys.argv[3]=='-':
         pdb_id = ''
     else:
-        pdb_id = sys.argv[2]
+        pdb_id = sys.argv[3]
 
-    if len(sys.argv) <= 8:
-        folder.update({'input': sys.argv[3], 'relax_run': sys.argv[4], 'relax_output': sys.argv[5], 
-            'ddG_input': sys.argv[6]})
+    if len(sys.argv) <= 9:
+        folder.update({'input': sys.argv[4], 'relax_run': sys.argv[5], 'relax_output': sys.argv[6], 
+            'ddG_input': sys.argv[7]})
     else:
-        folder.update({'input': sys.argv[3], 'relax_run': sys.argv[4], 'relax_output': sys.argv[5], 
-            'ddG_input': [sys.argv[x] for x in range(6, len(sys.argv)-2)]})
+        folder.update({'input': sys.argv[4], 'relax_run': sys.argv[5], 'relax_output': sys.argv[6], 
+            'ddG_input': [sys.argv[x] for x in range(7, len(sys.argv)-2)]})
     print(sys.argv)
     print(folder)
-    if len(sys.argv) == 8:
-        parse_relax_results(folder, sc_name=sys.argv[7], is_MP=is_MP, pdb_id=pdb_id)
-    elif len(sys.argv) > 8:
-        parse_relax_results(folder, sc_name=sys.argv[-2], keep=int(sys.argv[-1]), is_MP=is_MP, pdb_id=pdb_id)
+    if len(sys.argv) == 9:
+        parse_relax_results(folder, sc_name=sys.argv[8], is_MP=is_MP, pdb_id=pdb_id, do_checking=do_checking)
+    elif len(sys.argv) > 9:
+        parse_relax_results(folder, sc_name=sys.argv[-2], keep=int(sys.argv[-1]), is_MP=is_MP, pdb_id=pdb_id, do_checking=do_checking)
     else:
         parse_relax_results(folder)
