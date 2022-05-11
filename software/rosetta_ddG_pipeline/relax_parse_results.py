@@ -85,7 +85,7 @@ def parse_relax_results(folder, pdb_id='', sc_name='score_bn15_calibrated', logg
 
     # checking for consitency
     if do_checking:
-        input_pdb = glob.glob(os.path.join(folder.input, '*.pdb'))[0]
+        input_pdb = glob.glob(os.path.join(folder.relax_input, '*.pdb'))[0]
         output_pdb = os.path.join(folder.relax_run, f'{most_relaxed}.pdb')
         chain = 'A'
         with open(output_pdb, 'r') as fp:
@@ -246,10 +246,10 @@ if __name__ == '__main__':
         pdb_id = sys.argv[3]
 
     if len(sys.argv) <= 9:
-        folder.update({'input': sys.argv[4], 'relax_run': sys.argv[5], 'relax_output': sys.argv[6], 
+        folder.update({'relax_input': sys.argv[4], 'relax_run': sys.argv[5], 'relax_output': sys.argv[6], 
             'ddG_input': sys.argv[7]})
     else:
-        folder.update({'input': sys.argv[4], 'relax_run': sys.argv[5], 'relax_output': sys.argv[6], 
+        folder.update({'relax_input': sys.argv[4], 'relax_run': sys.argv[5], 'relax_output': sys.argv[6], 
             'ddG_input': [sys.argv[x] for x in range(7, len(sys.argv)-2)]})
     print(sys.argv)
     print(folder)
