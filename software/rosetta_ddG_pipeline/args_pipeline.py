@@ -109,10 +109,10 @@ def parse_args2():
                         help='Dumps all mutant pdbs, default False.'
                         )
     parser.add_argument('--skip_zip', '-nzip',
-                        default=True,
-                        type=lambda s: s.lower() in ['false', 'f', 'no', '0'],
-                        dest='ZIP_FILES',
-                        help='Switch folder zipping off. default on'
+                        default=False,
+                        type=lambda s: s.lower() in ['true', 't', 'yes', '1'],
+                        dest='NO_ZIP',
+                        help='Skip folder zipping. default off'
                         )
     parser.add_argument('--do_checks',
                         default=True,
@@ -348,8 +348,10 @@ def parse_args2():
         args.MUT_MODE = 'mut_file'
     if args.DUMP_PDB != 0:
         args.DUMP_PDB = 1
-    if args.ZIP_FILES != True:
+    if args.NO_ZIP != False:
         args.ZIP_FILES = False
+    else:
+        args.ZIP_FILES = True
     if args.LIGAND != None:
         args.LIGAND = True
     if args.IS_MP == False:
