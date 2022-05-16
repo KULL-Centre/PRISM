@@ -49,19 +49,6 @@ def tmp(*dir_name):
     return os.path.join(TMP_DIR, 'sci-sp-pipeline', *dir_name)
 
 
-def clean_reference_from_local_path(dir_name, local_path):
-    for dname, dirs, files in os.walk(dir_name):
-        for fname in files:
-            if not fname.startswith('.'):
-                fpath = os.path.join(dname, fname)
-                s = ''
-                with open(fpath, 'r') as fp:
-                    s = fp.read()
-                s = s.replace(local_path, '')
-                with open(fpath, 'w') as fp:
-                    fp.write(s)
-
-
 class SPpipelineFullrunDHFRTestCase(unittest.TestCase):
     """
     Description:
@@ -107,7 +94,9 @@ class SPpipelineFullrunDHFRTestCase(unittest.TestCase):
             'SLURM_PARTITION': 'sbinlab',
             'GAPS_OUTPUT': False,
             'DUMP_PDB': 0,
+            'DO_CHECKING': True,
             'ZIP_FILES': True,
+            'NO_ZIP': False, 
             'VERBOSE': False,
             'IS_MP': False,
             'MP_SPAN_INPUT': None,
@@ -248,7 +237,7 @@ class SPpipelineFullrunDHFRTestCase(unittest.TestCase):
         df.to_csv(ref_ddG_file, index=False)
         print(f"corr: {corr}, slope: {slope}, intercept: {intercept}")
         
-        self.assertTrue(abs(corr) > 0.85)
+        self.assertTrue(abs(corr) > 0.8)
 
     def test_d_deleteFolder(self):
         # Remove the directory after the test
