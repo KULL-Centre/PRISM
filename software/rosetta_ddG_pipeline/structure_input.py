@@ -77,12 +77,13 @@ class structure:
         #This cleans the protein but keeps the ligands          
         if ligand == True:
             self.path_to_clean_pdb = rosetta_paths.path_to_clean_keep_ligand
+            self.tmp_prep_struc = create_copy(self.prep_struc, self.folder.prepare_cleaning, name='withHETATM.pdb')
             #Runs shell script
-            shell_command = f'python2 {self.path_to_clean_pdb} {self.prep_struc} {self.chain_id}  --keepzeroocc'
+            shell_command = f'python2 {self.path_to_clean_pdb} {self.tmp_prep_struc} {self.chain_id}  --keepzeroocc'
             self.logger.info('Running clean_pdb_keep_ligand.py script')
             subprocess.call(shell_command, cwd=self.folder.prepare_cleaning, shell=True)
             self.logger.info('end of output from clean_pdb_keep_ligand.py')
-            path_to_cleaned_pdb = os.path.join(self.folder.prepare_cleaning, f'{name}.pdb{self.chain_id}.pdb')
+            path_to_cleaned_pdb = f'{self.tmp_prep_struc}{self.chain_id}.pdb'
         #Creates struc.json from cleaned pdb file           
         struc_dic_cleaned= get_structure_parameters(
             self.folder.prepare_cleaning, path_to_cleaned_pdb,printing=False)
@@ -422,9 +423,9 @@ class structure:
 # launching parsing script 
 ''')
             if mp_multistruc == 0:
-                fp.write(f'python {path_to_parse_relax_script} {do_checking} {is_MP} {ref_pdb} {folder.input} {folder.relax_run} {folder.relax_output} {folder.ddG_input} {sc_name}')
+                fp.write(f'python {path_to_parse_relax_script} {do_checking} {is_MP} {ref_pdb} {folder.relax_input} {folder.relax_run} {folder.relax_output} {folder.ddG_input} {sc_name}')
             else:
-                fp.write(f'python {path_to_parse_relax_script} {do_checking} {is_MP} {ref_pdb} {folder.input} {folder.relax_run} {folder.relax_output}' )
+                fp.write(f'python {path_to_parse_relax_script} {do_checking} {is_MP} {ref_pdb} {folder.relax_input} {folder.relax_run} {folder.relax_output}' )
                 for ddg_subfolder in folder.ddG_input:
                     fp.write(f' {ddg_subfolder}')
                 fp.write(f' {sc_name} {mp_multistruc}')
@@ -432,7 +433,8 @@ class structure:
         return path_to_sbatch
 
 
-    def write_rosetta_cartesian_ddg_sbatch(self, folder, input_mutfiles='', ddgfile='', sys_name='', partition='sbinlab'):
+    def write_rosetta_cartesian_ddg_sbatch(self, folder, input_mutfiles='', ddgfile='', sys_name='', 
+        partition='sbinlab', dump_pdb=0):
         """This script creates the rosetta_dddg.sbatch script"""
                                   
         path_to_sbatch = os.path.join(self.folder.ddG_input, 'rosetta_ddg.sbatch')
@@ -466,7 +468,8 @@ echo $INDEX
 ''')
             fp.write((f'{os.path.join(rosetta_paths.path_to_rosetta, f"bin/cartesian_ddg.{rosetta_paths.Rosetta_extension}")} '
                       f'-s {structure_path} -ddg:mut_file ${{LST[$INDEX]}} '
-                      f' -out:prefix ddg-$SLURM_ARRAY_JOB_ID-$SLURM_ARRAY_TASK_ID @{path_to_ddgflags}'))
+                      f' -out:prefix ddg-$SLURM_ARRAY_JOB_ID-$SLURM_ARRAY_TASK_ID @{path_to_ddgflags}'
+                      f' -ddg::dump_pdbs {dump_pdb} '))
         self.logger.info(path_to_sbatch)
         return path_to_sbatch
 
