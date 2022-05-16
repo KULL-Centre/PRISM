@@ -5,4 +5,4 @@
 #SBATCH --partition=sbinlab
 
 # launching parsing script 
-python /relax_parse_results.py False - /input /relax/run /relax/output /ddG/input score_bn15_calibrated
+python /relax_parse_results.py True False - /relax/input /relax/run /relax/output /ddG/input score_bn15_calibrated
