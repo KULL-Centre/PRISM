@@ -1,0 +1,16 @@
+-fa_max_dis 9
+-relax:constrain_relax_to_start_coords
+-ignore_unrecognized_res
+-missing_density_to_jump
+-nstruct 1
+-relax:coord_constrain_sidechains 
+-relax:cartesian
+-beta
+-score:weights beta_nov16_cart
+-ex1
+-ex2
+-relax:min_type lbfgs_armijo_nonmonotone
+-out:suffix _bn15_calibrated
+-flip_HNQ
+-no_optH false
+-fa_max_dis 9.0
