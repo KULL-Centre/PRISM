@@ -28,7 +28,7 @@ To install the pipeline, get it from the GitHub page.
 An installation file is not yet available.
 
 
-The following links can be included in your bashrc, otherwise the default will be used:
+The following links can be included in your bashrc, otherwise the default (found in rosetta_path.py) will be used:
 ```bash
 export Rosetta_main_path= ‘{Newest Rosetta version}’
 export Rosetta_tools_path='{path to Rosetta tools}’
@@ -79,6 +79,8 @@ General flags
     --verbose increase verbose level
     --gapped_output output pism and pdb file with shifted residue numbering according to input
     --dump_pdb dumps all mutant pdbs
+    -nzip skip folder zipping (default off=false) 
+    --do_checks does concistency checks after prepare and relax (default true)
 ```
 
 Flags for membrane proteins:
