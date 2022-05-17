@@ -55,6 +55,33 @@ def clean_reference_from_local_path(dir_name, local_path):
                     fp.write(s)
 
 
+def clean_version(dir_name, new_val='XXXtagvXXX'):
+    for dname, dirs, files in os.walk(dir_name):
+        for fname in files:
+            if not fname.startswith('.'):
+                fpath = os.path.join(dname, fname)
+                s = ''
+                with open(fpath, 'r') as fp:
+                    s = fp.read()
+                s = s.replace(' *tagv* ', new_val)
+                with open(fpath, 'w') as fp:
+                    fp.write(s)
+
+
+def remove_header(dir_name):
+    for dname, dirs, files in os.walk(dir_name):
+        for fname in files:
+            if not fname.startswith('.'):
+                fpath = os.path.join(dname, fname)
+                s = ''
+                with open(fpath, 'r') as fp:
+                    s = fp.read()
+                s = s.replace('HEADER *', '')
+                s = s.replace('REMARK *', '')
+                with open(fpath, 'w') as fp:
+                    fp.write(s)
+
+
 class MPpipelineCreateGlpGTestCase(unittest.TestCase):
     """
     Description:
@@ -99,6 +126,8 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
             'SLURM_PARTITION': 'sbinlab',
             'GAPS_OUTPUT': False,
             'DUMP_PDB': 0,
+            'DO_CHECKING': True,
+            'NO_ZIP': False, 
             'ZIP_FILES': True,
             'VERBOSE': False,
             'IS_MP': True,
@@ -166,6 +195,8 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
                      rosetta_paths.Rosetta_database_path, rosetta_paths.Rosetta_extension]
         clean_reference_from_local_path(
             self.reference_dir, elem)
+        clean_version(self.reference_dir, new_val='XXXtagvXXX')
+        remove_header(self.reference_dir)
         for r, d, f in os.walk(self.reference_dir):
             for file in f:
                 file_join = os.path.join(r, file)
@@ -206,6 +237,8 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
             'SLURM_PARTITION': 'sbinlab',
             'GAPS_OUTPUT': False,
             'DUMP_PDB': 0,
+            'DO_CHECKING': True,
+            'NO_ZIP': False, 
             'ZIP_FILES': True,
             'VERBOSE': False,
             'IS_MP': True,
@@ -273,6 +306,7 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
                      rosetta_paths.Rosetta_database_path, rosetta_paths.Rosetta_extension]
         clean_reference_from_local_path(
             self.reference_dir, elem)
+        clean_version(self.reference_dir, new_val='XXXtagvXXX')
         for r, d, f in os.walk(self.reference_dir):
             for file in f:
                 file_join = os.path.join(r, file)
@@ -312,6 +346,8 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
             'SLURM_PARTITION': 'sbinlab',
             'GAPS_OUTPUT': False,
             'DUMP_PDB': 0,
+            'DO_CHECKING': True,
+            'NO_ZIP': False, 
             'ZIP_FILES': True,
             'VERBOSE': False,
             'IS_MP': True,
@@ -379,6 +415,7 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
                      rosetta_paths.Rosetta_database_path, rosetta_paths.Rosetta_extension]
         clean_reference_from_local_path(
             self.reference_dir, elem)
+        clean_version(self.reference_dir, new_val='XXXtagvXXX')
         for r, d, f in os.walk(self.reference_dir):
             for file in f:
                 file_join = os.path.join(r, file)
@@ -419,6 +456,8 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
             'SLURM_PARTITION': 'sbinlab',
             'GAPS_OUTPUT': False,
             'DUMP_PDB': 0,
+            'DO_CHECKING': True,
+            'NO_ZIP': False, 
             'ZIP_FILES': True,
             'VERBOSE': False,
             'IS_MP': True,
@@ -486,6 +525,7 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
                      rosetta_paths.Rosetta_database_path, rosetta_paths.Rosetta_extension]
         clean_reference_from_local_path(
             self.reference_dir, elem)
+        clean_version(self.reference_dir, new_val='XXXtagvXXX')
         for r, d, f in os.walk(self.reference_dir):
             for file in f:
                 file_join = os.path.join(r, file)

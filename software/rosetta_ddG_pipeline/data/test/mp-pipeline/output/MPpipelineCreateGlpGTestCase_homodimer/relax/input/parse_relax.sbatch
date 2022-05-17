@@ -5,4 +5,4 @@
 #SBATCH --partition=sbinlab
 
 # launching parsing script 
-python /relax_parse_results.py True 1AFO_A /input /relax/run /relax/output /ddG/input relax_scores
+python /relax_parse_results.py True True 1AFO_A /relax/input /relax/run /relax/output /ddG/input relax_scores

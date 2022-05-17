@@ -11,6 +11,8 @@
     "SLURM_PARTITION": "sbinlab",
     "GAPS_OUTPUT": false,
     "DUMP_PDB": 0,
+    "DO_CHECKING": true,
+    "NO_ZIP": false,
     "ZIP_FILES": true,
     "VERBOSE": false,
     "IS_MP": true,

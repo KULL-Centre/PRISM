@@ -19,6 +19,8 @@ Running individual classes or methods
 
 > python -m unittest test_sp_pipeline.SPpipelineCreateDHFRTestCase.test_create_rosettamutfile_prov_flag
 
+> python -m unittest test_sp_pipeline.SPpipelineCreateDHFRTestCase.test_create_ligand_prov_flag
+
 Please expect some waiting time for the last test.
 
 

@@ -49,19 +49,6 @@ def tmp(*dir_name):
     return os.path.join(TMP_DIR, 'sci-mp-pipeline', *dir_name)
 
 
-def clean_reference_from_local_path(dir_name, local_path):
-    for dname, dirs, files in os.walk(dir_name):
-        for fname in files:
-            if not fname.startswith('.'):
-                fpath = os.path.join(dname, fname)
-                s = ''
-                with open(fpath, 'r') as fp:
-                    s = fp.read()
-                s = s.replace(local_path, '')
-                with open(fpath, 'w') as fp:
-                    fp.write(s)
-
-
 class MPpipelineFullrunGlpGTestCase(unittest.TestCase):
     """
     Description:
@@ -107,6 +94,8 @@ class MPpipelineFullrunGlpGTestCase(unittest.TestCase):
             'SLURM_PARTITION': 'sbinlab',
             'GAPS_OUTPUT': False,
             'DUMP_PDB': 0,
+            'DO_CHECKING': True,
+            'NO_ZIP': False, 
             'ZIP_FILES': True,
             'VERBOSE': False,
             'IS_MP': True,
