@@ -263,6 +263,12 @@ def download_pdb(pdb_id, output_dir='.'):
     return pdb_path
 
 
+def download_pdb2(pdb_id, output_dir = '.'):
+    pdb_path = os.path.join(output_dir, f'{pdb_id}.pdb')
+    pdb_fileurllib.request.urlretrieve(f'http://files.rcsb.org/download/{pdb_id}.pdb', pdb_path)
+    return pdb_path
+
+
 def make_dssp_df(pdb_file, pdbID=None, chain='all'):
 
     pdb_p = PDBParser()
