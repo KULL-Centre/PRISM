@@ -386,7 +386,10 @@ def pdb_to_prism(pdbID, pdb_file=None, output_dir='.', chain='all', fill=False):
 
     if not pdb_file:
         logger.info(f'PDB {pdbID} will be downloaded')
-        pdb_file = download_pdb(pdbID, output_dir=output_dir)
+        try:
+            pdb_file = download_pdb(pdbID, output_dir=output_dir)
+        except:
+            pdb_file = download_pdb2(pdbID, output_dir=output_dir)
     else:
         pdb_file = os.path.abspath(pdb_file)
 
