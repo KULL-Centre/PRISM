@@ -19,6 +19,7 @@ import json
 from Bio import PDB
 from Bio.Seq import Seq 
 from Bio import pairwise2
+import biolib
 import numpy as np
 import pandas as pd
 
@@ -159,6 +160,86 @@ def mp_TMalign_opm(reference_chain, target, filename, target_chain='A',
 
     print(f"Aligned structure saved")
 
+
+def mp_span_from_deepTMHMM(pdbinput, outdir_path):
+
+    spanfiles = []
+
+    # get input sequence
+    input_secs = {}
+    with open(pdbinput, 'r') as fp:
+        for line in fp:
+            if line.startswith('ATOM'):
+                resseq = int(line[22:26])
+                resname = line[17:20].strip()
+                chain = line[21]
+                if line[12:16].strip() == 'CA':
+                    if line[16] in [' ', 'A']:
+                        resname = d3to1[resname]
+                        if chain in input_secs.keys():
+                            inputseq = input_secs[chain]
+                        else:
+                            inputseq = []
+                        inputseq.append(resname)
+                        input_secs[chain] = inputseq
+    for chain in input_secs.keys():
+        tmp_output_path = os.path.join(outdir_path, chain)
+        os.makedirs(tmp_output_path, exist_ok=True)
+
+        inputseq = input_secs[chain]
+        inputseq = "".join(inputseq)
+
+        # make fasta_file
+        fasta_file = os.path.join(tmp_output_path, 'query.fasta')
+        with open(fasta_file, 'w') as fp:
+            fp.write('> input\n')
+            fp.write(inputseq)
+
+        # calculate TM regions
+        deeptmhmm = biolib.load('DTU/DeepTMHMM')
+        deeptmhmm_res = deeptmhmm.cli(args=f'--fasta {fasta_file}')
+        deeptmhmm_res.save_files(tmp_output_path)
+
+        result_file = os.path.join(tmp_output_path, 'TMRs.gff3')
+
+        # get total length
+        total_length = len(inputseq)
+        with open(result_file, 'r') as fp:
+            for line in fp:
+                if line.startswith('#'):
+                    if 'Length' in line:
+                        line = line.split()
+                        total_length = line[3]
+                        break
+
+        # get TM regions
+        df = pd.read_csv(result_file, skiprows=3, delimiter='\t', header=None)
+        df.rename(columns={0: 'ID', 1: 'location', 2:'start', 3: 'end'}, inplace=True)
+        non_tm = ['signal', 'outside', 'inside', 'periplasm']
+        tm = ['Beta sheet', 'TMhelix']
+        TM_df = df.loc[~df['location'].isin(non_tm)]
+
+        # get info about structure
+        if TM_df['location'].unique() == ['Beta sheet']:
+            order = 'antiparallel'
+        elif TM_df['location'].unique() == ['TMhelix']:
+            order = 'transmem'
+        else:
+            order = 'others'
+
+        # write span file
+        span_file = os.path.join(outdir_path, f"{os.path.splitext(os.path.basename(pdbinput))[0]}_{chain}.span")
+        with open(span_file, 'w') as fp:
+            fp.write('manual-generated spanfile from DeepTMHMM\n')
+            fp.write(f'1 {total_length}\n')
+            fp.write(f'{order}\n')
+            fp.write('n2c\n')
+            for index, row in TM_df.iterrows():
+                fp.write(f"\t\t{row['start']}\t{row['end']}\n")
+
+        spanfiles.append(span_file)
+    print("Span process done")
+    return spanfiles
 
 
 def mp_span_from_pdb_octopus(pdbinput, outdir_path, SLURM=False):

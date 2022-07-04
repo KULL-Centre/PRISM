@@ -141,7 +141,7 @@ def parse_args2():
                               '(see --mp_calc_span_mode).')
                         )
     parser.add_argument('--mp_calc_span_mode',
-                        choices=['False', 'struc', 'DSSP', 'octopus',
+                        choices=['False', 'deepTMHMM', 'struc', 'DSSP', 'octopus',
                                  'bcl', 'Boctopus'],
                         default='DSSP',
                         dest='MP_CALC_SPAN_MODE',
