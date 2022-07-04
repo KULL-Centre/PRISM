@@ -365,6 +365,8 @@ def parse_args2():
             args.MP_ALIGN_MODE='OPM'
         if args.MP_CART_DDG == 1:
             args.RELAX_XML_INPUT = os.path.join(rosetta_paths.path_to_data, 'mp', 'mp_cart_relax.xml')
+        if args.MP_SPAN_INPUT != None:
+            args.MP_ALIGN_REF = '-'
     if args.SCALE_FACTOR == -999:
         if args.IS_MP:
             args.SCALE_FACTOR = 1
