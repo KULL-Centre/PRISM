@@ -215,14 +215,15 @@ def mp_span_from_deepTMHMM(pdbinput, outdir_path):
         # get TM regions
         df = pd.read_csv(result_file, skiprows=3, delimiter='\t', header=None)
         df.rename(columns={0: 'ID', 1: 'location', 2:'start', 3: 'end'}, inplace=True)
-        non_tm = ['signal', 'outside', 'inside', 'periplasm']
+        print(df['location'].unique())
+        non_tm = ['outside', 'inside', 'periplasm', 'signal']
         tm = ['Beta sheet', 'TMhelix']
         TM_df = df.loc[~df['location'].isin(non_tm)]
 
         # get info about structure
-        if TM_df['location'].unique() == ['Beta sheet']:
+        if ('Beta sheet' in TM_df['location'].unique()) and (not 'TMhelix' in TM_df['location'].unique()):
             order = 'antiparallel'
-        elif TM_df['location'].unique() == ['TMhelix']:
+        elif ('transmem' in TM_df['location'].unique()) and (not 'Beta sheet' in TM_df['location'].unique()):
             order = 'transmem'
         else:
             order = 'others'
@@ -232,10 +233,12 @@ def mp_span_from_deepTMHMM(pdbinput, outdir_path):
         with open(span_file, 'w') as fp:
             fp.write('manual-generated spanfile from DeepTMHMM\n')
             fp.write(f'1 {total_length}\n')
+            print(f'1 {total_length}\n')
             fp.write(f'{order}\n')
             fp.write('n2c\n')
             for index, row in TM_df.iterrows():
                 fp.write(f"\t\t{row['start']}\t{row['end']}\n")
+                print(f"\t\t{row['start']}\t{row['end']}\n")
 
         spanfiles.append(span_file)
     print("Span process done")
