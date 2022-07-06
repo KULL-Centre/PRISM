@@ -91,7 +91,7 @@ def predict_stability(args):
         if args.IS_MP == True and args.MP_ALIGN_MODE != 'False':
             logger.info(f'Align the structure along the membrane using {args.MP_CALC_SPAN_MODE}')
             if args.MP_ALIGN_MODE == 'OPM':
-                if args.MP_ALIGN_REF != '':
+                if args.MP_ALIGN_REF != '-':
                     run_name = 'input_mp_aligned'
                     structure_instance.path = os.path.join(
                         folder.prepare_mp_superpose, f'{run_name}.pdb')
@@ -337,4 +337,5 @@ def predict_stability(args):
 if __name__ == '__main__':
 
     args = parse_args2()
+    print(args)
     predict_stability(args)
