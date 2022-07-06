@@ -141,7 +141,7 @@ def parse_args2():
                               '(see --mp_calc_span_mode).')
                         )
     parser.add_argument('--mp_calc_span_mode',
-                        choices=['False', 'struc', 'DSSP', 'octopus',
+                        choices=['False', 'deepTMHMM', 'struc', 'DSSP', 'octopus',
                                  'bcl', 'Boctopus'],
                         default='DSSP',
                         dest='MP_CALC_SPAN_MODE',
@@ -156,7 +156,7 @@ def parse_args2():
                               )
                         )
     parser.add_argument('--mp_align_ref',
-                        default='',
+                        default='-',
                         dest='MP_ALIGN_REF',
                         help=('Reference PDB-id to membrane protein alignment.'
                               'Required for --mp_prep_align_mode options [OPM]'
@@ -359,12 +359,15 @@ def parse_args2():
     if args.IS_MP:
         if args.SUPERPOSE_ONTM != True:
             args.SUPERPOSE_ONTM = False
-        if (args.MP_ALIGN_MODE=='OPM') and not (args.MP_ALIGN_REF):
+        if (args.MP_ALIGN_MODE=='OPM') and (args.MP_ALIGN_REF == '-'):
             parser.error('Please specify a reference PDBid and chain for alginment into membrane plane or switch "MP_ALIGN_MODE" to false')
-        if args.MP_ALIGN_REF:
+            sys.exit()
+        if args.MP_ALIGN_REF != '-':
             args.MP_ALIGN_MODE='OPM'
         if args.MP_CART_DDG == 1:
             args.RELAX_XML_INPUT = os.path.join(rosetta_paths.path_to_data, 'mp', 'mp_cart_relax.xml')
+        if args.MP_SPAN_INPUT != None:
+            args.MP_ALIGN_REF = '-'
     if args.SCALE_FACTOR == -999:
         if args.IS_MP:
             args.SCALE_FACTOR = 1

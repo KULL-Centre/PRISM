@@ -91,7 +91,7 @@ def predict_stability(args):
         if args.IS_MP == True and args.MP_ALIGN_MODE != 'False':
             logger.info(f'Align the structure along the membrane using {args.MP_CALC_SPAN_MODE}')
             if args.MP_ALIGN_MODE == 'OPM':
-                if args.MP_ALIGN_REF != '':
+                if args.MP_ALIGN_REF != '-':
                     run_name = 'input_mp_aligned'
                     structure_instance.path = os.path.join(
                         folder.prepare_mp_superpose, f'{run_name}.pdb')
@@ -135,7 +135,10 @@ def predict_stability(args):
         if args.IS_MP == True:
             if input_dict['MP_SPAN_INPUT'] == None:
                 logger.info(f'Calculate span file with option {args.MP_CALC_SPAN_MODE}')
-                if args.MP_CALC_SPAN_MODE == 'DSSP':
+                if args.MP_CALC_SPAN_MODE == 'deepTMHMM':
+                    structure_instance.span = mp_prepare.mp_span_from_deepTMHMM(
+                        structure_instance.path_to_cleaned_pdb, folder.prepare_mp_span)
+                elif args.MP_CALC_SPAN_MODE == 'DSSP':
                     structure_instance.span = mp_prepare.mp_span_from_pdb_dssp(
                         structure_instance.path_to_cleaned_pdb, folder.prepare_mp_span, thickness=args.MP_THICKNESS, SLURM=False)
                 elif args.MP_CALC_SPAN_MODE == 'octopus':
@@ -334,4 +337,5 @@ def predict_stability(args):
 if __name__ == '__main__':
 
     args = parse_args2()
+    print(args)
     predict_stability(args)
