@@ -12,6 +12,7 @@ import logging as logger
 from os.path import join
 import glob
 import subprocess
+import sys
 from get_memory_stats import check_memory
 
 
@@ -32,6 +33,10 @@ def check_relax_done_launch_rest(folder):
             logger.info(f'ddG process ID info: {parse_relax_process_id}')
             return parse_relax_process_id
         else:
+            if len(glob.glob(join(folder.relax_input, '*.pdb')))==0:
+                print('relax not run - no input pdb present')
+                sys.exit()
+                return
             print('Relaxation not performed. Starting run now.')
             return relaxation(folder)
 
@@ -67,6 +72,10 @@ def ddg_calculation(folder, parse_relax_process_id=None, mp_multistruc=0):
     if parse_relax_process_id == None:
         dependency = ''
         parse_relax_process_id = ''
+        if len(glob.glob(join(folder.ddG_input, '*.pdb')))==0:
+            print('ddG not run - no input pdb present')
+            sys.exit()
+            return
     else:
         dependency = '--dependency=afterany:'
     
