@@ -1,0 +1,34 @@
+<ROSETTASCRIPTS>
+    <SCOREFXNS>
+    	<ScoreFunction name="memb_hires" weights="%%energy_func%%">
+            <Reweight scoretype="fa_water_to_bilayer" weight="%%energy_fawtb%%" />
+        </ScoreFunction>
+    </SCOREFXNS>
+    <TASKOPERATIONS>
+    </TASKOPERATIONS>
+    <RESIDUE_SELECTORS>
+    </RESIDUE_SELECTORS>
+    <TASKOPERATIONS>
+        <UseMultiCoolAnnealer name="multicool" states="6"/>
+        <ExtraChiCutoff name="extrachizero" extrachi_cutoff="0"/>
+        <InitializeFromCommandline name="commandline_init"/>
+        <RestrictToRepacking name="restrict_to_repacking"/>
+    </TASKOPERATIONS>
+    <FILTERS>
+    </FILTERS>
+    <SIMPLE_METRICS>
+    </SIMPLE_METRICS>
+    <MOVERS>
+    	<AddMembraneMover name="add_memb"/>
+    	<MembranePositionFromTopologyMover name="init_pos"/>
+            <FastRelax name="fastrelax" scorefxn="memb_hires" repeats="%%repeats%%" cartesian="1" bondangle="1" task_operations="commandline_init,restrict_to_repacking" min_type="lbfgs_armijo_nonmonotone"/>
+    </MOVERS>
+    <APPLY_TO_POSE>
+    </APPLY_TO_POSE>
+    <PROTOCOLS>
+    	<Add mover="add_memb"/>
+    	<Add mover="init_pos"/>
+        <Add mover="fastrelax"/>
+    </PROTOCOLS>
+    <OUTPUT scorefxn="memb_hires"/>
+</ROSETTASCRIPTS>
