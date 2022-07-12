@@ -150,7 +150,8 @@ class SPpipelineCreateDHFRTestCase(unittest.TestCase):
 
         # evaluates the test
         skip_files = [
-            'logs/info.log', 'span.log', 'parse_ddgs.sbatch',
+            'logs/info.log', 
+            'span.log', 
         ]
 
         output_dic = {}
@@ -198,6 +199,10 @@ class SPpipelineCreateDHFRTestCase(unittest.TestCase):
                             reference_dic[os.path.join(
                                 parent_directory, file)] = fp.read()
         self.maxDiff = None
+        # print('test_create_rosettamutfile_prov_flag')
+        # for key in output_dic.keys():
+        #     if output_dic[key]!=reference_dic[key]:
+        #         print(key)
         self.assertDictEqual(output_dic, reference_dic)
 
 
@@ -258,7 +263,8 @@ class SPpipelineCreateDHFRTestCase(unittest.TestCase):
 
         # evaluates the test
         skip_files = [
-            'logs/info.log', 'span.log', 'parse_ddgs.sbatch',
+            'logs/info.log', 
+            'span.log', 
         ]
 
         output_dic = {}
@@ -306,4 +312,8 @@ class SPpipelineCreateDHFRTestCase(unittest.TestCase):
                             reference_dic[os.path.join(
                                 parent_directory, file)] = fp.read()
         self.maxDiff = None
+        # print('test_create_ligand_prov_flag')
+        # for key in output_dic.keys():
+        #     if output_dic[key]!=reference_dic[key]:
+        #         print(key)
         self.assertDictEqual(output_dic, reference_dic)
