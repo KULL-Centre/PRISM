@@ -164,13 +164,14 @@ def parse_args2():
                               )
                         )
     parser.add_argument('--mp_prep_align_mode',
-                        choices=['False', 'OPM', 'PDBTM',
+                        choices=['False', 'OPM', 'span', 'PDBTM',
                                  'TMDET', 'MemProtMD'],
                         default='OPM',
                         dest='MP_ALIGN_MODE',
                         help=('Function/mode to align the membrane protein structure:\n'
                               '\tFalse: structure will not be rearranged \n'
                               '\tOPM: uses the information provided in OPM \n'
+                              '\tspan: positiones the structure based on the information in span file \n'
                               '\tPDBTM: uses the information provided in PDBTM (better than OPM but not tested) \n'
                               '\tTMDET: uses the information provided in TMDET \n'
                               '\tMemProtMD: uses the information provided in MemProtMD \n'

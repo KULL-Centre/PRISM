@@ -88,7 +88,7 @@ def predict_stability(args):
         run_name = 'input'
 
         # adjust mp structure if MP_ALIGN_MODE is selected
-        if args.IS_MP == True and args.MP_ALIGN_MODE != 'False':
+        if args.IS_MP == True and (not args.MP_ALIGN_MODE in ['False', 'span']):
             logger.info(f'Align the structure along the membrane using {args.MP_CALC_SPAN_MODE}')
             if args.MP_ALIGN_MODE == 'OPM':
                 if args.MP_ALIGN_REF != '-':
@@ -154,6 +154,18 @@ def predict_stability(args):
             elif input_dict['MP_SPAN_INPUT']:
                 structure_instance.span = create_copy(
                     input_dict['MP_SPAN_INPUT'], folder.prepare_mp_span, name='input.span')
+
+
+            # superpose if span mode on
+            if args.MP_ALIGN_MODE == 'span':
+                logger.info(f'Superpositioning based on span file')
+                run_name = 'input_mp_aligned'
+                prep_struc = create_copy(
+                        structure_instance.path_to_cleaned_pdb, folder.prepare_cleaning, name='backup.pdb')
+                structure_instance.path_to_cleaned_pdb = os.path.join(folder.prepare_mp_superpose, 'superposed_struc.pdb')
+                mp_prepare.mp_superpose_span(prep_struc, folder.prepare_mp_superpose, structure_instance.span, 
+                    structure_instance.path_to_cleaned_pdb, chain=args.CHAIN)
+
 
             logger.info(f'Calculate lipid accessible residues')
             lipacc_dic, lipacc_file = mp_prepare.mp_lipid_acc_resi(structure_instance.path_to_cleaned_pdb, folder.prepare_mp_lipacc, folder.prepare_mp_span, thickness=args.MP_THICKNESS, SLURM=False)

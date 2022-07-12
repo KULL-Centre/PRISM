@@ -57,7 +57,6 @@ def mp_superpose_opm(reference_chain, target, filename, target_chain='A',
     bio_ref_struc_raw = parser.get_structure(
         "reference", io.StringIO(ref_struc))
     bio_target_struc_raw = parser.get_structure("target", target)
-
     #get sequence info about TM region and where best to align
 
     if inTM:
@@ -67,6 +66,14 @@ def mp_superpose_opm(reference_chain, target, filename, target_chain='A',
 
     seq1, seq1num, maxi1 = get_seq(target, isfile=True)
     seq2, seq2num, maxi2 = get_seq(ref_struc, isfile=False)
+
+    superpose_struc(bio_ref_struc_raw, bio_target_struc_raw, ref_align_atoms, 
+                     seq1, seq1num, maxi1, seq2, seq2num, maxi2, filename, target_chain=target_chain, ref_chain=ref_chain,
+                     ref_model_id=ref_model_id, target_model_id=target_model_id, write_opm=write_opm)
+
+def superpose_struc(bio_ref_struc_raw, bio_target_struc_raw, ref_align_atoms, 
+                     seq1, seq1num, maxi1, seq2, seq2num, maxi2, filename, target_chain='A',ref_chain='A',
+                     ref_model_id=0, target_model_id=0, write_opm=True):
     seq1 = Seq(seq1)
     seq2 = Seq(seq2)
     alignments = pairwise2.align.globalxx(seq1, seq2)
@@ -81,12 +88,12 @@ def mp_superpose_opm(reference_chain, target, filename, target_chain='A',
     seqnum2 = getnums(seq2, seq2num)
 
     df = pd.DataFrame(np.array([seq1, seqnum1, seq2, seqnum2]).T, columns=['infile', 'infile_num', 'opm', 'opm_num'])
+    df['infile_num'] = df['infile_num'].astype(int)
+    df['opm_num'] = df['opm_num'].astype(int)
 
     target_align_atoms = []
     for res in ref_align_atoms:
-        target_align_atoms.append(df.loc[(df['opm_num']==res), 'infile_num'].tolist()[0])
-
-
+        target_align_atoms.append(df.loc[(df['opm_num']==int(res)), 'infile_num'].tolist()[0])
 
 
     # Select the model number - normally always the first
@@ -161,6 +168,56 @@ def mp_TMalign_opm(reference_chain, target, filename, target_chain='A',
     print(f"Aligned structure saved")
 
 
+def mp_superpose_span(pdbinput, outdir_path, span_file_list, filename, SLURM=False, chain='A'):
+    """
+    Calculates the residues which are accessible by lipids. 
+    Rosetta scripts used: mp_lipid_acc
+    Cite:   Koehler Leman, Lyskov, & Bonneau (2017) BMC Bioinformatics (https://doi.org/10.1186/s12859-017-1541-z)
+    Documentation: https://www.rosettacommons.org/docs/latest/application_documentation/membrane_proteins/RosettaMP-App-MPSpanFromPDB
+    """
+    spanfile = span_file_list[0]
+    Rosetta_lipacc_exec = os.path.join(
+        rosetta_paths.path_to_rosetta, f'bin/mp_transform.{rosetta_paths.Rosetta_extension}')
+    lipacc_command = (f'{Rosetta_lipacc_exec} '
+                    f'-in:file:s {pdbinput} '
+                    f'-database {rosetta_paths.Rosetta_database_path} '
+                    f'-mp:setup:spanfiles {spanfile} '
+                    '-restore_talaris_behavior -mp:scoring:hbond true -mp:restore_lazaridis_imm_behavior 1'
+                    '')
+    print(f"MP_transform call function: {lipacc_command}")
+
+    if SLURM:
+        logger.warn("need to write the slurm script!")
+        sys.exit()
+        lipacc_call = subprocess.Popen('sbatch rosetta_lipacc.sbatch', stdout=subprocess.PIPE,
+                                     stderr=subprocess.STDOUT, shell=True, cwd=outdir_path)
+        lipacc_process_id_info = lipacc_call.communicate()
+        lipacc_process_id = str(lipacc_process_id_info[0]).split()[3][0:-3]
+        print(lipacc_process_id_info)
+    else:
+        lipacc_call = subprocess.Popen(
+            lipacc_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, cwd=outdir_path)
+        lipacc_process_id_info = lipacc_call.communicate()
+    
+    ref_struc = glob.glob(os.path.join(outdir_path, '*.pdb'))[0]
+
+
+    # Parse reference (from string) and target structure (from file)
+    parser = PDB.PDBParser(QUIET=True)
+    bio_ref_struc_raw = parser.get_structure("reference", ref_struc)
+    bio_target_struc_raw = parser.get_structure("target", pdbinput)
+    #get sequence info about TM region and where best to align
+
+    ref_align_atoms = get_res_in_all(ref_struc, isfile=True)
+
+    seq1, seq1num, maxi1 = get_seq(pdbinput, isfile=True)
+    seq2, seq2num, maxi2 = get_seq(ref_struc, isfile=True)
+
+    superpose_struc(bio_ref_struc_raw, bio_target_struc_raw, ref_align_atoms, 
+                     seq1, seq1num, maxi1, seq2, seq2num, maxi2, filename, target_chain=chain, ref_chain=chain,
+                     ref_model_id=0, target_model_id=0, write_opm=False)
+
+
 def mp_span_from_deepTMHMM(pdbinput, outdir_path):
 
     spanfiles = []
@@ -219,21 +276,17 @@ def mp_span_from_deepTMHMM(pdbinput, outdir_path):
         non_tm = ['outside', 'inside', 'periplasm', 'signal']
         tm = ['Beta sheet', 'TMhelix']
         TM_df = df.loc[~df['location'].isin(non_tm)]
+        num_span = len(TM_df['start'])
 
         # get info about structure
-        if ('Beta sheet' in TM_df['location'].unique()) and (not 'TMhelix' in TM_df['location'].unique()):
-            order = 'antiparallel'
-        elif ('transmem' in TM_df['location'].unique()) and (not 'Beta sheet' in TM_df['location'].unique()):
-            order = 'transmem'
-        else:
-            order = 'others'
+        order = 'antiparallel' # parallel possible - not sure how to calculate - only possible for n1c (horizontal)
 
         # write span file
         span_file = os.path.join(outdir_path, f"{os.path.splitext(os.path.basename(pdbinput))[0]}_{chain}.span")
         with open(span_file, 'w') as fp:
             fp.write('manual-generated spanfile from DeepTMHMM\n')
-            fp.write(f'1 {total_length}\n')
-            print(f'1 {total_length}\n')
+            fp.write(f'{num_span} {total_length}\n')
+            print(f'num_span {total_length}\n')
             fp.write(f'{order}\n')
             fp.write('n2c\n')
             for index, row in TM_df.iterrows():
