@@ -12,6 +12,8 @@ from datetime import datetime
 from functools import reduce
 import logging as log
 import os
+import urllib
+
 import shutil
 import subprocess
 import sys
@@ -23,6 +25,7 @@ from Bio.PDB import PDBParser
 from Bio.PDB.PDBList import PDBList 
 from Bio.PDB.DSSP import DSSP
 import pandas as pd
+
 
 # Local application imports
 log_message="verbose"
@@ -265,7 +268,7 @@ def download_pdb(pdb_id, output_dir='.'):
 
 def download_pdb2(pdb_id, output_dir = '.'):
     pdb_path = os.path.join(output_dir, f'{pdb_id}.pdb')
-    pdb_fileurllib.request.urlretrieve(f'http://files.rcsb.org/download/{pdb_id}.pdb', pdb_path)
+    urllib.request.urlretrieve(f'http://files.rcsb.org/download/{pdb_id}.pdb', pdb_path)
     return pdb_path
 
 
