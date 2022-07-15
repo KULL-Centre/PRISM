@@ -218,7 +218,7 @@ def mp_superpose_span(pdbinput, outdir_path, span_file_list, filename, SLURM=Fal
                      ref_model_id=0, target_model_id=0, write_opm=False)
 
 
-def mp_span_from_deepTMHMM(pdbinput, outdir_path):
+def mp_span_from_deepTMHMM(pdbinput, outdir_path, signal_TM=False):
 
     spanfiles = []
 
@@ -272,9 +272,14 @@ def mp_span_from_deepTMHMM(pdbinput, outdir_path):
         # get TM regions
         df = pd.read_csv(result_file, skiprows=3, delimiter='\t', header=None)
         df.rename(columns={0: 'ID', 1: 'location', 2:'start', 3: 'end'}, inplace=True)
+        df.to_csv(os.path.join(outdir_path, f"{os.path.splitext(os.path.basename(pdbinput))[0]}_{chain}_deepTMHMM.csv"))
         print(df['location'].unique())
-        non_tm = ['outside', 'inside', 'periplasm', 'signal']
-        tm = ['Beta sheet', 'TMhelix']
+        if signal_TM:
+            non_tm = ['outside', 'inside', 'periplasm']
+            tm = ['Beta sheet', 'TMhelix', 'signal']
+        else:
+            non_tm = ['outside', 'inside', 'periplasm', 'signal']
+            tm = ['Beta sheet', 'TMhelix']
         TM_df = df.loc[~df['location'].isin(non_tm)]
         num_span = len(TM_df['start'])
 
