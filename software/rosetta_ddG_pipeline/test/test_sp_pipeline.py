@@ -2,7 +2,7 @@
 
 Author: Johanna K.S. Tiemann
 
-Date of last major changes: 2022-03-11
+Date of last major changes: 2022-07-14
 
 How to run all tests:
 =======
@@ -11,7 +11,9 @@ How to run all tests:
 
 # Standard library imports
 from argparse import Namespace
+from datetime import date
 import os
+import re
 import shutil
 import sys
 import unittest
@@ -55,7 +57,7 @@ def clean_reference_from_local_path(dir_name, local_path):
                     fp.write(s)
 
 
-def clean_version(dir_name, new_val='XXXtagvXXX'):
+def clean_version(dir_name, new_val='XXXtagvXXX', old_val=' .*tagv.* '):
     for dname, dirs, files in os.walk(dir_name):
         for fname in files:
             if not fname.startswith('.'):
@@ -63,7 +65,7 @@ def clean_version(dir_name, new_val='XXXtagvXXX'):
                 s = ''
                 with open(fpath, 'r') as fp:
                     s = fp.read()
-                s = s.replace(' *tagv* ', new_val)
+                s = re.sub(old_val, new_val, s)
                 with open(fpath, 'w') as fp:
                     fp.write(s)
 
@@ -150,9 +152,13 @@ class SPpipelineCreateDHFRTestCase(unittest.TestCase):
 
         # evaluates the test
         skip_files = [
-            'logs/info.log', 'span.log', 'parse_ddgs.sbatch',
+            'logs/info.log', 
+            'span.log', 
         ]
 
+        today = date.today()
+        clean_version(self.output_dir, new_val='XXXtagvXXX')
+        clean_version(self.output_dir, new_val='', old_val=today.strftime("%d-%b-%y").upper())
         output_dic = {}
         for r, d, f in os.walk(self.output_dir):
             for file in f:
@@ -182,6 +188,8 @@ class SPpipelineCreateDHFRTestCase(unittest.TestCase):
         clean_reference_from_local_path(
             self.reference_dir, elem)
         clean_version(self.reference_dir, new_val='XXXtagvXXX')
+        clean_version(self.reference_dir, new_val='', old_val=today.strftime("%d-%b-%y").upper())
+
         for r, d, f in os.walk(self.reference_dir):
             for file in f:
                 file_join = os.path.join(r, file)
@@ -198,6 +206,10 @@ class SPpipelineCreateDHFRTestCase(unittest.TestCase):
                             reference_dic[os.path.join(
                                 parent_directory, file)] = fp.read()
         self.maxDiff = None
+        # print('test_create_rosettamutfile_prov_flag')
+        # for key in output_dic.keys():
+        #     if output_dic[key]!=reference_dic[key]:
+        #         print(key)
         self.assertDictEqual(output_dic, reference_dic)
 
 
@@ -258,9 +270,13 @@ class SPpipelineCreateDHFRTestCase(unittest.TestCase):
 
         # evaluates the test
         skip_files = [
-            'logs/info.log', 'span.log', 'parse_ddgs.sbatch',
+            'logs/info.log', 
+            'span.log', 
         ]
 
+        today = date.today()
+        clean_version(self.output_dir, new_val='XXXtagvXXX')
+        clean_version(self.output_dir, new_val='', old_val=today.strftime("%d-%b-%y").upper())
         output_dic = {}
         for r, d, f in os.walk(self.output_dir):
             for file in f:
@@ -290,6 +306,8 @@ class SPpipelineCreateDHFRTestCase(unittest.TestCase):
         clean_reference_from_local_path(
             self.reference_dir, elem)
         clean_version(self.reference_dir, new_val='XXXtagvXXX')
+        clean_version(self.reference_dir, new_val='\n', old_val=today.strftime("%d-%b-%y").upper())
+
         for r, d, f in os.walk(self.reference_dir):
             for file in f:
                 file_join = os.path.join(r, file)
@@ -306,4 +324,8 @@ class SPpipelineCreateDHFRTestCase(unittest.TestCase):
                             reference_dic[os.path.join(
                                 parent_directory, file)] = fp.read()
         self.maxDiff = None
+        # print('test_create_ligand_prov_flag')
+        # for key in output_dic.keys():
+        #     if output_dic[key]!=reference_dic[key]:
+        #         print(key)
         self.assertDictEqual(output_dic, reference_dic)

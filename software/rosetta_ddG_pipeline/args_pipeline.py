@@ -143,7 +143,7 @@ def parse_args2():
     parser.add_argument('--mp_calc_span_mode',
                         choices=['False', 'deepTMHMM', 'struc', 'DSSP', 'octopus',
                                  'bcl', 'Boctopus'],
-                        default='DSSP',
+                        default='deepTMHMM',
                         dest='MP_CALC_SPAN_MODE',
                         help=('Function/mode to calculate the membrane spanning region/file:\n'
                               '\tFalse: file will not be calculated \n'
@@ -152,7 +152,7 @@ def parse_args2():
                               '\toctopus: uses octopus \n'
                               '\tbcl: should be used for helix & beta sheets \n'
                               '\tBoctopus: should be used for beta sheets \n'
-                              'Default value: DSSP'
+                              'Default value: deepTMHMM'
                               )
                         )
     parser.add_argument('--mp_align_ref',
@@ -164,13 +164,14 @@ def parse_args2():
                               )
                         )
     parser.add_argument('--mp_prep_align_mode',
-                        choices=['False', 'OPM', 'PDBTM',
+                        choices=['False', 'OPM', 'span', 'PDBTM',
                                  'TMDET', 'MemProtMD'],
                         default='OPM',
                         dest='MP_ALIGN_MODE',
                         help=('Function/mode to align the membrane protein structure:\n'
                               '\tFalse: structure will not be rearranged \n'
                               '\tOPM: uses the information provided in OPM \n'
+                              '\tspan: positiones the structure based on the information in span file \n'
                               '\tPDBTM: uses the information provided in PDBTM (better than OPM but not tested) \n'
                               '\tTMDET: uses the information provided in TMDET \n'
                               '\tMemProtMD: uses the information provided in MemProtMD \n'
@@ -362,8 +363,12 @@ def parse_args2():
         if (args.MP_ALIGN_MODE=='OPM') and (args.MP_ALIGN_REF == '-'):
             parser.error('Please specify a reference PDBid and chain for alginment into membrane plane or switch "MP_ALIGN_MODE" to false')
             sys.exit()
-        if args.MP_ALIGN_REF != '-':
-            args.MP_ALIGN_MODE='OPM'
+        if args.MP_CALC_SPAN_MODE == 'deepTMHMM':
+            args.MP_ALIGN_MODE = 'span'
+            args.MP_ALIGN_REF = '-'
+        else:
+            if args.MP_ALIGN_REF != '-':
+                args.MP_ALIGN_MODE='OPM'
         if args.MP_CART_DDG == 1:
             args.RELAX_XML_INPUT = os.path.join(rosetta_paths.path_to_data, 'mp', 'mp_cart_relax.xml')
         if args.MP_SPAN_INPUT != None:

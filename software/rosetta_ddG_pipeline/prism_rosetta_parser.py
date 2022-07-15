@@ -34,8 +34,20 @@ def span_multi(x, region):
             out_tms.append('False')
     return ":".join(out_tms)
 
+def deepTMHMM_multi(x, deepTM_start, deepTM_end, info_name):
+    print(x)
+    if not x in ['outside', 'inside', 'periplasm', 'Beta sheet', 'TMhelix', 'signal']:
+        resi = x[0]
+        if (int(resi) >= int(deepTM_start)) and (int(resi) <= int(deepTM_end)):
+            return info_name
+        else:
+            return x
+    else:
+        return x
+
+
 def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=1, sys_name='', 
-    first_residue_number=1, sha_tag='', MP=False, span_file='', lipid_file='', scale=2.9):
+    first_residue_number=1, sha_tag='', MP=False, span_file='', lipid_file='', deepTMHMM_file='', scale=2.9):
     
     sequence = sequence.replace('-', 'X')
     # create prism file with rosetta values
@@ -102,6 +114,15 @@ def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=
         lipid_df = lipid_df['index'].astype(int).unique()
         dataframeset['LAR'] = dataframeset['resi'].apply(lambda x: span_multi(x, lipid_df))
 
+    if deepTMHMM_file!='':
+        deepTMHMM_df = pd.read_csv(deepTMHMM_file, header=0)
+        dataframeset['deepTM'] = dataframeset['resi']
+        for idx, row in deepTMHMM_df.iterrows():
+            deepTM_start = row['start']
+            deepTM_end = row['end']
+            info_name = row['location']
+            dataframeset['deepTM'] = dataframeset['deepTM'].apply(lambda x: deepTMHMM_multi(x, deepTM_start, deepTM_end, info_name))
+
     sha = sha_tag.split('tag')[0]
     tag = sha_tag.split('tag')[1]
 
@@ -141,6 +162,8 @@ def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=
         metadata['columns']['TMspan'] = 'Residue within the TM region defined by the Rosetta span file'
     if lipid_file!='':
         metadata['columns']['LAR'] = 'Lipid accessible residue defined by Rosetta'
+    if deepTMHMM_file!='':
+        metadata['columns']['deepTM'] = 'Protein regions defined by deepTMHMM'
 
     if first_residue_number != 1:
         metadata['protein']['first_residue_number'] = first_residue_number

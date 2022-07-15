@@ -47,6 +47,8 @@ Running individual classes or methods
 
 > python -m unittest test_mp_pipeline.MPpipelineCreateGlpGTestCase.test_create_homodimer_prov_flag
 
+> python -m unittest test_mp_pipeline.MPpipelineCreateGlpGTestCase.test_create_deepTMHMM_prov_flag
+
 Please expect some waiting time for the last test.
 
 

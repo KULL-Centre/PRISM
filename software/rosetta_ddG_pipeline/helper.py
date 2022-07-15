@@ -572,9 +572,13 @@ def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism
     if MP:
         span_file = glob.glob(os.path.join(folder.prepare_checking[:-9], 'mp_files', 'membrane_span', '*.span'))[0]
         lipid_file = glob.glob(os.path.join(folder.prepare_checking[:-9], 'mp_files', 'mp_lipid_acc', '*.json'))[0]
+        deepTMHMM_file = glob.glob(os.path.join(folder.prepare_checking[:-9], 'mp_files', 'membrane_span', '**/*deepTMHMM.csv'), recursive=True)
+        if len(deepTMHMM_file)>0:
+            deepTMHMM_file = deepTMHMM_file[0]
     else:
         span_file = ''
         lipid_file = ''
+        deepTMHMM_file = ''
 
     ddg_file = os.path.join(folder.ddG_run, output_name)
     pdb_file_raw = os.path.join(folder.ddG_input, 'input.pdb')
@@ -603,7 +607,7 @@ def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism
     prism_file = os.path.join(folder.ddG_output, f'prism_rosetta_{prism_nr}_{sys_name}.txt')
     rosetta_to_prism(ddg_sorted_file, prism_file, rosetta_seq, rosetta_info=None,
                      version=version, sys_name=sys_name, first_residue_number=1, sha_tag=sha_tag, MP=MP, 
-                     span_file=span_file, lipid_file=lipid_file, scale=scale)
+                     span_file=span_file, lipid_file=lipid_file, deepTMHMM_file=deepTMHMM_file, scale=scale)
     create_copy(prism_file, folder.output)
     create_copy(pdb_file, folder.output, name=f'{sys_name}_final.pdb')
 
@@ -624,7 +628,7 @@ def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism
             ddG_postprocessing(ddg_file, ddg_shifted_gap_file, sec_all=sec_all, startnr=first_residue_number, chain_id=chain_id)
             rosetta_to_prism(ddg_shifted_gap_file, prism_gap_shifted_file, sequence, rosetta_info=None,
                              version=version, sys_name=sys_name, first_residue_number=first_residue_number, sha_tag=sha_tag, MP=MP, 
-                             span_file=span_file, lipid_file=lipid_file, scale=scale)
+                             span_file=span_file, lipid_file=lipid_file, deepTMHMM_file=deepTMHMM_file, scale=scale)
             create_copy(prism_gap_shifted_file, folder.output)
 
             pdb_gap_shifted_file = os.path.join(folder.ddG_output, 'relaxed_gap_shifted.pdb')
@@ -637,7 +641,7 @@ def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism
         prism_gap_file = os.path.join(folder.ddG_output, f'prism_rosetta_{prism_nr}_{sys_name}-gap.txt')
         rosetta_to_prism(ddg_gap_file, prism_gap_file, sequence, rosetta_info=None,
                          version=version, sys_name=sys_name, first_residue_number=1, sha_tag=sha_tag, MP=MP, 
-                         span_file=span_file, lipid_file=lipid_file, scale=scale)
+                         span_file=span_file, lipid_file=lipid_file, deepTMHMM_file=deepTMHMM_file, scale=scale)
         create_copy(prism_gap_file, folder.output)
 
         pdb_gap_file = os.path.join(folder.ddG_output, 'relaxed_gap.pdb')

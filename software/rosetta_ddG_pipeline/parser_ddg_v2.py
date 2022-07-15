@@ -5,6 +5,7 @@ import subprocess
 from parse_cartesian_functions import rosetta_cartesian_read, ddgs_from_dg
 import numpy as np
 import re
+import sys
 
 from argparse import ArgumentParser
 from helper import read_slurms, runtime_memory_stats
@@ -240,17 +241,23 @@ def quickcheck( run_dir, base_mut ):
 
 if __name__ == '__main__':
     print(sys.argv)
-    base_mut = os.path.join(sys.argv[13], 'mutation_clean.txt')
-    all_calculated, df_all = quickcheck( sys.argv[4], base_mut )
-    print(f'all calculated: {all_calculated}')
+    # check if pdb is present
+    if os.path.isfile(sys.argv[6]):
+        # check if all calculated
+        base_mut = os.path.join(sys.argv[13], 'mutation_clean.txt')
+        all_calculated, df_all = quickcheck( sys.argv[4], base_mut )
+        print(f'all calculated: {all_calculated}')
 
-    if all_calculated:
-        parse_rosetta_ddgs(sys_name=sys.argv[1], chain_id=sys.argv[2], fasta_seq=sys.argv[3], 
-            ddG_run=sys.argv[4], ddG_output=sys.argv[5], structure_input=sys.argv[6], 
-            ddG_input=sys.argv[7], output=sys.argv[8], prepare_checking=sys.argv[9], output_gaps=eval(sys.argv[10]), 
-            zip_files=eval(sys.argv[11]), sha_tag=sys.argv[12], is_MP=eval(sys.argv[14]), scale_factor=float(sys.argv[15]))
+        if all_calculated:
+            parse_rosetta_ddgs(sys_name=sys.argv[1], chain_id=sys.argv[2], fasta_seq=sys.argv[3], 
+                ddG_run=sys.argv[4], ddG_output=sys.argv[5], structure_input=sys.argv[6], 
+                ddG_input=sys.argv[7], output=sys.argv[8], prepare_checking=sys.argv[9], output_gaps=eval(sys.argv[10]), 
+                zip_files=eval(sys.argv[11]), sha_tag=sys.argv[12], is_MP=eval(sys.argv[14]), scale_factor=float(sys.argv[15]))
+        else:
+            print(f"sys args before rerun: {sys.argv}")
+            folder = AttrDict()
+            folder.update({'ddG_input': sys.argv[7], 'ddG_run': sys.argv[4]})
+            run_modes.ddg_calculation(folder, parse_relax_process_id=None)
     else:
-        print(f"sys args before rerun: {sys.argv}")
-        folder = AttrDict()
-        folder.update({'ddG_input': sys.argv[7], 'ddG_run': sys.argv[4]})
-        run_modes.ddg_calculation(folder, parse_relax_process_id=None)
+        print(f"{sys.argv[6]} not present")
+        sys.exit()

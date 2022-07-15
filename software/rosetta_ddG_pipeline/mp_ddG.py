@@ -116,8 +116,9 @@ INDEX=$((OFFSET+SLURM_ARRAY_TASK_ID))
 echo $INDEX
 
 # launching rosetta 
+if test -f "{input_struc}"; then
 ''')
-            fp.write((f'{os.path.join(rosetta_paths.path_to_rosetta, f"bin/cartesian_ddg.{rosetta_paths.Rosetta_extension}")} '
+            fp.write((f'\t{os.path.join(rosetta_paths.path_to_rosetta, f"bin/cartesian_ddg.{rosetta_paths.Rosetta_extension}")} '
                       f'-database {rosetta_paths.Rosetta_database_path} '
                       f'-s {input_struc} '
                       f'-ddg:mut_file ${{LST[$INDEX]}} '
@@ -136,6 +137,10 @@ echo $INDEX
                       f'-ddg:bbnbrs 1 '
                       f'-ddg::cartesian '
                       f'-out:prefix ddg-$SLURM_ARRAY_JOB_ID-$SLURM_ARRAY_TASK_ID '))#@{path_to_ddgflags} '))
+            fp.write(f'''\nelse
+\techo "{input_struc} does not exist - exiting the call"
+fi
+''')
         logger.info(path_to_sbatch)
         return path_to_sbatch
 
