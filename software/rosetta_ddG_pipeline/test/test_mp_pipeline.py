@@ -2,7 +2,7 @@
 
 Author: Johanna K.S. Tiemann
 
-Date of last major changes: 2020-04-29
+Date of last major changes: 2022-07-14
 
 How to run all tests:
 =======
@@ -57,7 +57,7 @@ def clean_reference_from_local_path(dir_name, local_path):
                     fp.write(s)
 
 
-def clean_version(dir_name, new_val='XXXtagvXXX', old_val=' *tagv* '):
+def clean_version(dir_name, new_val='XXXtagvXXX', old_val=' .*tagv.* '):
     for dname, dirs, files in os.walk(dir_name):
         for fname in files:
             if (not fname.startswith('.')) and (not fname.endswith('.png')):
@@ -196,8 +196,8 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
         clean_reference_from_local_path(
             self.reference_dir, elem)
         clean_version(self.reference_dir, new_val='XXXtagvXXX')
-        clean_version(self.reference_dir, new_val='', old_val='HEADER *')
-        clean_version(self.reference_dir, new_val='', old_val='REMARK *')
+        clean_version(self.reference_dir, new_val='\n', old_val='HEADER .*\n')
+        clean_version(self.reference_dir, new_val='\n', old_val='REMARK .*\n')
         clean_version(self.reference_dir, new_val='', old_val=today.strftime("%d-%b-%y").upper())
         clean_version(self.reference_dir, new_val='\n', old_val='VERSION.*\n')
 
@@ -217,10 +217,10 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
                             reference_dic[os.path.join(
                                 parent_directory, file)] = fp.read()
         self.maxDiff = None
-        # print('test_create_rosettamutfile_prov_flag')
-        # for key in output_dic.keys():
-        #     if output_dic[key]!=reference_dic[key]:
-        #         print(key)
+        print('test_create_rosettamutfile_prov_flag')
+        for key in output_dic.keys():
+            if output_dic[key]!=reference_dic[key]:
+                print(key)
         self.assertDictEqual(output_dic, reference_dic)
 
 
@@ -342,10 +342,10 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
                             reference_dic[os.path.join(
                                 parent_directory, file)] = fp.read()
         self.maxDiff = None
-        # print('test_create_pipemut_prov_flag')
-        # for key in output_dic.keys():
-        #     if output_dic[key]!=reference_dic[key]:
-        #         print(key)
+        print('test_create_pipemut_prov_flag')
+        for key in output_dic.keys():
+            if output_dic[key]!=reference_dic[key]:
+                print(key)
         self.assertDictEqual(output_dic, reference_dic)
 
 
@@ -469,10 +469,10 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
                             reference_dic[os.path.join(
                                 parent_directory, file)] = fp.read()
         self.maxDiff = None
-        # print('test_create_mutdir_prov_flag')
-        # for key in output_dic.keys():
-        #     if output_dic[key]!=reference_dic[key]:
-        #         print(key)
+        print('test_create_mutdir_prov_flag')
+        for key in output_dic.keys():
+            if output_dic[key]!=reference_dic[key]:
+                print(key)
         self.assertDictEqual(output_dic, reference_dic)
 
 
@@ -594,10 +594,10 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
                             reference_dic[os.path.join(
                                 parent_directory, file)] = fp.read()
         self.maxDiff = None
-        # print('test_create_homodimer_prov_flag')
-        # for key in output_dic.keys():
-        #     if output_dic[key]!=reference_dic[key]:
-        #         print(key)
+        print('test_create_homodimer_prov_flag')
+        for key in output_dic.keys():
+            if output_dic[key]!=reference_dic[key]:
+                print(key)
         self.assertDictEqual(output_dic, reference_dic)
 
 
@@ -618,7 +618,7 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
             'RUN_STRUC': None,
             'LIGAND': None,
             'OVERWRITE_PATH': True,
-            'SLURM_PARTITION': 'sbinlab',
+            'SLURM_PARTITION': 'sbinlab_ib',
             'GAPS_OUTPUT': False,
             'DUMP_PDB': 0,
             'DO_CHECKING': True,
@@ -713,9 +713,9 @@ class MPpipelineCreateGlpGTestCase(unittest.TestCase):
                             reference_dic[os.path.join(
                                 parent_directory, file)] = fp.read()
         self.maxDiff = None
-        # print('test_create_deepTMHMM_prov_flag')
-        # for key in output_dic.keys():
-        #     if output_dic[key]!=reference_dic[key]:
-        #         print(key)
+        print('test_create_deepTMHMM_prov_flag')
+        for key in output_dic.keys():
+            if output_dic[key]!=reference_dic[key]:
+                print(key)
         self.assertDictEqual(output_dic, reference_dic)
 
