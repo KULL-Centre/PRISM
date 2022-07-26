@@ -489,7 +489,7 @@ fi
 #SBATCH --job-name={self.sys_name}_p-ddg
 #SBATCH --array=1 
 #SBATCH --nodes=1 
-#SBATCH --time=0:10:00 
+#SBATCH --time=10:00:00 
 #SBATCH --partition={partition} 
 
 #This sbatch script launches the parse parse_rosetta_ddgs function, from the parse_cartesian_ddgs 
