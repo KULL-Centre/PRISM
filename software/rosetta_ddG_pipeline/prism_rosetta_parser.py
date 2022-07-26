@@ -36,14 +36,14 @@ def span_multi(x, region):
 
 def deepTMHMM_multi(x, deepTM_start, deepTM_end, info_name):
     print(x)
-    if not x in ['outside', 'inside', 'periplasm', 'Beta sheet', 'TMhelix', 'signal']:
+    if not x in ['outside', 'inside', 'periplasm', 'Beta sheet', 'Beta_sheet', 'TMhelix', 'signal']:
         resi = x[0]
         if (int(resi) >= int(deepTM_start)) and (int(resi) <= int(deepTM_end)):
-            return info_name
+            return "_".join(info_name.split(' '))
         else:
             return x
     else:
-        return x
+        return "_".join(x.split(' '))
 
 
 def rosetta_to_prism(ddg_file, prism_file, sequence, rosetta_info=None, version=1, sys_name='', 

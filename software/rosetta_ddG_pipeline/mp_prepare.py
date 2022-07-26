@@ -2,7 +2,7 @@
 
 Author: Johanna K.S. Tiemann
 
-Date of last major changes: 2020-04-16
+Date of last major changes: 2022-07-26
 
 """
 
@@ -88,8 +88,8 @@ def superpose_struc(bio_ref_struc_raw, bio_target_struc_raw, ref_align_atoms,
     seqnum2 = getnums(seq2, seq2num)
 
     df = pd.DataFrame(np.array([seq1, seqnum1, seq2, seqnum2]).T, columns=['infile', 'infile_num', 'opm', 'opm_num'])
-    df['infile_num'] = df['infile_num'].astype(int)
-    df['opm_num'] = df['opm_num'].astype(int)
+    df['infile_num'] = df['infile_num'].astype('int')
+    df['opm_num'] = df['opm_num'].astype('int')
 
     target_align_atoms = []
     for res in ref_align_atoms:
@@ -198,6 +198,38 @@ def mp_superpose_span(pdbinput, outdir_path, span_file_list, filename, SLURM=Fal
         lipacc_call = subprocess.Popen(
             lipacc_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, cwd=outdir_path)
         lipacc_process_id_info = lipacc_call.communicate()
+
+        if len(glob.glob(os.path.join(outdir_path, '*.pdb')))==0:
+            print('Missing heavy atom. run fixbb')
+            fixbb_output_dir = os.path.join(outdir_path, 'fixbb')
+            os.makedirs(fixbb_output_dir, exist_ok=True)
+
+            Rosetta_fixbb_exec = os.path.join(
+                rosetta_paths.path_to_rosetta, f'bin/fixbb.{rosetta_paths.Rosetta_extension}')
+            pre_align_cmd = (f'{Rosetta_fixbb_exec} '
+                f'-in:file:s {pdbinput} '
+                f'-in:file:fullatom -nstruct 1 '
+                '-minimize_sidechains false -min_pack true '
+                '-off_rotamer_pack true -ex1 -ex2 ' 
+                '-packing:ndruns 1 -packing:repack_only True '
+                '')
+            print(pre_align_cmd)
+            fixbb_call = subprocess.Popen(
+                pre_align_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, cwd=fixbb_output_dir)
+            fixbb_process_id_info = fixbb_call.communicate()
+
+            newpdbinput = glob.glob(os.path.join(fixbb_output_dir, '*.pdb'))[0]
+            lipacc_command = (f'{Rosetta_lipacc_exec} '
+                    f'-in:file:s {newpdbinput} '
+                    f'-database {rosetta_paths.Rosetta_database_path} '
+                    f'-mp:setup:spanfiles {spanfile} '
+                    '-restore_talaris_behavior -mp:scoring:hbond true -mp:restore_lazaridis_imm_behavior 1'
+                    '')
+
+            print(lipacc_command)
+            lipacc_call = subprocess.Popen(
+                lipacc_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, cwd=outdir_path)
+            lipacc_process_id_info = lipacc_call.communicate()
     
     ref_struc = glob.glob(os.path.join(outdir_path, '*.pdb'))[0]
 
@@ -214,7 +246,7 @@ def mp_superpose_span(pdbinput, outdir_path, span_file_list, filename, SLURM=Fal
     seq2, seq2num, maxi2 = get_seq(ref_struc, isfile=True)
 
     superpose_struc(bio_ref_struc_raw, bio_target_struc_raw, ref_align_atoms, 
-                     seq1, seq1num, maxi1, seq2, seq2num, maxi2, filename, target_chain=chain, ref_chain=chain,
+                     seq1, seq1num, maxi1, seq2, seq2num, maxi2, filename, target_chain=chain, ref_chain='A',
                      ref_model_id=0, target_model_id=0, write_opm=False)
 
 
