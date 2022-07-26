@@ -2,7 +2,7 @@
 
 Author: Johanna K.S. Tiemann
 
-Date of last major changes: 2020-04-16
+Date of last major changes: 2022-07-26
 
 """
 
@@ -214,7 +214,7 @@ def mp_superpose_span(pdbinput, outdir_path, span_file_list, filename, SLURM=Fal
     seq2, seq2num, maxi2 = get_seq(ref_struc, isfile=True)
 
     superpose_struc(bio_ref_struc_raw, bio_target_struc_raw, ref_align_atoms, 
-                     seq1, seq1num, maxi1, seq2, seq2num, maxi2, filename, target_chain=chain, ref_chain=chain,
+                     seq1, seq1num, maxi1, seq2, seq2num, maxi2, filename, target_chain=chain, ref_chain='A',
                      ref_model_id=0, target_model_id=0, write_opm=False)
 
 
