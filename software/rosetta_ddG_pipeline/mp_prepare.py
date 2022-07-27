@@ -10,8 +10,10 @@ Date of last major changes: 2022-07-26
 import io
 import logging as logger
 import os
+import random
 import subprocess
 import sys
+import time
 import glob
 import json
 
@@ -300,7 +302,8 @@ def mp_span_from_deepTMHMM(pdbinput, outdir_path, signal_TM=False):
                 run_count = 9
             else:
                 run_count += 1
-                time.sleep(2*60) # wait 2 minutes before trying to reach the server again
+                sleeptime = random.randint(1*60, 5*60)
+                time.sleep(sleeptime) # wait 2 minutes before trying to reach the server again
 
         # get total length
         total_length = len(inputseq)
