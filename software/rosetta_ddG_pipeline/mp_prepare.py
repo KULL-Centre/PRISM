@@ -284,12 +284,23 @@ def mp_span_from_deepTMHMM(pdbinput, outdir_path, signal_TM=False):
             fp.write('> input\n')
             fp.write(inputseq)
 
-        # calculate TM regions
-        deeptmhmm = biolib.load('DTU/DeepTMHMM')
-        deeptmhmm_res = deeptmhmm.cli(args=f'--fasta {fasta_file}')
-        deeptmhmm_res.save_files(tmp_output_path)
+        def calc_deepTMHMM(fasta_file, tmp_output_path):
+            # calculate TM regions
+            deeptmhmm = biolib.load('DTU/DeepTMHMM')
+            deeptmhmm_res = deeptmhmm.cli(args=f'--fasta {fasta_file}')
+            deeptmhmm_res.save_files(tmp_output_path)
 
-        result_file = os.path.join(tmp_output_path, 'TMRs.gff3')
+            result_file = os.path.join(tmp_output_path, 'TMRs.gff3')
+            return result_file
+
+        run_count = 0
+        while run_count < 5 :
+            result_file = calc_deepTMHMM(fasta_file, tmp_output_path)
+            if os.path.isfile(result_file):
+                run_count = 9
+            else:
+                run_count += 1
+                time.sleep(2*60) # wait 2 minutes before trying to reach the server again
 
         # get total length
         total_length = len(inputseq)
