@@ -57,7 +57,7 @@ def clean_reference_from_local_path(dir_name, local_path):
                     fp.write(s)
 
 
-def clean_version(dir_name, new_val='XXXtagvXXX', old_val=' .*tagv.* '):
+def clean_version(dir_name, new_val=' XXXtagvXXX ', old_val=r'\s?.\S+tagv.*?\s'):
     for dname, dirs, files in os.walk(dir_name):
         for fname in files:
             if not fname.startswith('.'):
@@ -157,7 +157,7 @@ class SPpipelineCreateDHFRTestCase(unittest.TestCase):
         ]
 
         today = date.today()
-        clean_version(self.output_dir, new_val='XXXtagvXXX')
+        clean_version(self.output_dir)
         clean_version(self.output_dir, new_val='', old_val=today.strftime("%d-%b-%y").upper())
         output_dic = {}
         for r, d, f in os.walk(self.output_dir):
@@ -187,7 +187,7 @@ class SPpipelineCreateDHFRTestCase(unittest.TestCase):
                      rosetta_paths.Rosetta_database_path, rosetta_paths.Rosetta_extension]
         clean_reference_from_local_path(
             self.reference_dir, elem)
-        clean_version(self.reference_dir, new_val='XXXtagvXXX')
+        clean_version(self.reference_dir)
         clean_version(self.reference_dir, new_val='', old_val=today.strftime("%d-%b-%y").upper())
 
         for r, d, f in os.walk(self.reference_dir):
@@ -275,7 +275,7 @@ class SPpipelineCreateDHFRTestCase(unittest.TestCase):
         ]
 
         today = date.today()
-        clean_version(self.output_dir, new_val='XXXtagvXXX')
+        clean_version(self.output_dir)
         clean_version(self.output_dir, new_val='', old_val=today.strftime("%d-%b-%y").upper())
         output_dic = {}
         for r, d, f in os.walk(self.output_dir):
@@ -305,7 +305,7 @@ class SPpipelineCreateDHFRTestCase(unittest.TestCase):
                      rosetta_paths.Rosetta_database_path, rosetta_paths.Rosetta_extension]
         clean_reference_from_local_path(
             self.reference_dir, elem)
-        clean_version(self.reference_dir, new_val='XXXtagvXXX')
+        clean_version(self.reference_dir)
         clean_version(self.reference_dir, new_val='\n', old_val=today.strftime("%d-%b-%y").upper())
 
         for r, d, f in os.walk(self.reference_dir):
