@@ -575,6 +575,8 @@ def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism
         deepTMHMM_file = glob.glob(os.path.join(folder.prepare_checking[:-9], 'mp_files', 'membrane_span', '**/*deepTMHMM.csv'), recursive=True)
         if len(deepTMHMM_file)>0:
             deepTMHMM_file = deepTMHMM_file[0]
+        else:
+            deepTMHMM_file = ''
     else:
         span_file = ''
         lipid_file = ''
