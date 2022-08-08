@@ -297,13 +297,18 @@ def mp_span_from_deepTMHMM(pdbinput, outdir_path, signal_TM=False):
 
         run_count = 0
         while run_count < 5 :
-            result_file = calc_deepTMHMM(fasta_file, tmp_output_path)
+            try:
+                result_file = calc_deepTMHMM(fasta_file, tmp_output_path)
+            except Exception as e:
+                print("The error raised is: ", e)
+                print("Maybe consider updating the library: pip3 install -U pybiolib")
+                result_file = ''
             if os.path.isfile(result_file):
                 run_count = 9
             else:
                 run_count += 1
                 sleeptime = random.randint(1*60, 5*60)
-                time.sleep(sleeptime) # wait 2 minutes before trying to reach the server again
+                time.sleep(sleeptime) # wait between 1 to 5 minutes before trying to reach the server again
 
         # get total length
         total_length = len(inputseq)
