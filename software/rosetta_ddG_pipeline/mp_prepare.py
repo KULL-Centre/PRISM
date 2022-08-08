@@ -154,6 +154,7 @@ def superpose_MMLigner(target_pdb, target_chain, reference_pdb, reference_chain,
         f"{target_pdb}:{target_chain} "
         "--superpose"
         "")
+    print(f"Superpose pdbs using MMLigner: {exect_mmlinger} - here: {exec_dir}")
     mmlinger_call = subprocess.Popen(
                 exect_mmlinger, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, cwd=exec_dir)
     mmlinger_process_id_info = mmlinger_call.communicate()
