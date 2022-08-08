@@ -149,8 +149,15 @@ def superpose_struc(bio_ref_struc_raw, bio_target_struc_raw, ref_align_atoms,
 
 def superpose_MMLigner(target_pdb, target_chain, reference_pdb, reference_chain, output_pdb, exec_dir = ''):
     
+    # make clean version of reference file"
+    reference_pdb_cleaned = os.path.join(os.path.dirname(reference_pdb), 'ref_cleaned.pdb')
+    with open(reference_pdb, 'r') as fp, open(reference_pdb_cleaned, 'w') as fp2:
+        for line in fp:
+            if line.startswith('ATOM'):
+                fp2.write(line)
+
     exect_mmlinger = (f"{rosetta_paths.MMLigner_exec} "
-        f"{reference_pdb}:{reference_chain} "
+        f"{reference_pdb_cleaned}:{reference_chain} "
         f"{target_pdb}:{target_chain} "
         "--superpose"
         "")
