@@ -11,6 +11,7 @@ import io
 import logging as logger
 import os
 import random
+import shutil
 import subprocess
 import sys
 import time
@@ -45,6 +46,11 @@ def mp_superpose_opm(reference_chain, target, filename, target_chain='A',
     def get_ref_struc(keyword):
         try:
             ref_struc = extract_from_opm(keyword)
+            if write_opm:
+                ref_file_name = os.path.join(os.path.dirname(filename), 'ref_opm.pdb')
+                with open(ref_file_name, 'w') as fp:
+                    fp.write(ref_struc)
+                print(f"write_opm set to true - OPM structure saved")
         except:
             print("no OPM - id found - add a workaround, e.g. PDBTM")
             return
@@ -54,6 +60,7 @@ def mp_superpose_opm(reference_chain, target, filename, target_chain='A',
     reference = reference_chain.split('_')[0]
     ref_chain = reference_chain.split('_')[1]
     ref_struc = get_ref_struc(reference)
+    ref_file_name = os.path.join(os.path.dirname(filename), 'ref_opm.pdb')
     # Parse reference (from string) and target structure (from file)
     parser = PDB.PDBParser(QUIET=True)
     bio_ref_struc_raw = parser.get_structure(
@@ -69,13 +76,17 @@ def mp_superpose_opm(reference_chain, target, filename, target_chain='A',
     seq1, seq1num, maxi1 = get_seq(target, isfile=True)
     seq2, seq2num, maxi2 = get_seq(ref_struc, isfile=False)
 
-    superpose_struc(bio_ref_struc_raw, bio_target_struc_raw, ref_align_atoms, 
-                     seq1, seq1num, maxi1, seq2, seq2num, maxi2, filename, target_chain=target_chain, ref_chain=ref_chain,
-                     ref_model_id=ref_model_id, target_model_id=target_model_id, write_opm=write_opm)
+    superpose_MMLigner(target, target_chain, 
+        ref_file_name, ref_chain, filename, 
+        exec_dir = os.path.dirname(filename))
+
+    # superpose_struc(bio_ref_struc_raw, bio_target_struc_raw, ref_align_atoms, 
+    #                  seq1, seq1num, maxi1, seq2, seq2num, maxi2, filename, target_chain=target_chain, ref_chain=ref_chain,
+    #                  ref_model_id=ref_model_id, target_model_id=target_model_id)
 
 def superpose_struc(bio_ref_struc_raw, bio_target_struc_raw, ref_align_atoms, 
                      seq1, seq1num, maxi1, seq2, seq2num, maxi2, filename, target_chain='A',ref_chain='A',
-                     ref_model_id=0, target_model_id=0, write_opm=True):
+                     ref_model_id=0, target_model_id=0):
     seq1 = Seq(seq1)
     seq2 = Seq(seq2)
     alignments = pairwise2.align.globalxx(seq1, seq2)
@@ -90,6 +101,7 @@ def superpose_struc(bio_ref_struc_raw, bio_target_struc_raw, ref_align_atoms,
     seqnum2 = getnums(seq2, seq2num)
 
     df = pd.DataFrame(np.array([seq1, seqnum1, seq2, seqnum2]).T, columns=['infile', 'infile_num', 'opm', 'opm_num'])
+    #df = df.dropna(subset=["infile_num","opm_num"], how='any').reset_index(drop=True)
     df['infile_num'] = df['infile_num'].astype('int')
     df['opm_num'] = df['opm_num'].astype('int')
 
@@ -134,10 +146,21 @@ def superpose_struc(bio_ref_struc_raw, bio_target_struc_raw, ref_align_atoms,
     bioio.save(filename)
     print(f"Aligned structure saved")
 
-    if write_opm:
-        with open(os.path.join(os.path.dirname(filename), 'ref_opm.pdb'), 'w') as fp:
-            fp.write(ref_struc)
-        print(f"write_opm set to true - OPM structure saved")
+
+def superpose_MMLigner(target_pdb, target_chain, reference_pdb, reference_chain, output_pdb, exec_dir = ''):
+    
+    exect_mmlinger = (f"{rosetta_paths.MMLigner_exec} "
+        f"{reference_pdb}:{reference_chain} "
+        f"{target_pdb}:{target_chain} "
+        "--superpose"
+        "")
+    mmlinger_call = subprocess.Popen(
+                exect_mmlinger, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, cwd=exec_dir)
+    mmlinger_process_id_info = mmlinger_call.communicate()
+
+    shutil.copy(glob.glob(os.path.join(exec_dir, '*superposed*.pdb'))[0], output_pdb)
+
+    print(f"Aligned structure saved")
 
 
 def mp_TMalign_opm(reference_chain, target, filename, target_chain='A',
@@ -247,9 +270,13 @@ def mp_superpose_span(pdbinput, outdir_path, span_file_list, filename, SLURM=Fal
     seq1, seq1num, maxi1 = get_seq(pdbinput, isfile=True)
     seq2, seq2num, maxi2 = get_seq(ref_struc, isfile=True)
 
-    superpose_struc(bio_ref_struc_raw, bio_target_struc_raw, ref_align_atoms, 
-                     seq1, seq1num, maxi1, seq2, seq2num, maxi2, filename, target_chain=chain, ref_chain='A',
-                     ref_model_id=0, target_model_id=0, write_opm=False)
+
+    superpose_MMLigner(pdbinput, chain, 
+        ref_struc, 'A', filename, 
+        exec_dir = os.path.dirname(filename))
+   # superpose_struc(bio_ref_struc_raw, bio_target_struc_raw, ref_align_atoms, 
+   #                  seq1, seq1num, maxi1, seq2, seq2num, maxi2, filename, target_chain=chain, ref_chain='A',
+   #                  ref_model_id=0, target_model_id=0)
 
 
 def mp_span_from_deepTMHMM(pdbinput, outdir_path, signal_TM=False):

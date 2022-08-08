@@ -6,6 +6,7 @@ import time
 default_path = {
     'muscle_exec': '/groups/sbinlab/software/muscle/muscle3.8.31_i86linux64',
     'TMalign_exec': '/groups/sbinlab/software/TMalign/TMalign',
+    'MMLigner_exec': '/groups/sbinlab/software/MMLigner/mmligner',
     'ddG_pipeline': '/groups/sbinlab/software/PRISM_tools/rosetta_stability-dev/software/rosetta_ddG_pipeline',
     'Rosetta_main_path': '/sbinlab/software/Rosetta_2021_Aug_c7009b3/source/',
     'Rosetta_tools_path': '/sbinlab/software/Rosetta_tools/tools/',
@@ -26,6 +27,7 @@ def load_env(env):
 
 muscle_exec = load_env('muscle_exec')
 TMalign_exec = load_env('TMalign_exec')
+MMLigner_exec = load_env('MMLigner_exec')
 ddG_pipeline = load_env('ddG_pipeline')
 Rosetta_main_path = load_env('Rosetta_main_path')
 Rosetta_tools_path = load_env('Rosetta_tools_path')
