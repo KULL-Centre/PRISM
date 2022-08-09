@@ -145,6 +145,12 @@ An automatic download of pdb-ids is not possible and also not recommended. We hi
 If no OPM file is available, you can use http://sunshine.phar.umich.edu/server.php to put the structure into the membrane plane.
 
 
+#### new default for OPM: deepTMHMM
+the new default for OPM is deepTMHMM. If you experience problems with the generation, consider updating you library:
+```bash
+pip3 install -U pybiolib
+```
+
 
 ### Usage examples
 #### Case 1 - Creating files for inspection
