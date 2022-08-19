@@ -1,6 +1,6 @@
 #!/storage1/shared/software/anaconda3/bin/python3
 
-# Copyright (C) 2020 Kristoffer Enoe Johansson <kristoffer.johansson@bio.ku.dk>
+# Copyright (C) 2020-2022 Kristoffer Enoe Johansson <kristoffer.johansson@bio.ku.dk>
 
 """Module for data handling in the PRISM project
 
@@ -14,10 +14,12 @@ See documentation of derived parser and data classes for help.
 See README.md for general file format definitions.
 """
 
-__version__ = 1.002
+__version__ = 1.100
 
-from Bio import Seq,SeqRecord,SeqIO,pairwise2,SubsMat
-from Bio.SubsMat import MatrixInfo
+# from Bio import Seq,SeqRecord,SeqIO,pairwise2,SubsMat
+# from Bio.SubsMat import MatrixInfo
+from Bio import Seq,SeqRecord,SeqIO
+from Bio.Align import PairwiseAligner,substitution_matrices
 import numpy as np
 import pandas as pd
 import yaml,csv,copy,time
@@ -925,6 +927,12 @@ class VariantData(PrismData):
         self.check_header_and_data_sequence(verbose=verbose)
         self.check_variants_metadata(no_overwrite=no_overwrite_metadata, verbose=verbose)
 
+    def __align_path_convert(self, alignment):
+        formatted_alignment_lines = format(alignment).split('\n')
+        target_seq = formatted_alignment_lines[0]
+        query_seq = formatted_alignment_lines[2]
+        return {'target':target_seq, 'query':query_seq, 'score':alignment.score}
+    
     def to_new_reference(self, target_seq=None, first_resn=None, verbose=0,
                          min_identity=.8, min_coverage=.1, mismatch="remove", allow_inserts=True, allow_deletions=True):
         """Map variants from data file onto a new reference sequence
@@ -985,34 +993,53 @@ class VariantData(PrismData):
             if not PrismParser.is_aa_one_nat(None, target_seq, "X"):
                 raise ValueError("Argument target_seq to VariantData.to_new_reference must be a single-letter amino acid string (or None)")
             n_res_target = len(target_seq)
-            # Align sequences
-            # MatrixInfo supports a wildcard 'X' so use upper case. Open and extend penalty 11 and 1 is blast default
-            # 2DO: Consider to write gap_function where X--XX is 2 openings and --XXX is only one, i.e. NT-gap is not an opening
-            align = pairwise2.align.globalds(target_seq.upper(), seq.upper(), MatrixInfo.blosum62, -3, -1)
+            # Sequence aligner
+            aligner = PairwiseAligner()
+            # Matrix has positive match score (4-11) and includes a non-constant score to 'X' match -1 mism. -2-0 (and '*' match 1 mism. -4) 
+            aligner.substitution_matrix = substitution_matrices.load("BLOSUM62")
+            aligner.open_gap_score = -3.0
+            aligner.extend_gap_score = -1.0
+            # Use semi-global alignment: We want to align the entire query to the target protein. If query is shorter, we have partial data
+            # for that protein and that's ok (no penalty). If query is longer (or only a segment of it aligns), there are residues in the
+            # query data that are not relevant for the target and may be discarded - try to avoid this with a small target_end_gap penalty.
+            aligner.mode='global'
+            aligner.target_end_gap_score = -0.5
+            aligner.query_end_gap_score = 0.0
+            # Align
+            alignments = aligner.align(target_seq.upper(), seq.upper())
+            # # MatrixInfo supports a wildcard 'X' so use upper case. Open and extend penalty 11 and 1 is blast default
+            # alignments_old = pairwise2.align.globalds(target_seq.upper(), seq.upper(), MatrixInfo.blosum62, -3, -1)
+            
             # Check for alternative alignments
-            if len(align) > 1 and verbose > 0:
-                print("Found %d alignments" % (len(align)))
+            if len(alignments) > 1 and verbose > 0:
+                print("Found %d alignments" % (len(alignments)))
             if verbose > 0:
                 # Dump verbose number of alignments
-                for ia in range(min([verbose,len(align)])):
-                    print("==== alignment %d of %d ====" % (ia+1,len(align)))
-                    print(pairwise2.format_alignment(*align[ia]))
+                for ia in range(min([verbose,len(alignments)])):
+                    print("==== alignment %d of %d ====" % (ia+1,len(alignments)))
+                    print(alignments[ia])
+                    # print("==== old alignment %d of %d ====" % (ia+1,len(alignments_old)))
+                    # print(pairwise2.format_alignment(*alignments_old[ia]))
             # Check for equally good alignments, a good alignment has high score
-            if len(align) > 1:
-                align_scores = np.array([a[2] for a in align])
-                if any(align_scores[0] - align_scores[1:] < 1e-3):
+            if len(alignments) > 1:
+                alignments_scores = np.array([a.score for a in alignments])
+                if any(alignments_scores[0] - alignments_scores[1:] < 1e-3):
                     print("WARNING: There are alignments for %s with same or better scores (try verbose). Sores: %s" %
-                          (self.metadata['protein']['name'],str(align_scores)))
+                          (self.metadata['protein']['name'],str(alignments_scores)))
+                # alignments_scores_old = np.array([a[2] for a in alignments_old])
+                # if any(alignments_scores_old[0] - alignments_scores_old[1:] < 1e-3):
+                #     print("WARNING: There are old alignments for %s with same or better scores (try verbose). Sores: %s" %
+                #           (self.metadata['protein']['name'],str(alignments_scores_old)))
+                    
             # Use first alignment
-            align = align[0]
-            assert len(align[0]) == len(align[1])
-            n_align = len(align[0])
+            align = self.__align_path_convert( alignments[0] )
+            assert len(align['target']) == len(align['query'])
             # Number to convert 0-based alignment index to 0-based data (original) residue numbering
             ialign_shift = 0
             n_indel = n_match = n_mismatch = 0
             # Iterate over alignment, possible including gaps
-            for ialign in range(len(align[0])):
-                if align[0][ialign] == '-':
+            for ialign in range(len(align['target'])):
+                if align['target'][ialign] == '-':
                     # Deletion: Position in data sequence not present in target sequence
                     if not allow_deletions:
                         raise PrismValueFail("Aborting alignment due to deletion at position %d which is not allowed" % (ialign+ialign_shift))
@@ -1021,7 +1048,7 @@ class VariantData(PrismData):
                     # Downstream position are shifted to the left
                     resi_shift[(ialign+ialign_shift):] -= 1
                     n_indel += 1
-                elif align[1][ialign] == '-':
+                elif align['query'][ialign] == '-':
                     # Insertion: Position in target sequence not present in data sequence
                     if not allow_inserts:
                         raise PrismValueFail("Aborting alignment due to insertion at position %d which is not allowed" % (ialign+ialign_shift))
@@ -1029,10 +1056,10 @@ class VariantData(PrismData):
                     # Shift conversion number
                     ialign_shift -= 1
                     n_indel += 1
-                elif align[0][ialign] != align[1][ialign]:
+                elif align['target'][ialign] != align['query'][ialign]:
                     # Mismatch of 'X' always allowed since it is always mismatched
                     # Variants matched to X are always removed because position is ambiguous if adjacent to gap and because X is used for numbering offset
-                    if align[0][ialign] == 'X' or align[1][ialign] == 'X':
+                    if align['target'][ialign] == 'X' or align['query'][ialign] == 'X':
                         resi_rm.append(ialign+ialign_shift)
                     elif mismatch == "not_allowed":
                         raise PrismValueFail("Aborting alignment due to mismatch at position %d which is not allowed" % (ialign+ialign_shift))
@@ -1041,7 +1068,7 @@ class VariantData(PrismData):
                         resi_rm.append(ialign+ialign_shift)
                     elif mismatch == "convert":
                         # Change reference amino acid
-                        aa_change[ialign+ialign_shift] = align[0][ialign]
+                        aa_change[ialign+ialign_shift] = align['target'][ialign]
                     else:
                         raise ValueError("mismatch argument must be in [not_allowed,convert,remove]")
                     n_mismatch += 1
