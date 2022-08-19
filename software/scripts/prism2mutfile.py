@@ -99,11 +99,22 @@ def parse_args():
         type=lambda s: s.lower() in ['false', 'f', 'no', '0'],
         help="Includes/adds WT variants"
         )
+    parser.add_argument('--keepLig', '-l',
+        default=True,
+        type=lambda s: s.lower() in ['false', 'f', 'no', '0'],
+        help="keep ligands/HETATM"
+        )
     parser.add_argument('--resisatu', '-s',
         default=False,
         type=lambda s: s.lower() in ['true', 't', 'yes', '1'],
         help="Residual saturation for all residues which have known variants"
         )
+    parser.add_argument('--prismchains', '-ps',
+        default='all',
+        type=str,
+        help="Chains that should be considered for the prism file alignment"
+        )
+
     parser.add_argument('--mut_output', '-m',
         choices=['all', 'pipeline_combined_mut', 'combined_mut',
                  'residue_files'],
@@ -312,9 +323,23 @@ def main():
     
     if args.pdb_file:
         if args.pdb2rosetta:
-            args.pdb_file = pdb_renumb(args.pdb_file, output_dir=args.output_dir)
+            if args.keepLig == True:
+                ligs = []
+                with open(args.pdb_file, 'r') as fp:
+                    for line in fp:
+                        if line.startswith('HETATM'):
+                            ligs.append(line[17:20].strip())
+                ligs = list(set(ligs))
+                args.pdb_file = pdb_renumb(args.pdb_file, output_dir=args.output_dir, keep_ligand=ligs)
+            else:
+                args.pdb_file = pdb_renumb(args.pdb_file, output_dir=args.output_dir)
         # generate pdb prism files
         pdb_prism = pdb_to_prism('infile', pdb_file=args.pdb_file, output_dir=args.output_dir, fill=True)[0]
+        # make this if you have e.g. hetero-dimers
+        if args.prismchains !='all':
+            output_dir_tmp = os.path.join(args.output_dir, 'single_chain')
+            os.makedirs(output_dir_tmp, exist_ok = True)
+            pdb_prism = pdb_to_prism('infile', pdb_file=args.pdb_file, output_dir=output_dir_tmp, fill=True, chain=args.prismchains)[0]
         
         meta_data, dataframe = read_from_prism(args.prism)
         if meta_data['variants']['width'] == 'single mutants':
