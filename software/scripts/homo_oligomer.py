@@ -1,8 +1,8 @@
 #!/groups/sbinlab/software/miniconda3/bin/python3
 
-# Copyright (C) 2021 Johanna K. S. Tiemann <johanna.tiemann@gmail.com>
+# Copyright (C) 2022 Johanna K. S. Tiemann <johanna.tiemann@gmail.com>
 
-"""Script to create input for homo-dimer 
+"""Script to create input for homo-oligomers 
 
 """
 
@@ -97,6 +97,11 @@ def parse_args():
               'Default value: False'
               )
         )
+    parser.add_argument('--keep_ligand', '-l',
+        default=True,
+        type=lambda s: s.lower() in ['false', 'f', 'no', '0'],
+        help="keep ligands/HETATM"
+        )
     parser.add_argument('--inclWT', '-w',
         default=True,
         type=lambda s: s.lower() in ['false', 'f', 'no', '0'],
@@ -107,6 +112,7 @@ def parse_args():
     args = parser.parse_args()
 
     args.inclWT = bool(args.inclWT)
+    args.keep_ligand = bool(args.keep_ligand)
     try:
         os.makedirs(args.output_dir, exist_ok = True)
         logger.info(f"Directory {args.output_dir} created successfully")
@@ -128,9 +134,18 @@ def rechain(pdb_file, output_dir):
     return rechain_pdb
 
 
-def create_homodimer_input(pdb_file, prism_file, output_dir, additional=False, inclWT=True):
+def create_homo_oligomer_input(pdb_file, prism_file, output_dir, additional=False, inclWT=True, keep_ligand=None):
     #PDB to rosetta numbering
-    renumb_pdb = pdb_renumb(pdb_file, output_dir=output_dir, keepchain='all')
+    if keep_ligand == True:
+        ligs = []
+        with open(pdb_file, 'r') as fp:
+            for line in fp:
+                if line.startswith('HETATM'):
+                    ligs.append(line[17:20].strip())
+        ligs = list(set(ligs))
+        renumb_pdb = pdb_renumb(pdb_file, output_dir=output_dir, keepchain='all', keep_ligand=ligs)
+    else:
+        renumb_pdb = pdb_renumb(pdb_file, output_dir=output_dir, keepchain='all')
 
     #get sequence
     pdb_p = PDBParser()
@@ -146,23 +161,22 @@ def create_homodimer_input(pdb_file, prism_file, output_dir, additional=False, i
         i = 0
         for res in chain:
             residue = str(res).split()
-            sequence.append(d3to1[residue[1]])
-            residues.append(int(residue[3].split('=')[1]))
-            i += 1
-        all_data[nchain] = [sequence, residues]
-    seq_A = "".join(all_data[nchains[0]][0])
-    seq_B = "".join(all_data[nchains[1]][0])
-    
+            if residue[1] in d3to1.keys():
+                sequence.append(d3to1[residue[1]])
+                residues.append(int(residue[3].split('=')[1]))
+                i += 1
+        all_data[nchain] = [sequence, residues]    
     
     meta_data, dataframe = read_from_prism(prism_file)
     prism_seq = meta_data['protein']['sequence']
     prism_var = {}
     for var in dataframe['variant'].tolist():
-        resi = int(var[1:-1])
-        if resi in prism_var.keys():
-            prism_var[resi].append(var)
-        else:
-            prism_var[resi] = [var]
+        if not var in ['WT']:
+            resi = int(var[1:-1])
+            if resi in prism_var.keys():
+                prism_var[resi].append(var)
+            else:
+                prism_var[resi] = [var]
     if 'first_res_num' in meta_data['protein']:
         sys.exit('We have a first res num case! Needs to be handled - let Johanna know ;-)')
 
@@ -171,33 +185,47 @@ def create_homodimer_input(pdb_file, prism_file, output_dir, additional=False, i
         if not native in prism_var[key]:
             prism_var[key].append(native)
 
+    alignments_all = []
+    alignments_all_nresi = []
+    for chain_n in nchains:
+        seq_X = "".join(all_data[chain_n][0])
 
-    alignments1 = pairwise2.align.globalms(prism_seq, seq_A, 2, -1, -0.5, -0.1)[0]
-    alignments2 = pairwise2.align.globalms(prism_seq, seq_B, 2, -1, -0.5, -0.1)[0]
+        alignmentsX = pairwise2.align.globalms(prism_seq, seq_X, 2, -1, -0.5, -0.1)[0]
+        alignments_all.append(alignmentsX)
 
-
-    alignments1_nresi = [[-1, '-']]*len(alignments1[1])
-    i = 0
-    for index, elem in enumerate(alignments1[1]):
-        if elem !='-':
-            alignments1_nresi[index] = [all_data[nchains[0]][1][i], all_data[nchains[0]][0][i]]
-            i+=1
-    alignments2_nresi = [[-1, '-']]*len(alignments2[1])
-    i = 0
-    for index, elem in enumerate(alignments2[1]):
-        if elem !='-':
-            alignments2_nresi[index] = [all_data[nchains[1]][1][i], all_data[nchains[1]][0][i]]
-            i+=1
+        alignmentsX_nresi = [[-1, '-']]*len(alignmentsX[1])
+        i = 0
+        for index, elem in enumerate(alignmentsX[1]):
+            if elem !='-':
+                alignmentsX_nresi[index] = [all_data[chain_n][1][i], all_data[chain_n][0][i]]
+                i+=1
+        alignments_all_nresi.append(alignmentsX_nresi)
     
+    def check_align(alignments_all, index):
+        for aligns in alignments_all[1:]:
+            if (len(alignments_all[0][1]) >= index) and (len(aligns[1]) >= index):
+                if (alignments_all[0][1][index-1] == aligns[1][index-1]):
+                    pass
+                else:
+                    return False
+            else:
+                return False
+        return True
+
+    def get_muts(alignments_all_nresi, index, variant):
+        muts = []
+        for alignmentsX_nresi in alignments_all_nresi:
+            mutX = f"{alignmentsX_nresi[index-1][1]}{alignmentsX_nresi[index-1][0]}{variant[-1]}"
+            muts.append(mutX)
+        return muts
 
     vari_list = []
-    for index, res in enumerate(alignments1[1]):
-        if (alignments1[1][index-1] != '-') & (alignments1[1][index-1] == alignments2[1][index-1]):
+    for index, res in enumerate(alignments_all[0][1]):
+        if (alignments_all[0][1][index-1] != '-') & check_align(alignments_all, index):
             if index in prism_var.keys():
                 for variant in prism_var[index]:
-                    mut1 = f"{alignments1_nresi[index-1][1]}{alignments1_nresi[index-1][0]}{variant[-1]}"
-                    mut2 = f"{alignments2_nresi[index-1][1]}{alignments2_nresi[index-1][0]}{variant[-1]}"
-                    merged_variant = f"{mut1}:{mut2}"
+                    muts = get_muts(alignments_all_nresi, index, variant)
+                    merged_variant = ":".join(muts)
                     vari_list.append(merged_variant)
 
 
@@ -226,7 +254,7 @@ def main():
     # get user input arguments
     args = parse_args()
     
-    create_homodimer_input(args.pdb_file, args.prism, args.output_dir, additional=args.additional, inclWT=args.inclWT)
+    create_homo_oligomer_input(args.pdb_file, args.prism, args.output_dir, additional=args.additional, inclWT=args.inclWT, keep_ligand=args.keep_ligand)
     
     logger.info('Conversion sucessful!')
 
