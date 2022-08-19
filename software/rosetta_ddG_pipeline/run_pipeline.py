@@ -22,7 +22,7 @@ from AnalyseStruc import get_structure_parameters
 from args_pipeline import parse_args2
 from checks import compare_mutfile, pdbxmut
 from folders import folder2
-from helper import create_symlinks, create_copy, find_copy, get_mut_dict, read_fasta, check_path
+from helper import create_symlinks, create_copy, find_copy, get_mut_dict, read_fasta, check_path, make_no_hetatm_file
 import mp_prepare
 import mp_ddG
 from pdb_to_fasta_seq import pdb_to_fasta_seq
@@ -168,7 +168,11 @@ def predict_stability(args):
 
 
             logger.info(f'Calculate lipid accessible residues')
-            lipacc_dic, lipacc_file = mp_prepare.mp_lipid_acc_resi(structure_instance.path_to_cleaned_pdb, folder.prepare_mp_lipacc, folder.prepare_mp_span, thickness=args.MP_THICKNESS, SLURM=False)
+            if args.LIGAND:
+                no_lig_file = make_no_hetatm_file(structure_instance.path_to_cleaned_pdb)
+                lipacc_dic, lipacc_file = mp_prepare.mp_lipid_acc_resi(no_lig_file, folder.prepare_mp_lipacc, folder.prepare_mp_span, thickness=args.MP_THICKNESS, SLURM=False)
+            else:
+                lipacc_dic, lipacc_file = mp_prepare.mp_lipid_acc_resi(structure_instance.path_to_cleaned_pdb, folder.prepare_mp_lipacc, folder.prepare_mp_span, thickness=args.MP_THICKNESS, SLURM=False)
 
         # Making mutfiles and checks
         if args.MUT_MODE == 'mut_file':
@@ -184,8 +188,10 @@ def predict_stability(args):
             new_mut_input, args.MUT_MODE)
 
         new_mut_input = os.path.join(folder.prepare_cleaning, 'mutation_clean.txt')
+
         check1 = compare_mutfile(structure_instance.fasta_seq,
-                                 folder.prepare_mutfiles, folder.prepare_checking, new_mut_input)
+                                 folder.prepare_mutfiles, folder.prepare_checking, 
+                                 structure_instance.struc_dic_cleaned["resdata"], new_mut_input, chainid=structure_instance.chain_id)
         check3, errors = pdbxmut(folder.prepare_mutfiles, struc_dic_cleaned)
         #check3= False
 

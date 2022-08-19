@@ -3,7 +3,7 @@ import sys
 import os
 import numpy as np
 
-def compare_mutfile(fasta_seq, path_to_run_folder,prepare_checking,mutation_input=None):
+def compare_mutfile(fasta_seq, path_to_run_folder,prepare_checking,resdata,mutation_input=None,chainid='A'):
     """This function checks the created mutfiles and compares them to the fasta_sequence"""
     
     mutfiles_folder = path_to_run_folder +'/'
@@ -50,9 +50,10 @@ def compare_mutfile(fasta_seq, path_to_run_folder,prepare_checking,mutation_inpu
         a = [elem for ind in a for elem in ind]
         ran = list(range(0,len(a),3))
         for residue_number in ran:
-            res = a[residue_number+1]
+            res = a[int(residue_number)+1]
             if len(res.split("_")) == 1:
-                residue_number_ros = alignment_dic[int(res)]
+                residue_number_ros = int(res)
+                # residue_number_ros = alignment_dic[int(res)]
                 mut_file = os.path.join(mutfiles_folder,f'mutfile{str(residue_number_ros):0>5}')
             else:
 
@@ -66,8 +67,9 @@ def compare_mutfile(fasta_seq, path_to_run_folder,prepare_checking,mutation_inpu
             f= mutfile.readlines()
             fasta_seq_list=list(fasta_seq)
             for indi, resi in enumerate(res.split("_")):
-                if f[2+indi].split()[0] != fasta_seq_list[int(resi)-1][0]:
-                    print(f[2+indi].split()[0],fasta_seq_list[int(resi)-1][0])
+                if f[2+indi].split()[0] != resdata[int(resi)][0]:#fasta_seq_list[int(resi)-1][0]:
+                    print(f[2+indi].split()[0],resdata[int(resi)][0])
+                    # print(f[2+indi].split()[0],fasta_seq_list[int(resi)-1][0])
                     error=True
                     print("ERROR: RESIDUE MISMATCH")
                     break

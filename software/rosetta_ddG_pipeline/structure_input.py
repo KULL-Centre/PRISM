@@ -76,14 +76,32 @@ class structure:
                     
         #This cleans the protein but keeps the ligands          
         if ligand == True:
-            self.path_to_clean_pdb = rosetta_paths.path_to_clean_keep_ligand
-            self.tmp_prep_struc = create_copy(self.prep_struc, self.folder.prepare_cleaning, name='withHETATM.pdb')
-            #Runs shell script
-            shell_command = f'python2 {self.path_to_clean_pdb} {self.tmp_prep_struc} {self.chain_id}  --keepzeroocc'
-            self.logger.info('Running clean_pdb_keep_ligand.py script')
-            subprocess.call(shell_command, cwd=self.folder.prepare_cleaning, shell=True)
-            self.logger.info('end of output from clean_pdb_keep_ligand.py')
-            path_to_cleaned_pdb = f'{self.tmp_prep_struc}{self.chain_id}.pdb'
+            if len(list(self.run_struc))>1:
+                for chainn in list(self.run_struc):
+                    self.path_to_clean_pdb = rosetta_paths.path_to_clean_keep_ligand
+                    self.tmp_prep_struc = create_copy(self.prep_struc, self.folder.prepare_cleaning, name='withHETATM.pdb')
+                    #Runs shell script
+                    shell_command = f'python2 {self.path_to_clean_pdb} {self.tmp_prep_struc} {chainn}  --keepzeroocc'
+                    self.logger.info(f'Running clean_pdb_keep_ligand.py script {shell_command}')
+                    subprocess.call(shell_command, cwd=self.folder.prepare_cleaning, shell=True)
+                    self.logger.info('end of output from clean_pdb_keep_ligand.py')
+
+                path_to_cleaned_pdb = f'{self.tmp_prep_struc}{self.run_struc}.pdb'
+                with open(path_to_cleaned_pdb, 'w') as fp:
+                    for chainn in list(self.run_struc):
+                        path_to_cleaned_pdb_tmp = f'{self.tmp_prep_struc}{chainn}.pdb'
+                        with open(path_to_cleaned_pdb_tmp, 'r') as fp2:
+                            for line in fp2:
+                                fp.write(line)
+            else:
+                self.path_to_clean_pdb = rosetta_paths.path_to_clean_keep_ligand
+                self.tmp_prep_struc = create_copy(self.prep_struc, self.folder.prepare_cleaning, name='withHETATM.pdb')
+                #Runs shell script
+                shell_command = f'python2 {self.path_to_clean_pdb} {self.tmp_prep_struc} {self.run_struc}  --keepzeroocc'
+                self.logger.info(f'Running clean_pdb_keep_ligand.py script {shell_command}')
+                subprocess.call(shell_command, cwd=self.folder.prepare_cleaning, shell=True)
+                self.logger.info('end of output from clean_pdb_keep_ligand.py')
+                path_to_cleaned_pdb = f'{self.tmp_prep_struc}{self.run_struc}.pdb'
         #Creates struc.json from cleaned pdb file           
         struc_dic_cleaned= get_structure_parameters(
             self.folder.prepare_cleaning, path_to_cleaned_pdb,printing=False)
@@ -333,11 +351,14 @@ class structure:
                         residue_number_ros = [residue_number_ros]
                     if len(residue_number_ros)==1:
                         residue_number_ros = int(residue_number_ros[0])
-                        check = self.fasta_seq[residue_number_ros-1] in list(
+                        check = resdata[residue_number_ros][0] in list(
                             mutate[residue_number][0])
+                        # check = self.fasta_seq[residue_number_ros-1] in list(
+                        #     mutate[residue_number][0])
                         if check == False:
                             check2 = True
-                            self.logger.warning(f'Missmatch{self.fasta_seq[residue_number_ros-1]}, {residue_number},{mutate[residue_number][0]}')
+                            self.logger.warning(f'Missmatch{resdata[residue_number_ros][0]}, {residue_number},{mutate[residue_number][0]}')
+                            # self.logger.warning(f'Missmatch{self.fasta_seq[residue_number_ros-1]}, {residue_number},{mutate[residue_number][0]}')
                         final_list = []
                         for num in mutate[residue_number][1]:                    
                             if num not in final_list:
@@ -347,11 +368,12 @@ class structure:
                         with open(os.path.join(self.folder.prepare_mutfiles, f'mutfile{str(residue_number_ros):0>5}'), 'w') as mutfile:
                             mutfile.write('total ' + str(len(final_list)))
                             mut_dic[str(residue_number_ros)] = "".join(final_list)
-                            fp.write(f'{self.fasta_seq[residue_number_ros - 1]} {residue_number_ros} {"".join(final_list)}\n')
+                            fp.write(f'{resdata[residue_number_ros][0]} {residue_number_ros} {"".join(final_list)}\n')
+                            # fp.write(f'{self.fasta_seq[residue_number_ros - 1]} {residue_number_ros} {"".join(final_list)}\n')
                             for AAtype in final_list:
                                 mutfile.write('\n1\n')
-                                mutfile.write(self.fasta_seq[
-                                              residue_number_ros - 1] + ' ' + str(residue_number_ros) + ' ' + AAtype)
+                                mutfile.write(resdata[residue_number_ros][0] + ' ' + str(residue_number_ros) + ' ' + AAtype)
+                                # mutfile.write(self.fasta_seq[residue_number_ros - 1] + ' ' + str(residue_number_ros) + ' ' + AAtype)
                     else:
                         for res_index, residue in enumerate(residue_number_ros):
                             check = self.fasta_seq[int(residue)-1] in list(

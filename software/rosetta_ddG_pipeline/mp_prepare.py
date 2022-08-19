@@ -11,6 +11,7 @@ import io
 import logging as logger
 import os
 import random
+import re
 import shutil
 import subprocess
 import sys
@@ -61,28 +62,30 @@ def mp_superpose_opm(reference_chain, target, filename, target_chain='A',
     ref_chain = reference_chain.split('_')[1]
     ref_struc = get_ref_struc(reference)
     ref_file_name = os.path.join(os.path.dirname(filename), 'ref_opm.pdb')
-    # Parse reference (from string) and target structure (from file)
-    parser = PDB.PDBParser(QUIET=True)
-    bio_ref_struc_raw = parser.get_structure(
-        "reference", io.StringIO(ref_struc))
-    bio_target_struc_raw = parser.get_structure("target", target)
-    #get sequence info about TM region and where best to align
 
-    if inTM:
-        ref_align_atoms = get_res_in_mem(ref_struc, isfile=False)
-    else:
-        ref_align_atoms = get_res_in_all(ref_struc, isfile=False)
-
-    seq1, seq1num, maxi1 = get_seq(target, isfile=True)
-    seq2, seq2num, maxi2 = get_seq(ref_struc, isfile=False)
-
-    superpose_MMLigner(target, target_chain, 
+    sucess = superpose_MMLigner(target, target_chain, 
         ref_file_name, ref_chain, filename, 
         exec_dir = os.path.dirname(filename))
 
-    # superpose_struc(bio_ref_struc_raw, bio_target_struc_raw, ref_align_atoms, 
-    #                  seq1, seq1num, maxi1, seq2, seq2num, maxi2, filename, target_chain=target_chain, ref_chain=ref_chain,
-    #                  ref_model_id=ref_model_id, target_model_id=target_model_id)
+    if sucess == False:
+        # Parse reference (from string) and target structure (from file)
+        parser = PDB.PDBParser(QUIET=True)
+        bio_ref_struc_raw = parser.get_structure(
+            "reference", io.StringIO(ref_struc))
+        bio_target_struc_raw = parser.get_structure("target", target)
+        #get sequence info about TM region and where best to align
+
+        if inTM:
+            ref_align_atoms = get_res_in_mem(ref_struc, isfile=False)
+        else:
+            ref_align_atoms = get_res_in_all(ref_struc, isfile=False)
+
+        seq1, seq1num, maxi1 = get_seq(target, isfile=True)
+        seq2, seq2num, maxi2 = get_seq(ref_struc, isfile=False)
+
+        superpose_struc(bio_ref_struc_raw, bio_target_struc_raw, ref_align_atoms, 
+                         seq1, seq1num, maxi1, seq2, seq2num, maxi2, filename, target_chain=target_chain, ref_chain=ref_chain,
+                         ref_model_id=ref_model_id, target_model_id=target_model_id)
 
 def superpose_struc(bio_ref_struc_raw, bio_target_struc_raw, ref_align_atoms, 
                      seq1, seq1num, maxi1, seq2, seq2num, maxi2, filename, target_chain='A',ref_chain='A',
@@ -152,8 +155,18 @@ def superpose_MMLigner(target_pdb, target_chain, reference_pdb, reference_chain,
     # make clean version of reference file"
     reference_pdb_cleaned = os.path.join(os.path.dirname(reference_pdb), 'ref_cleaned.pdb')
     with open(reference_pdb, 'r') as fp, open(reference_pdb_cleaned, 'w') as fp2:
+        prev = ''
         for line in fp:
-            if line.startswith('ATOM'):
+            if line.startswith('# All scores below are weighted scores, not raw scores.'):
+                break
+            elif line.startswith('CONECT'):
+                pass
+            elif line[17:20].strip() in ['MEM', 'EMB']:
+                pass
+            elif (prev == 'TER') and (line[:3] == prev):
+                pass
+            else:
+                prev = line[:3]
                 fp2.write(line)
 
     exect_mmlinger = (f"{rosetta_paths.MMLigner_exec} "
@@ -166,9 +179,13 @@ def superpose_MMLigner(target_pdb, target_chain, reference_pdb, reference_chain,
                 exect_mmlinger, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True, cwd=exec_dir)
     mmlinger_process_id_info = mmlinger_call.communicate()
 
-    shutil.copy(glob.glob(os.path.join(exec_dir, '*superposed*.pdb'))[0], output_pdb)
-
-    print(f"Aligned structure saved")
+    if len(glob.glob(os.path.join(exec_dir, '*superposed*.pdb')))==0:
+        return False
+    else:
+        shutil.copy(glob.glob(os.path.join(exec_dir, '*superposed*.pdb'))[0], output_pdb)
+        print(glob.glob(os.path.join(exec_dir, '*superposed*.pdb'))[0], output_pdb)
+        print(f"Aligned structure saved")
+        return True
 
 
 def mp_TMalign_opm(reference_chain, target, filename, target_chain='A',
@@ -266,25 +283,56 @@ def mp_superpose_span(pdbinput, outdir_path, span_file_list, filename, SLURM=Fal
     
     ref_struc = glob.glob(os.path.join(outdir_path, '*.pdb'))[0]
 
+    chains = []
+    with open(ref_struc, 'r') as fp:
+        for line in fp:
+            if line.startswith('ATOM'):
+                chains.append(line[21])
+    chains = list(set(chains))
+    for chain_re in chains:
+        sucess = superpose_MMLigner(pdbinput, chain, 
+            ref_struc, chain_re, filename, 
+            exec_dir = os.path.dirname(filename))
+        if sucess == True:
+            break
 
-    # Parse reference (from string) and target structure (from file)
-    parser = PDB.PDBParser(QUIET=True)
-    bio_ref_struc_raw = parser.get_structure("reference", ref_struc)
-    bio_target_struc_raw = parser.get_structure("target", pdbinput)
-    #get sequence info about TM region and where best to align
+    if sucess == False:
+        for chain_re in chains:
+            try:
+                # Parse reference (from string) and target structure (from file)
+                parser = PDB.PDBParser(QUIET=True)
+                bio_ref_struc_raw = parser.get_structure("reference", ref_struc)
+                bio_target_struc_raw = parser.get_structure("target", pdbinput)
+                #get sequence info about TM region and where best to align
 
-    ref_align_atoms = get_res_in_all(ref_struc, isfile=True)
+                ref_align_atoms = get_res_in_all(ref_struc, isfile=True)
 
-    seq1, seq1num, maxi1 = get_seq(pdbinput, isfile=True)
-    seq2, seq2num, maxi2 = get_seq(ref_struc, isfile=True)
+                seq1, seq1num, maxi1 = get_seq(pdbinput, isfile=True)
+                seq2, seq2num, maxi2 = get_seq(ref_struc, isfile=True)
+
+                superpose_struc(bio_ref_struc_raw, bio_target_struc_raw, ref_align_atoms, 
+                                seq1, seq1num, maxi1, seq2, seq2num, maxi2, filename, target_chain=chain, ref_chain=chain_re,
+                                ref_model_id=0, target_model_id=0)
+            except:
+                pass
 
 
-    superpose_MMLigner(pdbinput, chain, 
-        ref_struc, 'A', filename, 
-        exec_dir = os.path.dirname(filename))
-   # superpose_struc(bio_ref_struc_raw, bio_target_struc_raw, ref_align_atoms, 
-   #                  seq1, seq1num, maxi1, seq2, seq2num, maxi2, filename, target_chain=chain, ref_chain='A',
-   #                  ref_model_id=0, target_model_id=0)
+def check_for_repeats(seq):
+    REPEATER = re.compile(r"(.+?)\1+$")
+
+    def repeated(s):
+        match = REPEATER.match(s)
+        return match.group(1) if match else None
+
+    sub = repeated(seq)
+    if sub:
+        ari = seq.split(sub)
+        for ar in ari:
+            if ar != '':
+                return False, 1, len(seq)
+        return True, len(ari), len(sub)
+    else:
+        return False, 1, len(seq)
 
 
 def mp_span_from_deepTMHMM(pdbinput, outdir_path, signal_TM=False):
@@ -314,6 +362,12 @@ def mp_span_from_deepTMHMM(pdbinput, outdir_path, signal_TM=False):
 
         inputseq = input_secs[chain]
         inputseq = "".join(inputseq)
+
+        # check for seqs:
+        does_repeat, num_repeats, len_repeats = check_for_repeats(inputseq)
+        if does_repeat == True:
+            inputseq_back = inputseq
+            inputseq = inputseq_back[0:len_repeats]
 
         # make fasta_file
         fasta_file = os.path.join(tmp_output_path, 'query.fasta')
@@ -372,19 +426,40 @@ def mp_span_from_deepTMHMM(pdbinput, outdir_path, signal_TM=False):
         # get info about structure
         order = 'antiparallel' # parallel possible - not sure how to calculate - only possible for n1c (horizontal)
 
-        # write span file
-        span_file = os.path.join(outdir_path, f"{os.path.splitext(os.path.basename(pdbinput))[0]}_{chain}.span")
-        with open(span_file, 'w') as fp:
-            fp.write('manual-generated spanfile from DeepTMHMM\n')
-            fp.write(f'{num_span} {total_length}\n')
-            print(f'num_span {total_length}\n')
-            fp.write(f'{order}\n')
-            fp.write('n2c\n')
-            for index, row in TM_df.iterrows():
-                fp.write(f"\t\t{row['start']}\t{row['end']}\n")
-                print(f"\t\t{row['start']}\t{row['end']}\n")
+        # get pdb resnumber info
+        res_dic = []
+        with open(pdbinput, 'r') as fp:
+            for line in fp:
+                if line.startswith('ATOM'):
+                    if line[21] == chain:
+                        if line[12:16].strip() == 'CA':
+                            if line[16] in [' ', 'A']:
+                                res_dic.append(int(line[22:26]))
+        res_dic.sort()
 
-        spanfiles.append(span_file)
+        # write span file
+        if len(TM_df)>0:
+            span_file = os.path.join(outdir_path, f"{os.path.splitext(os.path.basename(pdbinput))[0]}_{chain}.span")
+            with open(span_file, 'w') as fp:
+                fp.write('manual-generated spanfile from DeepTMHMM\n')
+                if does_repeat == True:
+                    fp.write(f'{num_span*num_repeats} {int(total_length)*(num_repeats-1)}\n')
+                    print(f'{num_span*num_repeats} {int(total_length)*(num_repeats-1)}\n')
+                else:
+                    fp.write(f'{num_span} {int(total_length)}\n')
+                    print(f'{num_span} {int(total_length)}\n')
+                fp.write(f'{order}\n')
+                fp.write('n2c\n')
+                for index, row in TM_df.iterrows():
+                    fp.write(f"\t\t{row['start']+res_dic[0]-1}\t{row['end']+res_dic[0]-1}\n")
+                    print(f"{row['start']}+{res_dic[0]}-1\t{row['end']}+{res_dic[0]}-1\n")
+                if does_repeat == True:
+                    for reps in range(1, num_repeats-1):
+                        for index, row in TM_df.iterrows():
+                            fp.write(f"\t\t{row['start']+res_dic[0]-1+(len_repeats*reps)}\t{row['end']+res_dic[0]-1+(len_repeats*reps)}\n")
+                            print(f"\t\t{row['start']+res_dic[0]-1+(len_repeats*reps)}\t{row['end']+res_dic[0]-1+(len_repeats*reps)}\n")
+
+            spanfiles.append(span_file)
     print("Span process done")
     return spanfiles
 

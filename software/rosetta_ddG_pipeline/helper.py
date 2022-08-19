@@ -134,6 +134,15 @@ def longest_common_subsequence(str1, str2):
     return ''.join(res)
 
 
+def make_no_hetatm_file(infile):
+    path_to_cleaned_pdb_withoutlig = f'{infile}_without_lig.pdb'
+    with open(path_to_cleaned_pdb_withoutlig, 'w') as fp, open(infile, 'r') as fp2:
+        for line in fp2:
+            if not line.startswith('HETATM'):
+                fp.write(line)
+    return path_to_cleaned_pdb_withoutlig
+
+
 def extract_by_uniprot_fasta(keyword):
     # extract information from uniprot
     url_base = "https://www.uniprot.org/uniprot/"
