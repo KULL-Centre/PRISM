@@ -13,6 +13,7 @@ default_path = {
     'Rosetta_database_path': '/sbinlab/software/Rosetta_2021_Aug_c7009b3/database/',
     'Rosetta_extension': 'linuxgccrelease',
     'prism_parser': '/groups/sbinlab/software/PRISM_tools/prism_parser/scripts',
+    'BIOLIB_TOKEN': 'wEogNuisIGYhUmKe8T3KBaPnWYb6vtTRElSSZRFmRkE'
 }
 
 
@@ -34,6 +35,7 @@ Rosetta_tools_path = load_env('Rosetta_tools_path')
 Rosetta_database_path = load_env('Rosetta_database_path')
 Rosetta_extension = load_env('Rosetta_extension')
 prism_parser = load_env('prism_parser')
+BIOLIB_TOKEN = load_env('BIOLIB_TOKEN')
 
 try:
     pipes2 = subprocess.Popen("git describe --tags", shell=True, cwd=ddG_pipeline, stdout=subprocess.PIPE,stderr=subprocess.PIPE,)
@@ -49,7 +51,7 @@ except:
 
 
 print('current env paths & exec:', TMalign_exec, muscle_exec, ddG_pipeline, Rosetta_main_path,
-      Rosetta_tools_path, Rosetta_database_path, Rosetta_extension, prism_parser, sha, tag)
+      Rosetta_tools_path, Rosetta_database_path, Rosetta_extension, prism_parser, sha, tag, BIOLIB_TOKEN)
 
 # Rosetta paths
 path_to_rosetta = Rosetta_main_path
