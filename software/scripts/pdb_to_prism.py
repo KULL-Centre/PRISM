@@ -102,6 +102,11 @@ def parse_args():
         default='False',
         help="Fill all variants according to WT. Default is 'False'."
         )
+    parser.add_argument('--renumb_pdb', '-r',
+        type=str,
+        default='False',
+        help="Renumber the pdb file. Default is 'False'."
+        )
     
     
     args = parser.parse_args()
@@ -114,6 +119,10 @@ def parse_args():
         logger.info(f"Directory {args.output_dir} created successfully")
     except OSError as error:
         logger.warning(f"Directory {args.output_dir} can not be created")
+    if args.renumb_pdb != 'False':
+        args.renumb_pdb = True
+    else:
+        args.renumb_pdb = False
     return args
 
 
@@ -385,7 +394,7 @@ def dfs_to_prism(df, meta, pdbID, output_dir='.', organism=None, uniprot_id=None
 
     return prism_file_list
 
-def pdb_to_prism(pdbID, pdb_file=None, output_dir='.', chain='all', fill=False):
+def pdb_to_prism(pdbID, pdb_file=None, output_dir='.', chain='all', fill=False, renumb_pdb=True):
 
     if not pdb_file:
         logger.info(f'PDB {pdbID} will be downloaded')
@@ -394,7 +403,11 @@ def pdb_to_prism(pdbID, pdb_file=None, output_dir='.', chain='all', fill=False):
         except:
             pdb_file = download_pdb2(pdbID, output_dir=output_dir)
     else:
+        logger.info(renumb_pdb)
+        if renumb_pdb==True:
+            pdb_file = pdb_renumb(pdb_file, output_dir=output_dir, keepchain=chain)
         pdb_file = os.path.abspath(pdb_file)
+        logger.info(pdb_file)
 
     logger.info('Extract information from DSSP')
     dssp_df, dssp_meta_dict = make_dssp_df(pdb_file, pdbID, chain=chain)
@@ -489,7 +502,8 @@ def main():
     args = parse_args()
     
     # generate pdb prism files
-    file_list = pdb_to_prism(args.pdbID, pdb_file=args.pdb_file, output_dir=args.output_dir, chain=args.chain, fill=args.fill)
+    file_list = pdb_to_prism(args.pdbID, pdb_file=args.pdb_file, output_dir=args.output_dir, 
+        chain=args.chain, fill=args.fill, renumb_pdb=args.renumb_pdb)
 
 
 
