@@ -18,7 +18,7 @@ def parse_rosetta_ddgs(sys_name, chain_id, fasta_seq, ddG_input, ddG_output):
     subprocess.call(shell_command, cwd=path_to_run_folder, shell=True)
 
     rosetta_cartesian_ddgs_dict = ddgs_from_dg(rosetta_cartesian_read(
-        join(path_to_run_folder, rosetta_summary_file), fasta_seq))
+        join(path_to_run_folder, rosetta_summary_file), fasta_seq, struc_dat = ''))
     line = []
     list_keys = list(rosetta_cartesian_ddgs_dict.keys())
     uniprot_numbering_ddgs_dict = {}

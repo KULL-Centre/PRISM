@@ -444,20 +444,16 @@ def mp_span_from_deepTMHMM(pdbinput, outdir_path, signal_TM=False):
                 fp.write('manual-generated spanfile from DeepTMHMM\n')
                 if does_repeat == True:
                     fp.write(f'{num_span*num_repeats} {int(total_length)*(num_repeats-1)}\n')
-                    print(f'{num_span*num_repeats} {int(total_length)*(num_repeats-1)}\n')
                 else:
                     fp.write(f'{num_span} {int(total_length)}\n')
-                    print(f'{num_span} {int(total_length)}\n')
                 fp.write(f'{order}\n')
                 fp.write('n2c\n')
                 for index, row in TM_df.iterrows():
                     fp.write(f"\t\t{row['start']+res_dic[0]-1}\t{row['end']+res_dic[0]-1}\n")
-                    print(f"{row['start']}+{res_dic[0]}-1\t{row['end']}+{res_dic[0]}-1\n")
                 if does_repeat == True:
                     for reps in range(1, num_repeats-1):
                         for index, row in TM_df.iterrows():
                             fp.write(f"\t\t{row['start']+res_dic[0]-1+(len_repeats*reps)}\t{row['end']+res_dic[0]-1+(len_repeats*reps)}\n")
-                            print(f"\t\t{row['start']+res_dic[0]-1+(len_repeats*reps)}\t{row['end']+res_dic[0]-1+(len_repeats*reps)}\n")
 
             spanfiles.append(span_file)
     print("Span process done")

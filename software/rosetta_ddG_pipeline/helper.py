@@ -601,7 +601,12 @@ def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism
     seqdicfile = os.path.join(folder.prepare_checking, 'structure_input.json')
     with open(seqdicfile, 'r') as fp:
         sec_all = json.load(fp)
-        rosetta_seq = sec_all['strucdata'][chain_id][0]
+        seqss = ''
+        for ind, cha in enumerate(sec_all['strucdata'].keys()):
+            seqss = seqss + sec_all['strucdata'][cha][0]
+            if cha == chain_id:
+                break
+        rosetta_seq = seqss#sec_all['strucdata'][chain_id][0]
         sequence_pdbnbr = sec_all['strucdata'][chain_id][2]
         seqdic = sec_all['resdata']
         minkey = min(sec_all['resdata_reverse'], key=sec_all['resdata_reverse'].get)

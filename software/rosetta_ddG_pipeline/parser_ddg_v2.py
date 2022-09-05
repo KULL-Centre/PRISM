@@ -89,7 +89,7 @@ def parse_rosetta_ddgs(sys_name, chain_id, fasta_seq, ddG_run, ddG_output, struc
     subprocess.call(shell_command, cwd=path_to_run_folder, shell=True)
 
     rosetta_cartesian_ddgs_dict, rosetta_cartesian_ddgs_array = ddgs_from_dg(rosetta_cartesian_read(
-        join(path_to_run_folder, rosetta_summary_file), fasta_seq), scale_factor=scale_factor)
+        join(path_to_run_folder, rosetta_summary_file), fasta_seq, struc_dat=structure_input), scale_factor=scale_factor)
     
     
     protein_sequence=fasta_seq 
