@@ -312,7 +312,7 @@ def shift_pdb_numbering(in_pdb, out_pdb, sec_all, startnr=1):
     with open(in_pdb, 'r') as fp2, open(out_pdb, 'w') as fp3:
         for line in fp2:
             if line.startswith('ATOM'):
-                new_number = str(seqdic[line[22:26].strip()][1]-start_resi)
+                new_number = str(seqdic[line[22:27].strip()][1]-start_resi)
                 line_str = ' '*(4-len(new_number))
                 fp3.write(f'{line[:22]}{line_str}{new_number}{line[26:]}')
             else:

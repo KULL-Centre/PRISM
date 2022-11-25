@@ -53,26 +53,23 @@ def get_structure_parameters(outpath,structure_id,printing=True):
         for residue in chain:
             if residue.get_id()[0] == " ":
                 count += 1
+                restore_res_id = f"{residue.get_id()[1]}{residue.get_id()[2]}".strip()
                 try:
                     residue_letter = aminocodes[residue.get_resname()]
-                    resdata[count] = residue_letter,residue.get_id()[1],chain.get_id()
-                    resdata_reverse[residue.get_id()[1]] = count
-                    resdata_reverse2[f'{residue.get_id()[1]};{chain.get_id()}'] = count
+                    resdata[count] = residue_letter,restore_res_id,chain.get_id()
+                    resdata_reverse[restore_res_id] = count
+                    resdata_reverse2[f'{restore_res_id};{chain.get_id()}'] = count
                 except: 
                     residue_letter = str(residue.get_resname())
                     exceptions += 1
-                    resdata[count] = residue_letter,str(residue.get_id()[1]),chain.get_id()
-                    resdata_reverse[residue.get_id()[1]] = count
-                    resdata_reverse2[f'{residue.get_id()[1]};{chain.get_id()}'] = count
+                    resdata[count] = residue_letter,str(restore_res_id),chain.get_id()
+                    resdata_reverse[restore_res_id] = count
+                    resdata_reverse2[f'{restore_res_id};{chain.get_id()}'] = count
     #Counts special residues such as DNA 
     if printing == True:
         print("Special residues in structure = ",exceptions)
     
     #Making strucdata
-    
-  
-    
-    
     for chain in model:
         sequence = []
         for res in range(1,len(resdata)+1):
@@ -105,7 +102,7 @@ def get_structure_parameters(outpath,structure_id,printing=True):
                     previous_chainspec = chainspec
                     chainspec = line[21]              
                     previous_residue_number = residue_number
-                    residue_number = line[22:26]
+                    residue_number = line[22:26]# maybe keep at 22:26
                     residue_number = residue_number.lstrip()
                     
                     if (previous_chainspec == 'NULL' or (residue_number != previous_residue_number and chainspec == previous_chainspec)):

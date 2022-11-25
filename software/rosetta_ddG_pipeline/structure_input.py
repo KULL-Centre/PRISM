@@ -199,7 +199,7 @@ class structure:
         check2 = False
         mut_dic = {}
         resdata = self.struc_dic_cleaned["resdata"]
-        strucdata = self.struc_dic_cleaned["strucdata"]        
+        strucdata = self.struc_dic_cleaned["strucdata"]  
         path_to_alignment = self.path_to_index_string
         alignment = np.loadtxt(path_to_alignment)
         
@@ -274,18 +274,19 @@ class structure:
                                 mutate["_".join(key)] = "_".join(wt), "_".join(val)
                         else:
                             save = True
+                    # read pipeline files
                     else:
                         for line in f:
                             lines = line.split()
                             if len(lines) == 3:
                                 (wt, key, val) = line.split()
-                                mutate[int(key)] = wt, val
-                                c = mutate[int(key)][0] in list(mutate[int(key)][1])
+                                mutate[key] = wt, val
+                                c = mutate[key][0] in list(mutate[key][1])
                                 if c == True:
-                                    mutate[int(key)] = wt, val
+                                    mutate[key] = wt, val
                                 else:
                                     val = wt + val
-                                    mutate[int(key)] = wt, val
+                                    mutate[key] = wt, val
                             else:
                                 key=[]
                                 wt=[]
@@ -341,7 +342,8 @@ class structure:
                         try:
                             residue_number_ros = []
                             for res_num in str(residue_number).split('_'):
-                                residue_number_ros.append(self.struc_dic['resdata_reverse'][int(res_num)])
+                                res_num_2format = f"{res_num[1:]};{res_num[0]}"
+                                residue_number_ros.append(self.struc_dic['resdata_reverse2'][res_num_2format])
                         except Exception as e:
                             self.logger.warning(f"Residue {residue_number} present in the mutation file is not resolved in the structure. No output generated for it.")
                             continue
