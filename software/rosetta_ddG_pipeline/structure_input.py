@@ -352,7 +352,7 @@ class structure:
                     if type(residue_number_ros)!=list:
                         residue_number_ros = [residue_number_ros]
                     if len(residue_number_ros)==1:
-                        residue_number_ros = int(residue_number_ros[0])
+                        residue_number_ros = residue_number_ros[0]
                         check = resdata[residue_number_ros][0] in list(
                             mutate[residue_number][0])
                         # check = self.fasta_seq[residue_number_ros-1] in list(
@@ -366,7 +366,6 @@ class structure:
                             if num not in final_list:
                                 final_list.append(num)                
                         self.logger.debug(f"{mutate[residue_number][0]} {residue_number}  {''.join(final_list)}")
-
                         with open(os.path.join(self.folder.prepare_mutfiles, f'mutfile{str(residue_number_ros):0>5}'), 'w') as mutfile:
                             mutfile.write('total ' + str(len(final_list)))
                             mut_dic[str(residue_number_ros)] = "".join(final_list)
@@ -385,8 +384,12 @@ class structure:
                                 self.logger.warning(f'Missmatch{self.fasta_seq[int(residue)-1]}, {residue},{mutate[int(residue)][0]}')
                             fp.write(f'{self.fasta_seq[int(residue) - 1]} {int(residue)} {mutate[residue_number][1].split("_")[res_index]} ')
                         fp.write('\n')
-
-                        with open(os.path.join(self.folder.prepare_mutfiles, f'mutfile{str(residue_number)}'), 'w') as mutfile:#f'mutfile{str(i)}'), 'w') as mutfile:
+                        
+                        if len(residue_number.split('_'))>1:
+                            residue_number_name = "_".join([i[1:] for i in residue_number.split('_')])
+                        else:
+                            residue_number_name = residue_number
+                        with open(os.path.join(self.folder.prepare_mutfiles, f'mutfile{str(residue_number_name)}'), 'w') as mutfile:#f'mutfile{str(i)}'), 'w') as mutfile:
                             mutfile.write('total ' + str(len(residue_number_ros)*len(mutate[residue_number][1].split('_')[0]))+'\n')
                             mut_dic[residue_number] = "".join(mutate[residue_number][1])
                             for res_rounds in range(len(mutate[residue_number][1].split('_')[0])):
