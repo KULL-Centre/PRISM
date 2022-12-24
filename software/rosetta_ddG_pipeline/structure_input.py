@@ -65,7 +65,8 @@ class structure:
             self.path_to_cleaned_pdb = os.path.join(self.folder.prepare_cleaning, f'{name}_{self.run_struc}.pdb')
             path_to_cleaned_pdb=self.path_to_cleaned_pdb
             #Gets the fasta_seq
-            for chain in list(str(self.run_struc)):
+            self.fasta_seq_all=[]
+            for chain in [x for x in self.run_struc]:
                 self.path_to_cleaned_fasta = os.path.join(self.folder.prepare_cleaning, f'{name}_{chain}.fasta')
                 with open(self.path_to_cleaned_fasta, 'r') as fp:
                     fasta_lines = fp.readlines()
@@ -73,6 +74,8 @@ class structure:
             
                     for line in fasta_lines[1:]:
                         self.fasta_seq = self.fasta_seq + line.strip()
+                self.fasta_seq_all.append(self.fasta_seq)
+            self.fasta_seq_all = "".join(self.fasta_seq_all)
                     
         #This cleans the protein but keeps the ligands          
         if ligand == True:
@@ -377,16 +380,17 @@ class structure:
                                 # mutfile.write(self.fasta_seq[residue_number_ros - 1] + ' ' + str(residue_number_ros) + ' ' + AAtype)
                     else:
                         for res_index, residue in enumerate(residue_number_ros):
-                            check = self.fasta_seq[int(residue)-1] in list(
+                            chain = residue_number.split('_')[res_index][0]
+                            check = self.fasta_seq_all[int(residue)-1] in list(
                                 mutate[residue_number][0].split("_")[res_index])
                             if check == False:
                                 check2 = True
-                                self.logger.warning(f'Missmatch{self.fasta_seq[int(residue)-1]}, {residue},{mutate[int(residue)][0]}')
-                            fp.write(f'{self.fasta_seq[int(residue) - 1]} {int(residue)} {mutate[residue_number][1].split("_")[res_index]} ')
+                                self.logger.warning(f'Missmatch{self.fasta_seq_all[int(residue)-1]}, {residue},{mutate[residue_number][0]}')
+                            fp.write(f'{self.fasta_seq_all[int(residue) - 1]} {int(residue)} {mutate[residue_number][1].split("_")[res_index]} ')
                         fp.write('\n')
-                        
+
                         if len(residue_number.split('_'))>1:
-                            residue_number_name = "_".join([i[1:] for i in residue_number.split('_')])
+                            residue_number_name = "_".join([str(i) for i in residue_number_ros])
                         else:
                             residue_number_name = residue_number
                         with open(os.path.join(self.folder.prepare_mutfiles, f'mutfile{str(residue_number_name)}'), 'w') as mutfile:#f'mutfile{str(i)}'), 'w') as mutfile:
@@ -396,7 +400,7 @@ class structure:
                                 mutfile.write(f'{len(residue_number_ros)}\n')
                                 
                                 for indi, res in enumerate(residue_number_ros):
-                                    towrite = self.fasta_seq[int(res) - 1] + ' ' + str(res) + ' ' + mutate[residue_number][1].split("_")[indi].split()[0][res_rounds]+ '\n'
+                                    towrite = self.fasta_seq_all[int(res) - 1] + ' ' + str(res) + ' ' + mutate[residue_number][1].split("_")[indi].split()[0][res_rounds]+ '\n'
                                     mutfile.write(towrite)
                         i += 1
 
@@ -522,6 +526,6 @@ fi
 #This sbatch script launches the parse parse_rosetta_ddgs function, from the parse_cartesian_ddgs 
 ''')
             fp.write((f'python3 {rosetta_paths.path_to_stability_pipeline}/parser_ddg_v2.py '
-                      f'{self.sys_name} {self.chain_id} {self.fasta_seq} {folder.ddG_run} {folder.ddG_output} {structure_input}'
+                      f'{self.sys_name} {self.chain_id} {self.fasta_seq_all} {folder.ddG_run} {folder.ddG_output} {structure_input}'
                       f' {folder.ddG_input} {folder.output} {folder.prepare_checking} {output_gaps} {zip_files} {sha_tag} {folder.prepare_cleaning} {is_MP} {scale_factor}'))
         return score_sbatch_path
