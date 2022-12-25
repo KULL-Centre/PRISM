@@ -278,7 +278,7 @@ def ddG_postprocessing(in_ddg, out_ddg, sec_all=None, startnr=1, chain_id='A'):
     if sec_all:
         seqdic = sec_all['resdata']
         if startnr ==1:
-            resis = [ int(key.split(';')[0]) for key in sec_all['resdata_reverse2'].keys() if key.split(';')[1] == chain_id]
+            resis = [ int(key.split(';')[0]) for key in sec_all['resdata_reverse2'].keys() if key.split(';')[1] in [x for x in chain_id]]
             start_resi = min(resis)-1
     with open(in_ddg, 'r') as fp2, open(out_ddg, 'w') as fp3:
         for line in fp2:
@@ -604,15 +604,15 @@ def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism
         seqss = ''
         for ind, cha in enumerate(sec_all['strucdata'].keys()):
             seqss = seqss + sec_all['strucdata'][cha][0]
-            if cha == chain_id:
+            if cha in [x for x in chain_id]:
                 break
         rosetta_seq = seqss#sec_all['strucdata'][chain_id][0]
-        sequence_pdbnbr = sec_all['strucdata'][chain_id][2]
+        sequence_pdbnbr = sec_all['strucdata'][chain_id[0]][2]
         seqdic = sec_all['resdata']
         minkey = min(sec_all['resdata_reverse'], key=sec_all['resdata_reverse'].get)
         first_residue_number = int(minkey)
         first_residue_number = 1
-        for elem in sec_all['strucdata'][chain_id][2]:
+        for elem in sec_all['strucdata'][chain_id[0]][2]:
             if elem in ['-', 'x', 'X']:
                 first_residue_number = first_residue_number+1
             else:

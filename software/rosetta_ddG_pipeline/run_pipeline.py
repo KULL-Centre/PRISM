@@ -54,6 +54,7 @@ def predict_stability(args):
     verbose = args.VERBOSE
     partition=args.SLURM_PARTITION
 
+
     SHA_TAG = f'{rosetta_paths.sha}tag{rosetta_paths.tag}'
 
     if run_struc == None:
@@ -119,7 +120,7 @@ def predict_stability(args):
                 sys.exit()
 
         structure_dic = get_structure_parameters(
-            folder.prepare_checking, prep_struc)
+            folder.prepare_checking, prep_struc, args.RUN_STRUC)
 
         # Cleaning pdb and making fasta based on pdb or uniprot-id if provided
         logger.info(f'Prepare the pdb and extract fasta file')
@@ -189,10 +190,10 @@ def predict_stability(args):
 
         new_mut_input = os.path.join(folder.prepare_cleaning, 'mutation_clean.txt')
 
-        check1 = compare_mutfile(structure_instance.fasta_seq,
+        check1 = compare_mutfile(structure_instance.fasta_seq_all,
                                  folder.prepare_mutfiles, folder.prepare_checking, 
-                                 structure_instance.struc_dic_cleaned["resdata"], new_mut_input, chainid=structure_instance.chain_id)
-        check3, errors = pdbxmut(folder.prepare_mutfiles, struc_dic_cleaned)
+                                 structure_instance.struc_dic["resdata"], new_mut_input)
+        check3, errors = pdbxmut(folder.prepare_mutfiles, structure_instance.struc_dic)
         #check3= False
 
         if check1 == True or check2 == True or check3 == True:

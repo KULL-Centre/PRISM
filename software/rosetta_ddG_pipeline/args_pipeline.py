@@ -70,13 +70,13 @@ def parse_args2():
     parser.add_argument('--chainid', '-c',
                         default='A',
                         dest='CHAIN',
-                        help='chain ID for ddG mutagenesis'
+                        help='chain ID for ddG mutagenesis, for multiple, join them e.g. ABG'
                         )
     parser.add_argument('--run_struc',
                         default=None,
                         dest='RUN_STRUC',
                         help=('Insert what chains you want to be part of the full structure format: ABC \n'
-                              'ignorechain for full structure'
+                              'default: takes chainid input'
                               )
                         )
     parser.add_argument('--ligand',
@@ -378,4 +378,22 @@ def parse_args2():
             args.SCALE_FACTOR = 1
         else:
             args.SCALE_FACTOR = 2.9
+    
+    # cleanup chain order according to occurence in pdb
+    pdb_chain_order = []
+    reordered_chain = []
+    reordered_stucs = []
+    with open(args.STRUC_FILE, 'r') as fp:
+        for line in fp:
+            if line.startswith('ATOM'):
+                if not line[21] in pdb_chain_order:
+                    pdb_chain_order.append(line[21])
+                    if line[21] in [x for x in args.CHAIN]:
+                        reordered_chain.append(line[21])
+                    if line[21] in [x for x in args.RUN_STRUC]:
+                        reordered_stucs.append(line[21])
+    if len(reordered_chain)>0:
+        args.CHAIN = "".join(reordered_chain)
+    if len(reordered_stucs)>0:
+        args.RUN_STRUC = "".join(reordered_stucs)
     return args

@@ -31,9 +31,9 @@ class structure:
             self.chain_id=chain_id
             self.sys_name=name
             self.prep_struc=prep_struc
-            self.struc_dic= get_structure_parameters(
-                folder.prepare_checking, self.prep_struc)
             self.run_struc=run_struc
+            self.struc_dic= get_structure_parameters(
+                folder.prepare_checking, self.prep_struc, self.run_struc)
             self.folder=folder
             self.logger=logger
             self.input_dict=input_dict
@@ -80,7 +80,7 @@ class structure:
         #This cleans the protein but keeps the ligands          
         if ligand == True:
             if len(list(self.run_struc))>1:
-                for chainn in list(self.run_struc):
+                for chainn in [x for x in self.run_struc]:
                     self.path_to_clean_pdb = rosetta_paths.path_to_clean_keep_ligand
                     self.tmp_prep_struc = create_copy(self.prep_struc, self.folder.prepare_cleaning, name='withHETATM.pdb')
                     #Runs shell script
@@ -91,7 +91,7 @@ class structure:
 
                 path_to_cleaned_pdb = f'{self.tmp_prep_struc}{self.run_struc}.pdb'
                 with open(path_to_cleaned_pdb, 'w') as fp:
-                    for chainn in list(self.run_struc):
+                    for chainn in [x for x in self.run_struc]:
                         path_to_cleaned_pdb_tmp = f'{self.tmp_prep_struc}{chainn}.pdb'
                         with open(path_to_cleaned_pdb_tmp, 'r') as fp2:
                             for line in fp2:
@@ -107,7 +107,7 @@ class structure:
                 path_to_cleaned_pdb = f'{self.tmp_prep_struc}{self.run_struc}.pdb'
         #Creates struc.json from cleaned pdb file           
         struc_dic_cleaned= get_structure_parameters(
-            self.folder.prepare_cleaning, path_to_cleaned_pdb,printing=False)
+            self.folder.prepare_cleaning, path_to_cleaned_pdb, self.chain_id, printing=False)
         self.struc_dic_cleaned= struc_dic_cleaned
         return(path_to_cleaned_pdb,struc_dic_cleaned)
 
@@ -190,7 +190,7 @@ class structure:
                 strucdata = struc_dic["strucdata"]
             with open(path_to_mutation_input + "/mutation_input.txt", 'w') as mutation_input:
                 for n in range(1, len(resdata)+1):                   
-                    if resdata[n][2] == str(chain_id):
+                    if resdata[n][2] in [x for x in chain_id]:
                         wt = resdata[n][0]
                         pos = resdata[n][1]
                         mutation_input.write(f'{wt} {pos}  {AA} \n')
@@ -201,14 +201,20 @@ class structure:
 
         check2 = False
         mut_dic = {}
-        resdata = self.struc_dic_cleaned["resdata"]
+        resdata = self.struc_dic["resdata"]#struc_dic_cleaned
+        resdata_reverse_preclean = self.struc_dic["resdata_reverse2"]
         strucdata = self.struc_dic_cleaned["strucdata"]  
         path_to_alignment = self.path_to_index_string
         alignment = np.loadtxt(path_to_alignment)
         
         alignment_dic = {}
-        for n in enumerate(alignment):
-            alignment_dic[int(n[1])] = int(n[0] + 1)
+        all_chains = [x for x in self.chain_id]
+        for indi, resdat_keys in enumerate(resdata.keys()):
+            pairs = resdata[resdat_keys]
+            if pairs[2] in all_chains:
+                alignment_dic[int(resdat_keys)] = int(indi+1)
+        # for n in enumerate(alignment):
+        #     alignment_dic[int(n[1])] = int(n[0] + 1)
 
         if mutation_input != "proceed":
 
@@ -338,23 +344,32 @@ class structure:
 
             with open(os.path.join(self.folder.prepare_cleaning, 'mutation_clean.txt'), 'w') as fp:
                 i = 10000
+                all_residue_number_ros=[]
                 for residue_number in mutate:
                     if mutation_mode == 'all':
-                        residue_number_ros = alignment_dic[residue_number]
+                        residue_number_ros = alignment_dic[int(residue_number)]
                     else:
                         try:
                             residue_number_ros = []
                             for res_num in str(residue_number).split('_'):
                                 res_num_2format = f"{res_num[1:]};{res_num[0]}"
-                                residue_number_ros.append(self.struc_dic['resdata_reverse2'][res_num_2format])
+                                if res_num[0] in all_chains:
+                                    residue_number_ros.append(self.struc_dic['resdata_reverse2'][res_num_2format])
+                                else:
+                                    self.logger.warning(f"Mutation {res_num} present in the mutation file is not in Chain {self.chain_id} (of chains to mutate). No output generated for it.")
+                                    break
                         except Exception as e:
                             self.logger.warning(f"Residue {residue_number} present in the mutation file is not resolved in the structure. No output generated for it.")
                             continue
                     self.logger.debug(f"{residue_number_ros}  {residue_number}")
+                    all_residue_number_ros.append(residue_number_ros)
                     #This checks that the position in the mutfile is the correct one in the fasta sequence
+                    # need to check not for the fasta sequence but for the mapping as shifted pdb numbering
                     if type(residue_number_ros)!=list:
                         residue_number_ros = [residue_number_ros]
                     if len(residue_number_ros)==1:
+                        
+                        
                         residue_number_ros = residue_number_ros[0]
                         check = resdata[residue_number_ros][0] in list(
                             mutate[residue_number][0])
@@ -362,7 +377,7 @@ class structure:
                         #     mutate[residue_number][0])
                         if check == False:
                             check2 = True
-                            self.logger.warning(f'Missmatch{resdata[residue_number_ros][0]}, {residue_number},{mutate[residue_number][0]}')
+                            self.logger.warning(f'Missmatch1: {resdata[residue_number_ros][0]}, {residue_number},{mutate[residue_number][0]}')
                             # self.logger.warning(f'Missmatch{self.fasta_seq[residue_number_ros-1]}, {residue_number},{mutate[residue_number][0]}')
                         final_list = []
                         for num in mutate[residue_number][1]:                    
@@ -378,14 +393,14 @@ class structure:
                                 mutfile.write('\n1\n')
                                 mutfile.write(resdata[residue_number_ros][0] + ' ' + str(residue_number_ros) + ' ' + AAtype)
                                 # mutfile.write(self.fasta_seq[residue_number_ros - 1] + ' ' + str(residue_number_ros) + ' ' + AAtype)
-                    else:
+                    elif len(residue_number_ros)>1:
                         for res_index, residue in enumerate(residue_number_ros):
                             chain = residue_number.split('_')[res_index][0]
                             check = self.fasta_seq_all[int(residue)-1] in list(
                                 mutate[residue_number][0].split("_")[res_index])
                             if check == False:
                                 check2 = True
-                                self.logger.warning(f'Missmatch{self.fasta_seq_all[int(residue)-1]}, {residue},{mutate[residue_number][0]}')
+                                self.logger.warning(f'Missmatch2: {self.fasta_seq_all[int(residue)-1]}, {residue},{mutate[residue_number][0]}')
                             fp.write(f'{self.fasta_seq_all[int(residue) - 1]} {int(residue)} {mutate[residue_number][1].split("_")[res_index]} ')
                         fp.write('\n')
 
@@ -403,6 +418,16 @@ class structure:
                                     towrite = self.fasta_seq_all[int(res) - 1] + ' ' + str(res) + ' ' + mutate[residue_number][1].split("_")[indi].split()[0][res_rounds]+ '\n'
                                     mutfile.write(towrite)
                         i += 1
+                        
+                flat_all_residue_number_ros = list()
+                for sub_list in all_residue_number_ros:
+                    if type(sub_list) == list:
+                        flat_all_residue_number_ros += sub_list
+                    else:
+                        flat_all_residue_number_ros.append(sub_list)
+                if len(flat_all_residue_number_ros)==0:
+                    self.logger.error('No mutation valid. Please check input parameters, especially input mut files and mutation chains.')
+                    sys.exit()
 
         return(check2, mut_dic)
 

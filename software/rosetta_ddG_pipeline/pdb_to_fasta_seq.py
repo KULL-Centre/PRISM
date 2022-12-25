@@ -52,11 +52,10 @@ def pdb_to_fasta_seq(path_to_pdb,chain_id='NULL'):
                 residue_number = residue_number.lstrip()
                 if residue_number != previous_residue_number or chainspec != previous_chainspec:
                         fasta_seq_full += residue_letter
-                if (residue_number != previous_residue_number or chainspec != previous_chainspec) and str(line[21]) == str(chain_id):
+                if (residue_number != previous_residue_number or chainspec != previous_chainspec) and str(line[21]) in [x for x in chain_id]:
                         fasta_seq_chain += residue_letter                
 
     return(fasta_seq_full,fasta_seq_chain)
 
 if __name__ == '__main__':
     fasta_sequence = pdb_to_fasta_seq(sys.argv[1],sys.argv[2])
-    print(fasta_sequence)

@@ -9,7 +9,7 @@ from Bio import pairwise2
 from Bio.pairwise2 import format_alignment
 import json
 
-def get_structure_parameters(outpath,structure_id,printing=True):
+def get_structure_parameters(outpath,structure_id,chain_id,printing=True):
     """This script creates the .json file containing all the structure and protein information. This is all extracted from the pdb file, so if the information is not in the pdb, it will not be in file.
     
     RESDATA: Information about pdb numbering, rosetta numbering and chain
@@ -49,6 +49,7 @@ def get_structure_parameters(outpath,structure_id,printing=True):
     model = structure[0]
     
     #Making resdata
+    true_count = 0
     for chain in structure[0]:
         for residue in chain:
             if residue.get_id()[0] == " ":
@@ -56,15 +57,19 @@ def get_structure_parameters(outpath,structure_id,printing=True):
                 restore_res_id = f"{residue.get_id()[1]}{residue.get_id()[2]}".strip()
                 try:
                     residue_letter = aminocodes[residue.get_resname()]
-                    resdata[count] = residue_letter,restore_res_id,chain.get_id()
                     resdata_reverse[restore_res_id] = count
-                    resdata_reverse2[f'{restore_res_id};{chain.get_id()}'] = count
+                    if chain.get_id() in [x for x in chain_id]:
+                        true_count += 1
+                        resdata[true_count] = residue_letter,restore_res_id,chain.get_id()
+                        resdata_reverse2[f'{restore_res_id};{chain.get_id()}'] = true_count
                 except: 
                     residue_letter = str(residue.get_resname())
                     exceptions += 1
-                    resdata[count] = residue_letter,str(restore_res_id),chain.get_id()
                     resdata_reverse[restore_res_id] = count
-                    resdata_reverse2[f'{restore_res_id};{chain.get_id()}'] = count
+                    if chain.get_id() in [x for x in chain_id]:
+                        true_count += 1
+                        resdata[true_count] = residue_letter,str(restore_res_id),chain.get_id()
+                        resdata_reverse2[f'{restore_res_id};{chain.get_id()}'] = true_count
     #Counts special residues such as DNA 
     if printing == True:
         print("Special residues in structure = ",exceptions)

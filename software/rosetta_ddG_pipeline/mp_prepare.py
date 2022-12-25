@@ -63,7 +63,7 @@ def mp_superpose_opm(reference_chain, target, filename, target_chain='A',
     ref_struc = get_ref_struc(reference)
     ref_file_name = os.path.join(os.path.dirname(filename), 'ref_opm.pdb')
 
-    sucess = superpose_MMLigner(target, target_chain, 
+    sucess = superpose_MMLigner(target, target_chain[0], 
         ref_file_name, ref_chain, filename, 
         exec_dir = os.path.dirname(filename))
 
@@ -84,7 +84,7 @@ def mp_superpose_opm(reference_chain, target, filename, target_chain='A',
         seq2, seq2num, maxi2 = get_seq(ref_struc, isfile=False)
 
         superpose_struc(bio_ref_struc_raw, bio_target_struc_raw, ref_align_atoms, 
-                         seq1, seq1num, maxi1, seq2, seq2num, maxi2, filename, target_chain=target_chain, ref_chain=ref_chain,
+                         seq1, seq1num, maxi1, seq2, seq2num, maxi2, filename, target_chain=target_chain[0], ref_chain=ref_chain,
                          ref_model_id=ref_model_id, target_model_id=target_model_id)
 
 def superpose_struc(bio_ref_struc_raw, bio_target_struc_raw, ref_align_atoms, 
@@ -120,7 +120,7 @@ def superpose_struc(bio_ref_struc_raw, bio_target_struc_raw, ref_align_atoms,
     # List of residues to align
     align_ref_atoms = []
     for ind, chain in enumerate(bio_ref_struc_raw.get_chains()):
-        if chain.id == ref_chain:
+        if chain.id == ref_chain[0]:
             for res in chain.get_residues():  # bio_ref_struc.get_residues():
                 if ref_align_atoms == [] or res.get_id()[1] in ref_align_atoms:
                     for atom in res:
@@ -128,7 +128,7 @@ def superpose_struc(bio_ref_struc_raw, bio_target_struc_raw, ref_align_atoms,
                             align_ref_atoms.append(atom)
     align_target_atoms = []
     for ind, chain in enumerate(bio_target_struc.get_chains()):
-        if chain.id == target_chain:
+        if chain.id == target_chain[0]:
             for res in chain.get_residues():  # bio_target_struc.get_residues():
                 if target_align_atoms == [] or res.get_id()[1] in target_align_atoms:
                     for atom in res:
@@ -170,8 +170,8 @@ def superpose_MMLigner(target_pdb, target_chain, reference_pdb, reference_chain,
                 fp2.write(line)
 
     exect_mmlinger = (f"{rosetta_paths.MMLigner_exec} "
-        f"{reference_pdb_cleaned}:{reference_chain} "
-        f"{target_pdb}:{target_chain} "
+        f"{reference_pdb_cleaned}:{reference_chain[0]} "
+        f"{target_pdb}:{target_chain[0]} "
         "--superpose"
         "")
     print(f"Superpose pdbs using MMLigner: {exect_mmlinger} - here: {exec_dir}")
@@ -290,7 +290,7 @@ def mp_superpose_span(pdbinput, outdir_path, span_file_list, filename, SLURM=Fal
                 chains.append(line[21])
     chains = list(set(chains))
     for chain_re in chains:
-        sucess = superpose_MMLigner(pdbinput, chain, 
+        sucess = superpose_MMLigner(pdbinput, chain[0], 
             ref_struc, chain_re, filename, 
             exec_dir = os.path.dirname(filename))
         if sucess == True:
@@ -311,7 +311,7 @@ def mp_superpose_span(pdbinput, outdir_path, span_file_list, filename, SLURM=Fal
                 seq2, seq2num, maxi2 = get_seq(ref_struc, isfile=True)
 
                 superpose_struc(bio_ref_struc_raw, bio_target_struc_raw, ref_align_atoms, 
-                                seq1, seq1num, maxi1, seq2, seq2num, maxi2, filename, target_chain=chain, ref_chain=chain_re,
+                                seq1, seq1num, maxi1, seq2, seq2num, maxi2, filename, target_chain=chain[0], ref_chain=chain_re,
                                 ref_model_id=0, target_model_id=0)
             except:
                 pass
