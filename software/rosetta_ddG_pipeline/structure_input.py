@@ -37,6 +37,7 @@ class structure:
             self.folder=folder
             self.logger=logger
             self.input_dict=input_dict
+            self.fasta_seq_all=''
             if uniprot_accesion != '':
                 if os.path.isfile(uniprot_accesion):
                     self.uniprot_seq = read_fasta(uniprot_accesion)
@@ -65,7 +66,7 @@ class structure:
             self.path_to_cleaned_pdb = os.path.join(self.folder.prepare_cleaning, f'{name}_{self.run_struc}.pdb')
             path_to_cleaned_pdb=self.path_to_cleaned_pdb
             #Gets the fasta_seq
-            self.fasta_seq_all=[]
+            self.fasta_seq_all_tmp=[]
             for chain in [x for x in self.run_struc]:
                 self.path_to_cleaned_fasta = os.path.join(self.folder.prepare_cleaning, f'{name}_{chain}.fasta')
                 with open(self.path_to_cleaned_fasta, 'r') as fp:
@@ -74,8 +75,8 @@ class structure:
             
                     for line in fasta_lines[1:]:
                         self.fasta_seq = self.fasta_seq + line.strip()
-                self.fasta_seq_all.append(self.fasta_seq)
-            self.fasta_seq_all = "".join(self.fasta_seq_all)
+                self.fasta_seq_all_tmp.append(self.fasta_seq)
+            self.fasta_seq_all = "".join(self.fasta_seq_all_tmp)
                     
         #This cleans the protein but keeps the ligands          
         if ligand == True:
@@ -105,6 +106,17 @@ class structure:
                 subprocess.call(shell_command, cwd=self.folder.prepare_cleaning, shell=True)
                 self.logger.info('end of output from clean_pdb_keep_ligand.py')
                 path_to_cleaned_pdb = f'{self.tmp_prep_struc}{self.run_struc}.pdb'
+            fasta_seq_all_tmp = []
+            d1t3 = {'ALA':'A', 'CYS':'C', 'ASP':'D', 'GLU':'E', 'PHE':'F', 'GLY':'G', 'HIS':'H', 
+                    'ILE':'I', 'LYS':'K', 'LEU':'L', 'MET':'M', 'ASN':'N', 'PRO':'P', 'GLN':'Q', 
+                    'ARG':'R', 'SER':'S', 'THR':'T', 'VAL':'V', 'TRP':'W', 'TYR': 'Y'}
+            with open(path_to_cleaned_pdb, 'r') as fp:
+                for line in fp:
+                    if line.startswith('ATOM'):
+                        if line[11:17].strip()=='N':
+                            fasta_seq_all_tmp.append(d1t3[line[17:20]])
+            self.fasta_seq_all = "".join(fasta_seq_all_tmp)
+
         #Creates struc.json from cleaned pdb file           
         struc_dic_cleaned= get_structure_parameters(
             self.folder.prepare_cleaning, path_to_cleaned_pdb, self.chain_id, printing=False)
