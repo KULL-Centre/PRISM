@@ -271,7 +271,7 @@ def read_slurms(path, printing=False):
                     cancelfile.write(n+'\n')
 
 
-def ddG_postprocessing(in_ddg, out_ddg, sec_all=None, startnr=1, chain_id='A'):
+def ddG_postprocessing(in_ddg, out_ddg, sec_all=None, startnr=1, chain_id='A', sequence=''):
     """does sort the variants and optionally shifts the numbering, depending on the sequence"""
     result_list = []
     start_resi = 0
@@ -280,6 +280,22 @@ def ddG_postprocessing(in_ddg, out_ddg, sec_all=None, startnr=1, chain_id='A'):
         if startnr ==1:
             resis = [ int(key.split(';')[0]) for key in sec_all['resdata_reverse2'].keys() if key.split(';')[1] in [x for x in chain_id]]
             start_resi = min(resis)-1
+    if sequence != '':
+        sequence_clean = ''
+        ini_d = True
+        for elem in sequence:
+            if elem in ['-', 'X', 'x'] and ini_d:
+                pass
+            else:
+                ini_d = False
+                sequence_clean += elem
+        seq_info_dic = {}
+        i_n = 0
+        for ind, elem in enumerate(list(sequence_clean)):
+            if elem not in ['X', 'x', '-']:
+                seq_info_dic[i_n+1] = ind+1
+                i_n = i_n + 1
+
     with open(in_ddg, 'r') as fp2, open(out_ddg, 'w') as fp3:
         for line in fp2:
             line_str = line.split(',')
@@ -287,7 +303,10 @@ def ddG_postprocessing(in_ddg, out_ddg, sec_all=None, startnr=1, chain_id='A'):
                 new_number = []
                 new_variant = []
                 for resi in line_str[0].split(':'):
-                    new_numb = str(seqdic[resi[1:-1]][1]-start_resi)
+                    if sequence != '':
+                        new_numb = str(seq_info_dic[int(resi[1:-1])])
+                    else:
+                        new_numb = str(int(seqdic[resi[1:-1]][1])-start_resi)
                     new_number.append(new_numb)
                     new_variant.append(f'{resi[0]}{new_numb}{resi[-1]}')
                 new_variants = f'{":".join(new_variant)},{line_str[1]},{line_str[2]}'
@@ -301,18 +320,40 @@ def ddG_postprocessing(in_ddg, out_ddg, sec_all=None, startnr=1, chain_id='A'):
             fp3.write(f'{elem[-1]}')
 
 
-def shift_pdb_numbering(in_pdb, out_pdb, sec_all, startnr=1):
+def shift_pdb_numbering(in_pdb, out_pdb, sec_all, startnr=1, sequence=''):
     result_list = []
-    start_resi = 0
+    start_resi = startnr-1
     if sec_all:
         seqdic = sec_all['resdata']
-        if startnr ==1:
-            minkey = min(sec_all['resdata_reverse'], key=sec_all['resdata_reverse'].get)
+        if startnr == 1:
+            renumbed_data_array = [int(sec_all['resdata'][elem][1]) for elem in sec_all['resdata'].keys()]
+            minkey = min(renumbed_data_array)
             start_resi = int(minkey)-1
+    if sequence != '':
+        sequence_clean = ''
+        ini_d = True
+        for elem in sequence:
+            if elem in ['-', 'X', 'x'] and ini_d:
+                pass
+            else:
+                ini_d = False
+                sequence_clean += elem
+        seq_info_dic = {}
+        i_n = 0
+        for ind, elem in enumerate(list(sequence_clean)):
+            if elem not in ['X', 'x', '-']:
+                seq_info_dic[i_n+1] = ind+1
+                i_n = i_n + 1
     with open(in_pdb, 'r') as fp2, open(out_pdb, 'w') as fp3:
         for line in fp2:
             if line.startswith('ATOM'):
-                new_number = str(seqdic[line[22:27].strip()][1]-start_resi)
+                if sequence != '':
+                    new_number = str(seq_info_dic[int(line[22:27].strip())])
+                else:
+                    if startnr == 1:
+                        new_number = str(int(seqdic[line[22:27].strip()][1])-start_resi)
+                    else:
+                        new_number = str(int(seqdic[line[22:27].strip()][1]))
                 line_str = ' '*(4-len(new_number))
                 fp3.write(f'{line[:22]}{line_str}{new_number}{line[26:]}')
             else:
@@ -575,7 +616,7 @@ def parse_rosetta_Eres_to_mut(folder, sys_name, prism_nr='XXX', chain='A', unipr
         uniprot_id=uniprot_id, organism=organism, version=version, count=count)
     create_copy(prism_file, folder.output)
 
-def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism_nr='XXX', chain_id='A', output_gaps=False, bfac=True, zip_files=True, sha_tag='', MP=False, scale=2.9):
+def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism_nr='XXX', chain_id='A', run_struc='A', output_gaps=False, bfac=True, zip_files=True, sha_tag='', MP=False, scale=2.9):
     # generate emission stats
     generate_emission_stats(folder.output[:-7])
     if MP:
@@ -602,16 +643,24 @@ def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism
     with open(seqdicfile, 'r') as fp:
         sec_all = json.load(fp)
         seqss = ''
+        sequence_pdbnbr = ''
         for ind, cha in enumerate(sec_all['strucdata'].keys()):
-            seqss = seqss + sec_all['strucdata'][cha][0]
-            if cha in [x for x in chain_id]:
-                break
-        rosetta_seq = seqss#sec_all['strucdata'][chain_id][0]
-        sequence_pdbnbr = sec_all['strucdata'][chain_id[0]][2]
+            if cha in [x for x in run_struc]:
+                seqss = seqss + sec_all['strucdata'][cha][0]
+                sequence_pdbnbr_tmp = ''
+                ini_d = True
+                for elem in sec_all['strucdata'][cha][2]:
+                    if elem in ['-', 'X', 'x'] and ini_d:
+                        pass
+                    else:
+                        ini_d = False
+                        sequence_pdbnbr_tmp += elem
+                sequence_pdbnbr = sequence_pdbnbr + sequence_pdbnbr_tmp
+        rosetta_seq = seqss
         seqdic = sec_all['resdata']
-        minkey = min(sec_all['resdata_reverse'], key=sec_all['resdata_reverse'].get)
+        renumbed_data_array = [int(sec_all['resdata'][elem][1]) for elem in sec_all['resdata'].keys()]
+        minkey = min(renumbed_data_array)
         first_residue_number = int(minkey)
-        first_residue_number = 1
         for elem in sec_all['strucdata'][chain_id[0]][2]:
             if elem in ['-', 'x', 'X']:
                 first_residue_number = first_residue_number+1
@@ -633,12 +682,12 @@ def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism
         ini_d = True
         sequence = ''
         for elem in sequence_pdbnbr:
-          if elem in ['-', 'X', 'x'] and ini_d:
-            pass
-          else:
-            ini_d = False
-            sequence += elem
-        if first_residue_number >1:
+            if elem in ['-', 'X', 'x'] and ini_d:
+                pass
+            else:
+                ini_d = False
+                sequence += elem
+        if (first_residue_number >1) and (len(chain_id)==1):
             ddg_shifted_gap_file = os.path.join(folder.ddG_run, f'{output_name[:-4]}_gap-shifted{output_name[-4:]}')
             prism_gap_shifted_file = os.path.join(folder.ddG_output, f'prism_rosetta_{prism_nr}_{sys_name}_gap-shifted.txt')
             ddG_postprocessing(ddg_file, ddg_shifted_gap_file, sec_all=sec_all, startnr=first_residue_number, chain_id=chain_id)
@@ -653,7 +702,9 @@ def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism
         else:
             logger.warn(f'original pdb-numbering starts with residue-nr <=1 ({first_residue_number}) - no fitting file generated')
         ddg_gap_file = os.path.join(folder.ddG_run, f'{output_name[:-4]}_gap{output_name[-4:]}')
-        ddG_postprocessing(ddg_file, ddg_gap_file, sec_all=sec_all, startnr=1, chain_id=chain_id)
+        # ddG_postprocessing(ddg_file, ddg_gap_file, sec_all=sec_all, startnr=1, chain_id=chain_id)
+        ddG_postprocessing(ddg_file, ddg_gap_file, sec_all=sec_all, startnr=1, 
+                           chain_id=chain_id, sequence=sequence_pdbnbr)
         prism_gap_file = os.path.join(folder.ddG_output, f'prism_rosetta_{prism_nr}_{sys_name}-gap.txt')
         rosetta_to_prism(ddg_gap_file, prism_gap_file, sequence, rosetta_info=None,
                          version=version, sys_name=sys_name, first_residue_number=1, sha_tag=sha_tag, MP=MP, 
@@ -661,7 +712,7 @@ def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism
         create_copy(prism_gap_file, folder.output)
 
         pdb_gap_file = os.path.join(folder.ddG_output, 'relaxed_gap.pdb')
-        shift_pdb_numbering(pdb_file, pdb_gap_file, sec_all, startnr=1)
+        shift_pdb_numbering(pdb_file, pdb_gap_file, sec_all, startnr=1, sequence=sequence_pdbnbr)
         create_copy(pdb_gap_file, folder.output, name=f'{sys_name}_final_gap.pdb')
 
     if zip_files:

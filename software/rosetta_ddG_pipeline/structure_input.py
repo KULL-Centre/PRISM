@@ -551,6 +551,6 @@ fi
 #This sbatch script launches the parse parse_rosetta_ddgs function, from the parse_cartesian_ddgs 
 ''')
             fp.write((f'python3 {rosetta_paths.path_to_stability_pipeline}/parser_ddg_v2.py '
-                      f'{self.sys_name} {self.chain_id} {self.fasta_seq_all} {folder.ddG_run} {folder.ddG_output} {structure_input}'
+                      f'{self.sys_name} {self.chain_id} {self.run_struc} {self.fasta_seq_all} {folder.ddG_run} {folder.ddG_output} {structure_input}'
                       f' {folder.ddG_input} {folder.output} {folder.prepare_checking} {output_gaps} {zip_files} {sha_tag} {folder.prepare_cleaning} {is_MP} {scale_factor}'))
         return score_sbatch_path

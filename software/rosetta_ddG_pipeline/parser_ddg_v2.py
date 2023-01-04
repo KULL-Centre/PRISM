@@ -76,7 +76,7 @@ def csv_to_prism(data,structure_input,chain_id):
             prism_data.write('#\t chain_id: '+ chain_id+"\n")
             output_df.to_csv(prism_data, index = False,sep=' ')
 
-def parse_rosetta_ddgs(sys_name, chain_id, fasta_seq, ddG_run, ddG_output, structure_input, ddG_input, output, prepare_checking, output_gaps=False, zip_files=True, sha_tag='', is_MP=False, scale_factor=2.9):
+def parse_rosetta_ddgs(sys_name, chain_id, run_struc, fasta_seq, ddG_run, ddG_output, structure_input, ddG_input, output, prepare_checking, output_gaps=False, zip_files=True, sha_tag='', is_MP=False, scale_factor=2.9):
     """This script parses the results from the ddG calculations into two files. A regular data file containing only the data and the variants and a prism-like file with data variants and additional information"""
     
     runtime_memory_stats(ddG_run)
@@ -138,7 +138,7 @@ def parse_rosetta_ddgs(sys_name, chain_id, fasta_seq, ddG_run, ddG_output, struc
     folder.update({'prepare_checking': prepare_checking, 'ddG_run': ddG_run,
                    'ddG_output': ddG_output, 'ddG_input': ddG_input, 'output': output})
     generate_output(folder, output_name='ddg.out', sys_name=sys_name, 
-        chain_id=chain_id, output_gaps=output_gaps, zip_files=zip_files, sha_tag=sha_tag, MP=is_MP, scale=scale_factor)
+        chain_id=chain_id, run_struc=run_struc, output_gaps=output_gaps, zip_files=zip_files, sha_tag=sha_tag, MP=is_MP, scale=scale_factor)
 
 #    try:
 #        data=output_file_path + ".csv"
@@ -159,16 +159,26 @@ def quickcheck( run_dir, base_mut ):
     with open(base_mut, 'r') as fp:
         for line in fp:
             line = line.split()
-            wt = line[0]
-            resi = line[1]
-            varrs = line[2].strip()
-            for var in varrs:
-                if var != wt:
-                    arr.append(f"{wt}{resi}{var}")
+            mods = int(len(line)/3)
+            if len(line)%3 ==0:
+                mods = mods-1
+            tmp_vars = []
+            tmp_vars_dic = {}
+            for var_mod in range(0,mods+1):
+                wt = line[0+3*var_mod]
+                resi = line[1+3*var_mod]
+                varrs = line[2+3*var_mod].strip()
+                for var in varrs:
+                    if var != wt:
+                        tmp_vars_dic[int(resi)] = f"{wt}{resi}{var}"
+                        tmp_vars.append(int(resi))
+            tmp_vars = sorted(list(set(tmp_vars)))
+            tmp_vars = [tmp_vars_dic[i] for i in tmp_vars]
+            arr.append(":".join(tmp_vars))
     df_goal = pd.DataFrame(data={'variant':arr})
     df_goal['target'] = True
-    df_goal['resi'] = df_goal['variant'].apply(lambda x: int(x[1:-1]))
-
+    df_goal['resi'] = df_goal['variant'].apply(lambda x: ":".join([str(i[1:-1]) for i in x.split(':')]))
+    
     df_add_all = []
     for files in os.listdir (run_dir):
         if files.startswith("mutfile"):
@@ -181,27 +191,41 @@ def quickcheck( run_dir, base_mut ):
                 d1t3 = {'ALA':'A', 'CYS':'C', 'ASP':'D', 'GLU':'E', 'PHE':'F', 'GLY':'G', 'HIS':'H', 'ILE':'I', 'LYS':'K', 'LEU':'L', 
                        'MET':'M', 'ASN':'N', 'PRO':'P', 'GLN':'Q', 'ARG':'R', 'SER':'S', 'THR':'T', 'VAL':'V', 'TRP':'W', 'TYR': 'Y'}
                 def get_vars(x):
-                    res = x.split('_')
-                    if len(res)>2:
-                        res = res[1]
-                    else:
-                        res = res[1][:-1]
-                    mut_var = res[-3:]
-                    mut_var = d1t3[mut_var]
-                    resi = int(res[:-3])
-                    wt_var = df_goal.loc[df_goal['resi']==int(resi), 'variant'].to_list()[0][0]
-                    return f"{wt_var}{resi}{mut_var}"
+                    res = x.split('_')[1:]
+                    resis_list = []
+                    mut_var_list = []
+                    for var_res in res:
+                        var_res = var_res.split(':')[0]                        
+                        mut_var = var_res[-3:]
+                        mut_var = d1t3[mut_var]
+                        resi = int(var_res[:-3])
+                        resis_list.append(int(resi))
+                        mut_var_list.append(mut_var)
+                    resis_list = sorted(resis_list)
+                    resis_list = [str(i) for i in resis_list]
+                    resis = ":".join(resis_list)
+                    wt_var = df_goal.loc[df_goal['resi']==resis, 'variant'].to_list()[0]
+                    wt_var = wt_var.split(':')
+                    
+                    tmp_joined_list = []
+                    for ind, resi in enumerate(resis_list):
+                        tmp_joined_list.append(f"{wt_var[ind][0]}{resi}{mut_var_list[ind]}")
+
+                    return ":".join(tmp_joined_list)
+                
                 df_add['variant'] = df_add[4].apply(lambda x: get_vars(x))
+
                 df_add['dG'] = df_add[5]
                 df_add = df_add[['variant', 'dG']]
                 df_add['rmsd'] = None
             else:
                 df_add = pd.DataFrame(columns=['variant', 'dG', 'rmsd', 'resi'])
-            df_add['resi'] = df_add['variant'].apply(lambda x: int(x[1:-1]))
+            df_add['resi'] = df_add['variant'].apply(lambda x: ":".join([str(i[1:-1]) for i in x.split(':')]))
+
             df_add_all.append(df_add)
         else:
             df_add = pd.DataFrame(columns=['variant', 'dG', 'rmsd', 'resi'])
-            df_add['resi'] = df_add['variant'].apply(lambda x: int(x[1:-1]))
+            df_add['resi'] = df_add['variant'].apply(lambda x: ":".join([str(i[1:-1]) for i in x.split(':')]))
             df_add_all.append(df_add)
     df_add = pd.concat(df_add_all)
     df_add['base'] = 'MUT'
@@ -216,12 +240,10 @@ def quickcheck( run_dir, base_mut ):
     df_add_count = pd.DataFrame(df_add_count).reset_index(drop=False)
     df_add_count = df_add_count.rename(columns={'dG': 'count'})
     df_add = pd.merge(df_add, df_add_count, on=['variant'], how='outer')
-    df_add
 
     # merging
     df_all = pd.merge(df_goal, df_add, on=['variant', 'resi'], how='outer')
     df_all['target'] = df_all['target'].fillna(False)
-    df_all
 
     # do some stats
     max_calculated = len(df_all['variant'])
@@ -242,22 +264,22 @@ def quickcheck( run_dir, base_mut ):
 if __name__ == '__main__':
     print(sys.argv)
     # check if pdb is present
-    if os.path.isfile(sys.argv[6]):
+    if os.path.isfile(sys.argv[7]):
         # check if all calculated
-        base_mut = os.path.join(sys.argv[13], 'mutation_clean.txt')
-        all_calculated, df_all = quickcheck( sys.argv[4], base_mut )
+        base_mut = os.path.join(sys.argv[14], 'mutation_clean.txt')
+        all_calculated, df_all = quickcheck( sys.argv[5], base_mut )
         print(f'all calculated: {all_calculated}')
 
         if all_calculated:
-            parse_rosetta_ddgs(sys_name=sys.argv[1], chain_id=sys.argv[2], fasta_seq=sys.argv[3], 
-                ddG_run=sys.argv[4], ddG_output=sys.argv[5], structure_input=sys.argv[6], 
-                ddG_input=sys.argv[7], output=sys.argv[8], prepare_checking=sys.argv[9], output_gaps=eval(sys.argv[10]), 
-                zip_files=eval(sys.argv[11]), sha_tag=sys.argv[12], is_MP=eval(sys.argv[14]), scale_factor=float(sys.argv[15]))
+            parse_rosetta_ddgs(sys_name=sys.argv[1], chain_id=sys.argv[2], run_struc=sys.argv[3], fasta_seq=sys.argv[4], 
+                ddG_run=sys.argv[5], ddG_output=sys.argv[6], structure_input=sys.argv[7], 
+                ddG_input=sys.argv[8], output=sys.argv[9], prepare_checking=sys.argv[10], output_gaps=eval(sys.argv[11]), 
+                zip_files=eval(sys.argv[12]), sha_tag=sys.argv[13], is_MP=eval(sys.argv[15]), scale_factor=float(sys.argv[16]))
         else:
             print(f"sys args before rerun: {sys.argv}")
             folder = AttrDict()
-            folder.update({'ddG_input': sys.argv[7], 'ddG_run': sys.argv[4]})
+            folder.update({'ddG_input': sys.argv[8], 'ddG_run': sys.argv[5]})
             run_modes.ddg_calculation(folder, parse_relax_process_id=None)
     else:
-        print(f"{sys.argv[6]} not present")
+        print(f"{sys.argv[7]} not present")
         sys.exit()
