@@ -246,16 +246,18 @@ class structure:
                         res_nums = len(key)
                         mutsNum = int(total_muts/res_nums)
                         wt=[]
-                        val=[]            
+                        val=[]
+                        res_list = []
                         for resii in range(res_nums):
                             single_var = []
                             for singlemuts in range(mutsNum):
                                 target = lines[(1+1*singlemuts)+(resii+(singlemuts*res_nums))].split()
                                 single_var.append(target[2])
                                 single_wt = target[0]
+                            res_list.append(target[1])
                             val.append("".join(single_var))
                             wt.append(single_wt)
-                        mutate["_".join(key)] = "_".join(wt), "_".join(val)
+                        mutate["_".join(res_list)] = "_".join(wt), "_".join(val)
             else:
                 with open(mutation_input) as f:
                     first_line = next(f).split()[0]
