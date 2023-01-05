@@ -5,7 +5,7 @@
     "MUT_MODE": "mut_file",
     "MUTATION_INPUT": "/data/test/mp-pipeline/input/pipeline_mutfile_short.txt",
     "CHAIN": "A",
-    "RUN_STRUC": null,
+    "RUN_STRUC": "A",
     "LIGAND": null,
     "OVERWRITE_PATH": true,
     "SLURM_PARTITION": "sbinlab",
