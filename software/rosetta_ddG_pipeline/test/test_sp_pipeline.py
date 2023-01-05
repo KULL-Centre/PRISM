@@ -94,6 +94,7 @@ class SPpipelineCreateDHFRTestCase(unittest.TestCase):
     def tearDown(self):
         # Remove the directory after the test
         shutil.rmtree(self.global_test_dir, ignore_errors=True)
+        # pass
 
     def test_create_rosettamutfile_prov_flag(self):
         # initiates output and reference directory
@@ -108,7 +109,7 @@ class SPpipelineCreateDHFRTestCase(unittest.TestCase):
             'MUT_MODE': 'mut_file',
             'MUTATION_INPUT': data('sp-pipeline/input/mutfile_short'),
             'CHAIN': 'A',
-            'RUN_STRUC': None,
+            'RUN_STRUC': 'A',
             'LIGAND': None,
             'OVERWRITE_PATH': True,
             'SLURM_PARTITION': 'sbinlab',
@@ -226,7 +227,7 @@ class SPpipelineCreateDHFRTestCase(unittest.TestCase):
             'MUT_MODE': 'mut_file',
             'MUTATION_INPUT': data('sp-pipeline/input/mutfile_short'),
             'CHAIN': 'A',
-            'RUN_STRUC': None,
+            'RUN_STRUC': 'A',
             'LIGAND': True,
             'OVERWRITE_PATH': True,
             'SLURM_PARTITION': 'sbinlab',
