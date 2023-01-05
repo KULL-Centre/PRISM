@@ -88,7 +88,7 @@ class MPpipelineFullrunGlpGTestCase(unittest.TestCase):
             'MUT_MODE': 'mut_file',
             'MUTATION_INPUT': data('mp-pipeline/input/mutfile_all'),
             'CHAIN': 'A',
-            'RUN_STRUC': None,
+            'RUN_STRUC': 'A',
             'LIGAND': None,
             'OVERWRITE_PATH': True,
             'SLURM_PARTITION': 'sbinlab',
