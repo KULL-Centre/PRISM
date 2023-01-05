@@ -26,6 +26,9 @@ Please expect some waiting time for the last test.
 
 # Consistency test for membrane pipeline:
 =======
+Note: make sure to activate the python environment before running
+> conda activate /groups/sbinlab/software/PRISM_tools/py3_ros_ddG_env
+
 Running all tests 
 > cd ./test
 
@@ -42,6 +45,8 @@ Running individual classes or methods
 > python -m unittest test_mp_pipeline.MPpipelineCreateGlpGTestCase.test_create_rosettamutfile_prov_flag
 
 > python -m unittest test_mp_pipeline.MPpipelineCreateGlpGTestCase.test_create_pipemut_prov_flag
+
+> python -m unittest test_mp_pipeline.MPpipelineCreateGlpGTestCase.test_create_mutfileall_prov_flag
 
 > python -m unittest test_mp_pipeline.MPpipelineCreateGlpGTestCase.test_create_mutdir_prov_flag
 
@@ -89,3 +94,12 @@ This algorithm runs on 60 CPU (any) for ~ 0 h and 27 min each, for a total runti
 > python -m unittest sci_test_sp_pipeline.SPpipelineFullrunDHFRTestCase.test_c_analyze_comp_rosettamutfile_prov_flag
 
 > python -m unittest sci_test_sp_pipeline.SPpipelineFullrunDHFRTestCase.test_d_deleteFolder
+
+
+# Trouble shooting:
+=======
+Sometimes the pybiolib library needs to be updated. Execute one (or multiple) of the following commands:
+
+> pip3 install -U pybiolib
+
+> conda install -y -c conda-forge -c anaconda -c defaults -c bioconda biolib
