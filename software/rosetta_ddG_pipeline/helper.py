@@ -275,10 +275,18 @@ def ddG_postprocessing(in_ddg, out_ddg, sec_all=None, startnr=1, chain_id='A', s
     """does sort the variants and optionally shifts the numbering, depending on the sequence"""
     result_list = []
     start_resi = 0
+    info_return = 'Fine'
     if sec_all:
         seqdic = sec_all['resdata']
         if startnr ==1:
-            resis = [ int(key.split(';')[0]) for key in sec_all['resdata_reverse2'].keys() if key.split(';')[1] in [x for x in chain_id]]
+            resis = []
+            for tmp_key in sec_all['resdata_reverse2'].keys():
+                if tmp_key.split(';')[1] in [x for x in chain_id]:
+                    try:
+                        resis.append(int(tmp_key.split(';')[0]))
+                    except:
+                        info_return = 'ERROR'
+                        pass
             start_resi = min(resis)-1
     if sequence != '':
         sequence_clean = ''
@@ -318,6 +326,7 @@ def ddG_postprocessing(in_ddg, out_ddg, sec_all=None, startnr=1, chain_id='A', s
         sorted_list = sorted(result_list, key=lambda x: (int(x[0]), x[1]))
         for elem in sorted_list:
             fp3.write(f'{elem[-1]}')
+    return info_return
 
 
 def shift_pdb_numbering(in_pdb, out_pdb, sec_all, startnr=1, sequence=''):
@@ -326,8 +335,14 @@ def shift_pdb_numbering(in_pdb, out_pdb, sec_all, startnr=1, sequence=''):
     if sec_all:
         seqdic = sec_all['resdata']
         if startnr == 1:
-            renumbed_data_array = [int(sec_all['resdata'][elem][1]) for elem in sec_all['resdata'].keys()]
-            minkey = min(renumbed_data_array)
+            renumbed_data_array = [sec_all['resdata'][elem][1] for elem in sec_all['resdata'].keys()]
+            minkey=[]
+            for tmpi_i in renumbed_data_array:
+                try:
+                    minkey.append(int(tmpi_i))
+                except:
+                    return 'ERROR'
+            minkey = min(minkey)
             start_resi = int(minkey)-1
     if sequence != '':
         sequence_clean = ''
@@ -358,6 +373,7 @@ def shift_pdb_numbering(in_pdb, out_pdb, sec_all, startnr=1, sequence=''):
                 fp3.write(f'{line[:22]}{line_str}{new_number}{line[26:]}')
             else:
                 fp3.write(line)
+    return 'Fine'
 
 
 def add_ddG_to_bfactor(in_pdb, in_ddg, out_pdb, threshold=0.0):
@@ -658,8 +674,14 @@ def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism
                 sequence_pdbnbr = sequence_pdbnbr + sequence_pdbnbr_tmp
         rosetta_seq = seqss
         seqdic = sec_all['resdata']
-        renumbed_data_array = [int(sec_all['resdata'][elem][1]) for elem in sec_all['resdata'].keys()]
-        minkey = min(renumbed_data_array)
+        renumbed_data_array = [sec_all['resdata'][elem][1] for elem in sec_all['resdata'].keys()]
+        minkey=[]
+        for tmpi_i in renumbed_data_array:
+            try:
+                minkey.append(int(tmpi_i))
+            except:
+                pass
+        minkey = min(minkey)
         first_residue_number = int(minkey)
         for elem in sec_all['strucdata'][chain_id[0]][2]:
             if elem in ['-', 'x', 'X']:
@@ -668,7 +690,7 @@ def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism
                 break
 
     ddg_sorted_file = os.path.join(folder.ddG_run, f'{output_name[:-4]}_sorted_continuous{output_name[-4:]}')
-    ddG_postprocessing(ddg_file, ddg_sorted_file, sec_all=None, startnr=1, chain_id=chain_id)
+    results_nongapped = ddG_postprocessing(ddg_file, ddg_sorted_file, sec_all=None, startnr=1, chain_id=chain_id)
     prism_file = os.path.join(folder.ddG_output, f'prism_rosetta_{prism_nr}_{sys_name}.txt')
     rosetta_to_prism(ddg_sorted_file, prism_file, rosetta_seq, rosetta_info=None,
                      version=version, sys_name=sys_name, first_residue_number=1, sha_tag=sha_tag, MP=MP, 
@@ -690,30 +712,36 @@ def generate_output(folder, output_name='ddG.out', sys_name='', version=1, prism
         if (first_residue_number >1) and (len(chain_id)==1):
             ddg_shifted_gap_file = os.path.join(folder.ddG_run, f'{output_name[:-4]}_gap-shifted{output_name[-4:]}')
             prism_gap_shifted_file = os.path.join(folder.ddG_output, f'prism_rosetta_{prism_nr}_{sys_name}_gap-shifted.txt')
-            ddG_postprocessing(ddg_file, ddg_shifted_gap_file, sec_all=sec_all, startnr=first_residue_number, chain_id=chain_id)
-            rosetta_to_prism(ddg_shifted_gap_file, prism_gap_shifted_file, sequence, rosetta_info=None,
-                             version=version, sys_name=sys_name, first_residue_number=first_residue_number, sha_tag=sha_tag, MP=MP, 
-                             span_file=span_file, lipid_file=lipid_file, deepTMHMM_file=deepTMHMM_file, scale=scale)
-            create_copy(prism_gap_shifted_file, folder.output)
+            results_gapped = ddG_postprocessing(ddg_file, ddg_shifted_gap_file, sec_all=sec_all, 
+                                                startnr=first_residue_number, chain_id=chain_id)
+            if results_gapped=='Fine':
+                rosetta_to_prism(ddg_shifted_gap_file, prism_gap_shifted_file, sequence, rosetta_info=None,
+                                 version=version, sys_name=sys_name, first_residue_number=first_residue_number, sha_tag=sha_tag, MP=MP, 
+                                 span_file=span_file, lipid_file=lipid_file, deepTMHMM_file=deepTMHMM_file, scale=scale)
+                create_copy(prism_gap_shifted_file, folder.output)
 
-            pdb_gap_shifted_file = os.path.join(folder.ddG_output, 'relaxed_gap_shifted.pdb')
-            shift_pdb_numbering(pdb_file, pdb_gap_shifted_file, sec_all, startnr=first_residue_number)
-            create_copy(pdb_gap_shifted_file, folder.output, name=f'{sys_name}_final_gap_shifted.pdb')
+                pdb_gap_shifted_file = os.path.join(folder.ddG_output, 'relaxed_gap_shifted.pdb')
+                results_shits = shift_pdb_numbering(pdb_file, pdb_gap_shifted_file, sec_all, startnr=first_residue_number)
+                if results_shits=='Fine':
+                    create_copy(pdb_gap_shifted_file, folder.output, name=f'{sys_name}_final_gap_shifted.pdb')
         else:
             logger.warn(f'original pdb-numbering starts with residue-nr <=1 ({first_residue_number}) - no fitting file generated')
         ddg_gap_file = os.path.join(folder.ddG_run, f'{output_name[:-4]}_gap{output_name[-4:]}')
         # ddG_postprocessing(ddg_file, ddg_gap_file, sec_all=sec_all, startnr=1, chain_id=chain_id)
-        ddG_postprocessing(ddg_file, ddg_gap_file, sec_all=sec_all, startnr=1, 
+        results_gapped = ddG_postprocessing(ddg_file, ddg_gap_file, sec_all=sec_all, startnr=1, 
                            chain_id=chain_id, sequence=sequence_pdbnbr)
-        prism_gap_file = os.path.join(folder.ddG_output, f'prism_rosetta_{prism_nr}_{sys_name}-gap.txt')
-        rosetta_to_prism(ddg_gap_file, prism_gap_file, sequence, rosetta_info=None,
-                         version=version, sys_name=sys_name, first_residue_number=1, sha_tag=sha_tag, MP=MP, 
-                         span_file=span_file, lipid_file=lipid_file, deepTMHMM_file=deepTMHMM_file, scale=scale)
-        create_copy(prism_gap_file, folder.output)
+        if results_gapped=='Fine':
+            prism_gap_file = os.path.join(folder.ddG_output, f'prism_rosetta_{prism_nr}_{sys_name}-gap.txt')
+            rosetta_to_prism(ddg_gap_file, prism_gap_file, sequence, rosetta_info=None,
+                             version=version, sys_name=sys_name, first_residue_number=1, sha_tag=sha_tag, MP=MP, 
+                             span_file=span_file, lipid_file=lipid_file, deepTMHMM_file=deepTMHMM_file, scale=scale)
 
-        pdb_gap_file = os.path.join(folder.ddG_output, 'relaxed_gap.pdb')
-        shift_pdb_numbering(pdb_file, pdb_gap_file, sec_all, startnr=1, sequence=sequence_pdbnbr)
-        create_copy(pdb_gap_file, folder.output, name=f'{sys_name}_final_gap.pdb')
+            create_copy(prism_gap_file, folder.output)
+
+            pdb_gap_file = os.path.join(folder.ddG_output, 'relaxed_gap.pdb')
+            results_shits = shift_pdb_numbering(pdb_file, pdb_gap_file, sec_all, startnr=1, sequence=sequence_pdbnbr)
+            if results_shits=='Fine':
+                create_copy(pdb_gap_file, folder.output, name=f'{sys_name}_final_gap.pdb')
 
     if zip_files:
         logger.info('Zip files...')
