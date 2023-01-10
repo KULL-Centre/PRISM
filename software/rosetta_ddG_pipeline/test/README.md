@@ -21,6 +21,10 @@ Running individual classes or methods
 
 > python -m unittest test_sp_pipeline.SPpipelineCreateDHFRTestCase.test_create_ligand_prov_flag
 
+> python -m unittest test_sp_pipeline.SPpipelineCreateMTSP1TestCase
+
+> python -m unittest test_sp_pipeline.SPpipelineCreateMTSP1TestCase.test_create_insertioncode_prov_flag
+
 Please expect some waiting time for the last test.
 
 

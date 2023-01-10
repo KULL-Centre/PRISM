@@ -1,0 +1,5 @@
+NAME = 1EAW
+CHAIN = AB
+STRUCTURE = /data/test/sp-pipeline/input/1EAW.pdb
+OUTPATH = 
+
