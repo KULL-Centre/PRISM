@@ -186,6 +186,12 @@ A 12 ACDEFGHIKLMNPQRSTVWY
 
 Be aware that we are talking Rosetta numbering! This means numbering starts at 1 and there are no gaps
 
+When doing multiple mutations, remember to follow the same rules for the mutation file. For example:
+```bash
+G 10 D H 11 TW
+```
+will do two sets of mutations, G10D H11T, and G10D H11W.
+
 You can now do the run:
 ```bash
 run_ddG_pipeline -s 1PGA.pdb -o run -i fullrun --chainid A -m mutation_input.txt
