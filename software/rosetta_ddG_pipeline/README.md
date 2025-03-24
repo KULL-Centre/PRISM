@@ -221,6 +221,7 @@ For anything other than beta_nov16, remove -beta flag and change the -score:weig
 
 ```bash
 run_ddG_pipeline -s 1u72.pdb -o run -i fullrun --chainid A --ddgflags cartesian_ddg_flagfile_ref2015 --relaxflags relax_flagfile_ref2015
+```
 
 ## Support
 For general support:
