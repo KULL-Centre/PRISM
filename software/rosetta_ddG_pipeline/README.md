@@ -213,8 +213,14 @@ To run a protein through the membrane protein pipeline, -mp must be specified an
 run_ddG_pipeline -s 6xro.pdb -o run -i fullrun --chainid A -mp 1 --mp_calc_span_mode DSSP --mp_align_ref 6xro_A 
 ```
 
+#### Case 6 - Running with a different score function
+To run a the pipeline with a score function other than beta_nov16, one needs to copy cartesian_ddg_flagfile and relax_flagfile from PRISM/software/rosetta_ddG_pipeline/data/sp and modify them correspondingly. The flags of interest are:
+-beta
+-score:weights beta_nov16_cart
+For anything other than beta_nov16, remove -beta flag and change the -score:weights flag.
 
-
+```bash
+run_ddG_pipeline -s 1u72.pdb -o run -i fullrun --chainid A --ddgflags cartesian_ddg_flagfile_ref2015 --relaxflags relax_flagfile_ref2015
 
 ## Support
 For general support:
