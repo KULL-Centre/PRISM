@@ -7,11 +7,16 @@ default_path = {
     'muscle_exec': '/groups/sbinlab/software/muscle/muscle3.8.31_i86linux64',
     'TMalign_exec': '/groups/sbinlab/software/TMalign/TMalign',
     'MMLigner_exec': '/groups/sbinlab/software/MMLigner/mmligner',
-    'ddG_pipeline': '/groups/sbinlab/software/PRISM_tools/rosetta_stability-dev/software/rosetta_ddG_pipeline',
-    'Rosetta_main_path': '/sbinlab/software/Rosetta_2021_Aug_c7009b3/source/',
-    'Rosetta_tools_path': '/sbinlab/software/Rosetta_tools/tools/',
-    'Rosetta_database_path': '/sbinlab/software/Rosetta_2021_Aug_c7009b3/database/',
+    # 'ddG_pipeline': '/groups/sbinlab/software/PRISM_tools/rosetta_stability-dev/software/rosetta_ddG_pipeline',
+    'ddG_pipeline': '/lustre/hpc/sbinlab/panf/PRISM/software/rosetta_ddG_pipeline/',
+    # 'Rosetta_main_path': '/sbinlab/software/Rosetta_2021_Aug_c7009b3/source/',
+    'Rosetta_main_path': '/sbinlab/software/Rosetta_2025_Jan_e5e4b27/source/',
+    # 'Rosetta_tools_path': '/sbinlab/software/Rosetta_tools/tools/',
+    'Rosetta_tools_path': '/sbinlab/software/Rosetta_2025_Jan_e5e4b27/tools/',
+    # 'Rosetta_database_path': '/sbinlab/software/Rosetta_2021_Aug_c7009b3/database/',
+    'Rosetta_database_path': '/sbinlab/software/Rosetta_2025_Jan_e5e4b27/database/',
     'Rosetta_extension': 'linuxgccrelease',
+#    'prism_parser': '/groups/sbinlab/software/PRISM_tools/prism_parser/scripts',
     'prism_parser': '/groups/sbinlab/software/PRISM_tools/prism_parser/scripts',
     'BIOLIB_TOKEN': 'wEogNuisIGYhUmKe8T3KBaPnWYb6vtTRElSSZRFmRkE'
 }
@@ -57,6 +62,7 @@ print('current env paths & exec:', TMalign_exec, muscle_exec, ddG_pipeline, Rose
 path_to_rosetta = Rosetta_main_path
 path_to_clean_pdb = os.path.join(
     Rosetta_tools_path, 'protein_tools', 'scripts', 'clean_pdb.py')
+#path_to_clean_pdb = 'Cartesian_pipeline_runs/448_1EAW_new/clean_pdb.py'
 path_to_clean_keep_ligand = os.path.join(
     path_to_rosetta, 'src', 'apps', 'public', 'relax_w_allatom_cst', 'clean_pdb_keep_ligand.py')
 # Personal paths

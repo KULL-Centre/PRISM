@@ -337,7 +337,25 @@ def parse_args2():
                         help=SUPPRESS,
                         #help="MP cartesian space. Default=1 "
                         )
-    
+    parser.add_argument('--ligands_to_keep', '-l',
+                        default='',
+                        type=str,
+                        dest='LIGANDS_TO_KEEP', 
+                        help='list of 3-letter ligand identifiers, e.g. "MTX NDP"'
+                        )
+    # parser.add_argument('--ptm_to_keep', '-ptm',
+    #                     default='',
+    #                     type=str,
+    #                     dest='PTM_TO_KEEP', 
+    #                     help='list of 3-letter PTM identifiers, e.g. "M3L PTR"'
+    #                    )
+    parser.add_argument('--ptm_mode', '-ptm',
+                        choices=['skip', 'keep', 'reverse'],
+                        default='create',
+                        dest='PTM_MODE', 
+                        help='skip: remove residues, keep: keep the same, revert: revert to the unmodified residue"'
+                       )
+                        
 
     args = parser.parse_args()
 
@@ -355,6 +373,9 @@ def parse_args2():
         args.ZIP_FILES = True
     if args.LIGAND != None:
         args.LIGAND = True
+    else:
+        if args.LIGANDS_TO_KEEP != '':
+            args.LIGANDS_TO_KEEP = ''
     if args.IS_MP == False:
         args.MP_MULTISTRUC_PROTOCOL == 0
     if args.IS_MP:

@@ -21,7 +21,9 @@ import numpy as np
 import pdb_to_fasta_seq
 import rosetta_paths
 from AnalyseStruc import get_structure_parameters
+from clean_pdb_new import clean_pdb
 from helper import read_fasta, remove_hetatms, create_copy
+from Bio import PDB
 
 class structure:
     
@@ -48,80 +50,44 @@ class structure:
             print('Failed initiation. Please check input parameters')
             sys.exit()
             
-    def clean_up_and_isolate(self, name='input',ligand=None):
+    def clean_up_and_isolate(self, name='input', ligand=None, ligands_to_keep='', ptm_mode='keep'):
         """This script is for cleaning the pdb file from unwanted entities"""
         
         #This cleans the protein and removes ligands
-        if  ligand == None:
-            self.path_to_clean_pdb = rosetta_paths.path_to_clean_pdb
-            #remove all HETATM
-            self.tmp_prep_struc = create_copy(self.prep_struc, self.folder.prepare_cleaning, name='withHETATM.pdb')
-            self.prep_struc = remove_hetatms(self.tmp_prep_struc , self.prep_struc)
-            #Runs shell script
-            shell_command = f'python2 {self.path_to_clean_pdb} {self.prep_struc} {self.run_struc}  --keepzeroocc'
-            self.logger.info('Running clean_pdb.py script')
-            subprocess.call(shell_command, cwd=self.folder.prepare_cleaning, shell=True)
-            self.logger.info('end of output from clean_pdb.py')
-    
-            self.path_to_cleaned_pdb = os.path.join(self.folder.prepare_cleaning, f'{name}_{self.run_struc}.pdb')
-            path_to_cleaned_pdb=self.path_to_cleaned_pdb
-            #Gets the fasta_seq
-            self.fasta_seq_all_tmp=[]
-            for chain in [x for x in self.run_struc]:
-                self.path_to_cleaned_fasta = os.path.join(self.folder.prepare_cleaning, f'{name}_{chain}.fasta')
-                with open(self.path_to_cleaned_fasta, 'r') as fp:
-                    fasta_lines = fp.readlines()
-                    self.fasta_seq = ''
-            
-                    for line in fasta_lines[1:]:
-                        self.fasta_seq = self.fasta_seq + line.strip()
-                self.fasta_seq_all_tmp.append(self.fasta_seq)
-            self.fasta_seq_all = "".join(self.fasta_seq_all_tmp)
-                    
-        #This cleans the protein but keeps the ligands          
-        if ligand == True:
-            if len(list(self.run_struc))>1:
-                for chainn in [x for x in self.run_struc]:
-                    self.path_to_clean_pdb = rosetta_paths.path_to_clean_keep_ligand
-                    self.tmp_prep_struc = create_copy(self.prep_struc, self.folder.prepare_cleaning, name='withHETATM.pdb')
-                    #Runs shell script
-                    shell_command = f'python2 {self.path_to_clean_pdb} {self.tmp_prep_struc} {chainn}  --keepzeroocc'
-                    self.logger.info(f'Running clean_pdb_keep_ligand.py script {shell_command}')
-                    subprocess.call(shell_command, cwd=self.folder.prepare_cleaning, shell=True)
-                    self.logger.info('end of output from clean_pdb_keep_ligand.py')
+        self.tmp_prep_struc = create_copy(self.prep_struc, self.folder.prepare_cleaning, name='withHETATM.pdb')
+        self.path_to_cleaned_pdb = os.path.join(self.folder.prepare_cleaning, f'{name}_{self.run_struc}.pdb')
+        path_intermediate = os.path.join(self.folder.prepare_cleaning, f'{name}.pdb')
+        path_intermediate_score = os.path.join(self.folder.prepare_cleaning, name)
+        # Custom cleaning function
+        print(f'Running the clean_pdb function with parameters ligand={ligand}, chains_to_keep={self.run_struc}, ptm_mode={ptm_mode}')
+        if ligand == None:
+            ligand = False
+        clean_pdb(self.prep_struc, path_intermediate, chains_to_keep=self.run_struc, keep_ligands=ligand, ptm_mode=ptm_mode)
+        # Run score_jd2 to make ensure proper formating
+        shell_command = f'/lustre/hpc/sbinlab/software/Rosetta_2025_Jan_e5e4b27/source/bin/score_jd2.linuxgccrelease -in:file:s {path_intermediate} -out:pdb -renumber_pdb -ignore_unrecognized_res -overwrite'
+        self.logger.info(f'Running score_jd2 for residue renumbering {shell_command}')
+        subprocess.call(shell_command, cwd=self.folder.prepare_cleaning, shell=True)
+        self.logger.info('end of output from score_jd2')
+        os.rename(f'{path_intermediate_score}_0001.pdb', self.path_to_cleaned_pdb)
 
-                path_to_cleaned_pdb = f'{self.tmp_prep_struc}{self.run_struc}.pdb'
-                with open(path_to_cleaned_pdb, 'w') as fp:
-                    for chainn in [x for x in self.run_struc]:
-                        path_to_cleaned_pdb_tmp = f'{self.tmp_prep_struc}{chainn}.pdb'
-                        with open(path_to_cleaned_pdb_tmp, 'r') as fp2:
-                            for line in fp2:
-                                fp.write(line)
-            else:
-                self.path_to_clean_pdb = rosetta_paths.path_to_clean_keep_ligand
-                self.tmp_prep_struc = create_copy(self.prep_struc, self.folder.prepare_cleaning, name='withHETATM.pdb')
-                #Runs shell script
-                shell_command = f'python2 {self.path_to_clean_pdb} {self.tmp_prep_struc} {self.run_struc}  --keepzeroocc'
-                self.logger.info(f'Running clean_pdb_keep_ligand.py script {shell_command}')
-                subprocess.call(shell_command, cwd=self.folder.prepare_cleaning, shell=True)
-                self.logger.info('end of output from clean_pdb_keep_ligand.py')
-                path_to_cleaned_pdb = f'{self.tmp_prep_struc}{self.run_struc}.pdb'
-            fasta_seq_all_tmp = []
-            d1t3 = {'ALA':'A', 'CYS':'C', 'ASP':'D', 'GLU':'E', 'PHE':'F', 'GLY':'G', 'HIS':'H', 
-                    'ILE':'I', 'LYS':'K', 'LEU':'L', 'MET':'M', 'ASN':'N', 'PRO':'P', 'GLN':'Q', 
-                    'ARG':'R', 'SER':'S', 'THR':'T', 'VAL':'V', 'TRP':'W', 'TYR': 'Y'}
-            with open(path_to_cleaned_pdb, 'r') as fp:
-                for line in fp:
-                    if line.startswith('ATOM'):
-                        if line[11:17].strip()=='N':
-                            fasta_seq_all_tmp.append(d1t3[line[17:20]])
-            self.fasta_seq_all = "".join(fasta_seq_all_tmp)
+        #Gets the fasta_seq
+        self.fasta_seq_all_tmp=[]
+        for chain in [x for x in self.run_struc]:
+            self.path_to_cleaned_fasta = os.path.join(self.folder.prepare_cleaning, f'{name}_{chain}.fasta')
+            with open(self.path_to_cleaned_fasta, 'r') as fp:
+                fasta_lines = fp.readlines()
+                self.fasta_seq = ''
+        
+                for line in fasta_lines[1:]:
+                    self.fasta_seq = self.fasta_seq + line.strip()
+            self.fasta_seq_all_tmp.append(self.fasta_seq)
+        self.fasta_seq_all = "".join(self.fasta_seq_all_tmp)
 
         #Creates struc.json from cleaned pdb file           
         struc_dic_cleaned= get_structure_parameters(
-            self.folder.prepare_cleaning, path_to_cleaned_pdb, self.chain_id, printing=False)
+            self.folder.prepare_cleaning, self.path_to_cleaned_pdb, self.chain_id, printing=False)
         self.struc_dic_cleaned= struc_dic_cleaned
-        return(path_to_cleaned_pdb,struc_dic_cleaned)
+        return(self.path_to_cleaned_pdb,struc_dic_cleaned)
 
 
 

@@ -685,8 +685,8 @@ def rosetta_relax_mp(folder, SLURM=False, num_struc=20, sys_name='mp', partition
         with open(path_to_sbatch, 'w') as fp:
             fp.write(f'''#!/bin/sh
 #SBATCH --job-name=relax_{sys_name}
-#SBATCH --time=24:00:00
-#SBATCH --mem 5000
+#SBATCH --time=96:00:00
+#SBATCH --mem 20G
 #SBATCH --array=0-{num_struc-1}
 #SBATCH --partition={partition}
 

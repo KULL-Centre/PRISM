@@ -39,24 +39,25 @@ def rosetta_cartesian_read(pathtofile, protein_seq='abcd', struc_dat=''):
 
     cartesian_scores = {}
     for line in score_data:
-        score_fields = line.split()
-        descriptions = score_fields[2][4:-1]
-        key = []
-        for description in descriptions.split('_'):
-            three_letter_code = description[-3:]
-            one_letter = aminocodes[three_letter_code]
-            res_number = description[:-3]
-            dg = float(score_fields[3])
-            if struc_dat=='':
-                key.append(protein_seq[int(res_number) - 1] + res_number + one_letter)
+        if line.startswith('COMPLEX'):
+            score_fields = line.split()
+            descriptions = score_fields[2][4:-1]
+            key = []
+            for description in descriptions.split('_'):
+                three_letter_code = description[-3:]
+                one_letter = aminocodes[three_letter_code]
+                res_number = description[:-3]
+                dg = float(score_fields[3])
+                if struc_dat=='':
+                    key.append(protein_seq[int(res_number) - 1] + res_number + one_letter)
+                else:
+                    key.append(strucdata['resdata'][str(res_number)][0] + res_number + one_letter)
+            key = ":".join(key)
+            if key in cartesian_scores:
+                cartesian_scores[key].append(dg)
+    
             else:
-                key.append(strucdata['resdata'][str(res_number)][0] + res_number + one_letter)
-        key = ":".join(key)
-        if key in cartesian_scores:
-            cartesian_scores[key].append(dg)
-
-        else:
-            cartesian_scores[key] = [dg]
+                cartesian_scores[key] = [dg]
     return cartesian_scores
 
 

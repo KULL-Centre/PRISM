@@ -10,3 +10,4 @@
 -ex2
 -ddg::legacy true
 -optimize_proline true
+-interface_ddg -1
