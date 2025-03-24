@@ -215,10 +215,30 @@ run_ddG_pipeline -s 6xro.pdb -o run -i fullrun --chainid A -mp 1 --mp_calc_span_
 
 #### Case 6 - Running with a different score function
 To run a the pipeline with a score function other than beta_nov16, one needs to copy cartesian_ddg_flagfile and relax_flagfile from PRISM/software/rosetta_ddG_pipeline/data/sp and modify them correspondingly. The flags of interest are:
+```bash
 -beta
 -score:weights beta_nov16_cart
-For anything other than beta_nov16, remove -beta flag and change the -score:weights flag.
+```
+For anything other than beta_nov16, remove -beta flag and change the -score:weights flag. For example, cartesian_ddg_flagfile for ref2015:
 
+```bash
+-fa_max_dis 9
+-relax:constrain_relax_to_start_coords
+-ignore_unrecognized_res
+-missing_density_to_jump
+-nstruct 1
+-relax:coord_constrain_sidechains 
+-relax:cartesian
+-score:weights ref2015_cart
+-ex1
+-ex2
+-relax:min_type lbfgs_armijo_nonmonotone
+-out:suffix _bn15_calibrated
+-flip_HNQ
+-no_optH false
+-fa_max_dis 9.0
+```
+Pipeline flag usage:
 ```bash
 run_ddG_pipeline -s 1u72.pdb -o run -i fullrun --chainid A --ddgflags cartesian_ddg_flagfile_ref2015 --relaxflags relax_flagfile_ref2015
 ```
