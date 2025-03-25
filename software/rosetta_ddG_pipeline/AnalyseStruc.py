@@ -51,8 +51,13 @@ def get_structure_parameters(outpath,structure_id,chain_id,printing=True):
     #Making resdata
     true_count = 0
     for chain in structure[0]:
+        print(chain)
         for residue in chain:
+            if residue.get_id()[0] != " " and residue.resname in modres:
+                print(residue.get_id())
+            #if residue.get_id()[0] == " " or (residue.get_id()[0] != " " and residue.resname in modres):
             if residue.get_id()[0] == " ":
+                print(residue.get_id())
                 count += 1
                 restore_res_id = f"{residue.get_id()[1]}{residue.get_id()[2]}".strip()
                 try:

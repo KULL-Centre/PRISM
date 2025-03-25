@@ -351,7 +351,7 @@ def parse_args2():
     #                    )
     parser.add_argument('--ptm_mode', '-ptm',
                         choices=['skip', 'keep', 'reverse'],
-                        default='create',
+                        default='skip',
                         dest='PTM_MODE', 
                         help='skip: remove residues, keep: keep the same, revert: revert to the unmodified residue"'
                        )
