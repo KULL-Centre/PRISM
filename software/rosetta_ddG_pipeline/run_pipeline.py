@@ -85,7 +85,7 @@ def predict_stability(args):
 
         # Create structure instance
         logger.info(f'Creating structure instance')
-        structure_instance = structure(chain_id,name,folder,prep_struc,run_struc,logger,input_dict,uniprot_accesion=uniprot_accesion)
+        structure_instance = structure(chain_id,name,folder,prep_struc,run_struc,logger,input_dict,uniprot_accesion=uniprot_accesion, ptm_mode=args.PTM_MODE)
         run_name = 'input'
 
         # adjust mp structure if MP_ALIGN_MODE is selected

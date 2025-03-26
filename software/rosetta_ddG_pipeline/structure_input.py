@@ -24,18 +24,19 @@ from AnalyseStruc import get_structure_parameters
 from clean_pdb_new import clean_pdb
 from helper import read_fasta, remove_hetatms, create_copy
 from Bio import PDB
+from ptm_dict import modres
 
 class structure:
     
-    def __init__(self,chain_id,name,folder,prep_struc,run_struc,logger,input_dict,uniprot_accesion=''):
-        #Initiating parameters for internal use in the script
+    def __init__(self,chain_id,name,folder,prep_struc,run_struc,logger,input_dict,uniprot_accesion='', ptm_mode='reverse'):
+        #Initiating parameters for internal use in the script            
         try:
             self.chain_id=chain_id
             self.sys_name=name
             self.prep_struc=prep_struc
             self.run_struc=run_struc
             self.struc_dic= get_structure_parameters(
-                folder.prepare_checking, self.prep_struc, self.run_struc)
+                    folder.prepare_checking, self.prep_struc, self.run_struc, ptm_mode=ptm_mode)
             self.folder=folder
             self.logger=logger
             self.input_dict=input_dict
@@ -46,11 +47,12 @@ class structure:
                 else:
                     self.uniprot_seq = extract_by_uniprot_fasta(uniprot_accesion)[1][1]
             self.name='input'
+            self.ptm_mode = ptm_mode
         except:
             print('Failed initiation. Please check input parameters')
             sys.exit()
             
-    def clean_up_and_isolate(self, name='input', ligand=None, ligands_to_keep='', ptm_mode='keep'):
+    def clean_up_and_isolate(self, name='input', ligand=None, ligands_to_keep='', ptm_mode='reverse'):
         """This script is for cleaning the pdb file from unwanted entities"""
         
         #This cleans the protein and removes ligands
@@ -85,7 +87,7 @@ class structure:
 
         #Creates struc.json from cleaned pdb file           
         struc_dic_cleaned= get_structure_parameters(
-            self.folder.prepare_cleaning, self.path_to_cleaned_pdb, self.chain_id, printing=False)
+            self.folder.prepare_cleaning, self.path_to_cleaned_pdb, self.chain_id, printing=False, ptm_mode=ptm_mode)
         self.struc_dic_cleaned= struc_dic_cleaned
         return(self.path_to_cleaned_pdb,struc_dic_cleaned)
 
