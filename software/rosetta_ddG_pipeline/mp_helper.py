@@ -9,6 +9,7 @@ Date of last major changes: 2020-04-16
 # Standard library imports
 import json
 import urllib.request
+from ptm_dict import modres
 
 
 d3to1 = {'CYS': 'C', 'ASP': 'D', 'SER': 'S', 'GLN': 'Q', 'LYS': 'K',
@@ -44,6 +45,7 @@ def getnums(seq, seqnum):
     return numseq
 
 def get_seq(file_pointer, isfile=True):
+    global modres
     i = 0
     if isfile:
         fp = open(file_pointer)
@@ -68,6 +70,7 @@ def get_seq(file_pointer, isfile=True):
             resname = line[17:20].strip()
             if line[12:16].strip() == 'CA':
                 if line[16] in [' ', 'A']:
+                    # seq[resseq-1] = d3to1[modres[resname]]
                     seq[resseq-1] = d3to1[resname]
                     seq2.append(resseq)
     return "".join(seq), seq2, i

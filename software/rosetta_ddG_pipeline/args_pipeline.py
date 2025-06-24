@@ -371,11 +371,6 @@ def parse_args2():
         args.ZIP_FILES = False
     else:
         args.ZIP_FILES = True
-    if args.LIGAND != None:
-        args.LIGAND = True
-    else:
-        if args.LIGANDS_TO_KEEP != '':
-            args.LIGANDS_TO_KEEP = ''
     if args.IS_MP == False:
         args.MP_MULTISTRUC_PROTOCOL == 0
     if args.IS_MP:
@@ -399,6 +394,12 @@ def parse_args2():
             args.SCALE_FACTOR = 1
         else:
             args.SCALE_FACTOR = 2.9
+            
+    if args.LIGAND != None:
+        args.LIGAND = True
+    else:
+        if args.LIGANDS_TO_KEEP != '':
+            args.LIGANDS_TO_KEEP = ''
     
     # cleanup chain order according to occurence in pdb
     pdb_chain_order = []

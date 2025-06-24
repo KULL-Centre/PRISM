@@ -90,13 +90,21 @@ def ddgs_from_dg(dictionary_of_dGs, scale_factor=2.9):
     ddgs = {}
     ddgs_array = []
     # (variant - WT) / 2.9
+    print('dictionary_of_dGs', dictionary_of_dGs)
     for mutation in dictionary_of_dGs:
+        print('mutation', mutation)
         residue_numbers = []
         for mutations in mutation.split(':'):
             residue_numbers.append(mutations[1:-1])
         residue_number = ":".join(residue_numbers)
+        print('residue_number', residue_number)
         ddg = []
         for indi in range(len(dgs_as_floats[mutation])):
+            print('indi', indi)
+            print('dgs_as_floats', dgs_as_floats)
+            print('dgs_as_floats[mutation]', dgs_as_floats[mutation])
+            print('residue_number', residue_number)
+            print('wt_dGs', wt_dGs)
             ddg.append((dgs_as_floats[mutation][indi]-np.mean(wt_dGs[residue_number]))/scale_factor)
         ddgs_array.append([mutation, np.mean(ddg), np.std(ddg)])
         ddgs[mutation] = np.divide((np.mean(dgs_as_floats[mutation]) - np.mean(wt_dGs[residue_number])), scale_factor)

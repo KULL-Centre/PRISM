@@ -17,7 +17,7 @@ default_path = {
     'Rosetta_database_path': '/sbinlab/software/Rosetta_2025_Jan_e5e4b27/database/',
     'Rosetta_extension': 'linuxgccrelease',
 #    'prism_parser': '/groups/sbinlab/software/PRISM_tools/prism_parser/scripts',
-    'prism_parser': '/groups/sbinlab/software/PRISM_tools/prism_parser/scripts',
+    'prism_parser': '/groups/sbinlab/software/PrismData',
     'BIOLIB_TOKEN': 'wEogNuisIGYhUmKe8T3KBaPnWYb6vtTRElSSZRFmRkE'
 }
 

@@ -98,7 +98,7 @@ def pdbxmut(input_mutfiles,structure_dic):
                 decs+=-1
         
         if x != str(mut_res)[0]:
-            print('ERROR',(x,str(mut_res)[0]))
+            print('ERROR',(x, y, z,str(mut_res)[0]))
             errors +=1
             check3 = True
 

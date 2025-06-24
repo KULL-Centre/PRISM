@@ -2,7 +2,7 @@ from Bio import PDB
 import os
 from ptm_dict import modres
 
-def clean_pdb(input_pdb, output_pdb, chains_to_keep='AB', keep_ligands=False, ligands_to_keep=None, ptm_mode='keep'):
+def clean_pdb(input_pdb, output_pdb, chains_to_keep='AB', keep_ligands=False, ligands_to_keep='', ptm_mode='reverse'):
     global modres
     """
     Cleans and restructures a PDB file, renumbers residues, and reorders ligands at the end.
@@ -41,7 +41,17 @@ def clean_pdb(input_pdb, output_pdb, chains_to_keep='AB', keep_ligands=False, li
     fasta_sequences = {}  # Store sequences per chain
 
     if ligands_to_keep is None:
-        ligands_to_keep = []
+        ligands_to_keep = ''
+
+    if keep_ligands is False:
+        ligands_to_keep = ''
+        
+    if ligands_to_keep == 'all':
+        all = True
+        ligands_to_keep = ''
+    else:
+        all = False
+        
     if modres_new is None:
         modres_new = {}
 
@@ -73,7 +83,7 @@ def clean_pdb(input_pdb, output_pdb, chains_to_keep='AB', keep_ligands=False, li
 
                 # Separate ligands for reordering
                 if het_flag != " ":
-                    if not keep_ligands or resname not in ligands_to_keep:
+                    if not keep_ligands or resname not in ligands_to_keep.split(' ') or all:
                         continue  # Skip unwanted ligands
                     ligand_residues.append(residue.copy())  # Store for later
                     continue
@@ -86,14 +96,17 @@ def clean_pdb(input_pdb, output_pdb, chains_to_keep='AB', keep_ligands=False, li
                 for atom in residue:
                     atom.serial_number = new_atom_serial
                     new_atom_serial += 1
+                    # print(atom.get_full_id())
+                    # print(atom.id)
 
                 clean_chain.add(residue.copy())  # Add residue to clean chain
 
             protein_chains.append(clean_chain)  # Store cleaned chain
 
             # Create fasta file
-            case_id = output_pdb.split('/')[-1].split('.')[0]
-            fasta_path = os.path.join('/'.join(output_pdb.split('/')[0:-1]), f'{case_id}_{chain.id}.fasta')
+            # case_id = input_pdb.split('/')[-1].split('.')[0]
+            # fasta_path = os.path.join('/'.join(output_pdb.split('/')[0:-1]), f'{case_id}_{chain.id}.fasta')
+            fasta_path = os.path.join('/'.join(output_pdb.split('/')[0:-1]), f'input_{chain.id}.fasta')
             with open(fasta_path, 'w') as fp:
                 fp.write(f'>input_{chain.id}\n')
                 fp.write(''.join(sequence))

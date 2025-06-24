@@ -19,9 +19,11 @@ from os.path import join
 import subprocess
 
 # 3rd party library imports
-from Bio import pairwise2
+import Bio
+from Bio import SeqRecord,SeqIO
+from Bio.Seq import Seq
+from Bio.Align import PairwiseAligner
 from Bio import PDB
-from Bio.Seq import Seq 
 import numpy as np
 import pandas as pd
 
@@ -96,7 +98,7 @@ def parse_relax_results(folder, pdb_id='', sc_name='score_bn15_calibrated', logg
         consistency = check_consitency(input_pdb, output_pdb, chain=chain, is_MP=is_MP, pdb_id=pdb_id)
         if consistency == False:
             print('input and relaxed structures are not consitent or too different')
-            sys.stderr()
+            #sys.stderr()
             sys.exit()
             return
 
@@ -127,20 +129,23 @@ def check_seq_completeness(input_pdb, output_pdb):
 
     seq1, seq1num, maxi1 = get_seq(output_pdb, isfile=True)
     seq2, seq2num, maxi2 = get_seq(input_pdb, isfile=True)
-    seq1 = Seq(seq1)
-    seq2 = Seq(seq2)
-    alignments = pairwise2.align.globalxx(seq1, seq2)
+    # seq1 = Seq(seq1)
+    # seq2 = Seq(seq2)
+    
+    aligner = PairwiseAligner()
+    aligner.mode='global'
+    # Align
+    alignments = aligner.align(seq1, seq2)
+    #alignments = pairwise2.align.globalxx(seq1, seq2)
     maxx = maxi2 if maxi1 < maxi2 else maxi1
     for align in alignments:
-        if maxx == align[-1]:
+        if maxx == align.score:
             break
-    align
-    align[0]
-    seq1 = [align[0][i:i+1] for i in range(0, len(align[0]), 1)]
+    seq1 = [align.target[i:i+1] for i in range(0, len(align.target), 1)]
     seqnum1 = getnums(seq1, seq1num)
-    seq2 = [align[1][i:i+1] for i in range(0, len(align[1]), 1)]
+    seq2 = [align.query[i:i+1] for i in range(0, len(align.query), 1)]
     seqnum2 = getnums(seq2, seq2num)
-
+    
     df = pd.DataFrame(np.array([seq1, seqnum1, seq2, seqnum2]).T, columns=['final', 'final_num', 'original', 'original_num'])
     df2 = df.dropna(axis=0, how='all', subset=['final_num', 'original_num'])
     if '-' in df2['final'].tolist()+df2['original'].tolist():
@@ -165,15 +170,16 @@ def check_struc_alignment(ref_pdb, target, target_chain='A', ref_model_id=0, tar
     seq2, seq2num, maxi2 = get_seq(ref_pdb, isfile=True)
     seq1 = Seq(seq1)
     seq2 = Seq(seq2)
-    alignments = pairwise2.align.globalxx(seq1, seq2)
+    alignments = aligner.align(seq1, seq2)
+    #alignments = pairwise2.align.globalxx(seq1, seq2)
     maxx = maxi2 if maxi1 < maxi2 else maxi1
     for align in alignments:
-        if maxx == align[-1]:
+        if maxx == align.score:
             break
 
-    seq1 = [align[0][i:i+1] for i in range(0, len(align[0]), 1)]
+    seq1 = [align.target[i:i+1] for i in range(0, len(align.target), 1)]
     seqnum1 = getnums(seq1, seq1num)
-    seq2 = [align[1][i:i+1] for i in range(0, len(align[1]), 1)]
+    seq2 = [align.query[i:i+1] for i in range(0, len(align.query), 1)]
     seqnum2 = getnums(seq2, seq2num)
 
     df = pd.DataFrame(np.array([seq1, seqnum1, seq2, seqnum2]).T, columns=['infile', 'infile_num', 'opm', 'opm_num'])

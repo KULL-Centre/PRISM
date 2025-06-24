@@ -37,6 +37,7 @@ class structure:
             self.run_struc=run_struc
             self.struc_dic= get_structure_parameters(
                     folder.prepare_checking, self.prep_struc, self.run_struc, ptm_mode=ptm_mode)
+            print("Struct dict ok!")
             self.folder=folder
             self.logger=logger
             self.input_dict=input_dict
@@ -55,27 +56,45 @@ class structure:
     def clean_up_and_isolate(self, name='input', ligand=None, ligands_to_keep='', ptm_mode='reverse'):
         """This script is for cleaning the pdb file from unwanted entities"""
         
-        #This cleans the protein and removes ligands
+        #This cleans the protein and optionally removes ligands (controled by flags)
         self.tmp_prep_struc = create_copy(self.prep_struc, self.folder.prepare_cleaning, name='withHETATM.pdb')
         self.path_to_cleaned_pdb = os.path.join(self.folder.prepare_cleaning, f'{name}_{self.run_struc}.pdb')
-        path_intermediate = os.path.join(self.folder.prepare_cleaning, f'{name}.pdb')
-        path_intermediate_score = os.path.join(self.folder.prepare_cleaning, name)
+        # path_intermediate_score = os.path.join(self.folder.prepare_cleaning, f'{name}_0001.pdb')
+        # path_intermediate = os.path.join(self.folder.prepare_cleaning, f'{name}.pdb')
         # Custom cleaning function
         print(f'Running the clean_pdb function with parameters ligand={ligand}, chains_to_keep={self.run_struc}, ptm_mode={ptm_mode}')
         if ligand == None:
             ligand = False
-        clean_pdb(self.prep_struc, path_intermediate, chains_to_keep=self.run_struc, keep_ligands=ligand, ptm_mode=ptm_mode)
-        # Run score_jd2 to make ensure proper formating
-        shell_command = f'/lustre/hpc/sbinlab/software/Rosetta_2025_Jan_e5e4b27/source/bin/score_jd2.linuxgccrelease -in:file:s {path_intermediate} -out:pdb -renumber_pdb -ignore_unrecognized_res -overwrite'
-        self.logger.info(f'Running score_jd2 for residue renumbering {shell_command}')
-        subprocess.call(shell_command, cwd=self.folder.prepare_cleaning, shell=True)
-        self.logger.info('end of output from score_jd2')
-        os.rename(f'{path_intermediate_score}_0001.pdb', self.path_to_cleaned_pdb)
+
+        # # Run score_jd2 to make ensure proper formating
+        # print(self.prep_struc)
+        # shell_command = f'/lustre/hpc/sbinlab/software/Rosetta_2025_Jan_e5e4b27/source/bin/score_jd2.linuxgccrelease -in:file:s {self.prep_struc} -out:pdb -ignore_unrecognized_res -overwrite'
+        # self.logger.info(f'Running score_jd2 for structure cleaning {shell_command}')
+        # subprocess.call(shell_command, cwd=self.folder.prepare_cleaning, shell=True)
+        # self.logger.info('end of output from score_jd2')
+        # os.rename(path_intermediate_score, path_intermediate)
+            
+        # clean_pdb(path_intermediate, self.path_to_cleaned_pdb, chains_to_keep=self.run_struc, keep_ligands=ligand, ptm_mode=ptm_mode)
+
+        
+        # clean_pdb(self.prep_struc, path_intermediate, chains_to_keep=self.run_struc, keep_ligands=ligand, ptm_mode=ptm_mode)
+
+        # # Run score_jd2 to make ensure proper formating
+        # print(self.prep_struc)
+        # shell_command = f'/lustre/hpc/sbinlab/software/Rosetta_2025_Jan_e5e4b27/source/bin/score_jd2.linuxgccrelease -in:file:s {path_intermediate} -out:pdb -ignore_unrecognized_res -overwrite'
+        # self.logger.info(f'Running score_jd2 for removing "bad residues" {shell_command}')
+        # subprocess.call(shell_command, cwd=self.folder.prepare_cleaning, shell=True)
+        # self.logger.info('end of output from score_jd2')
+        # os.rename(path_intermediate_score, self.path_to_cleaned_pdb)
+        
+        clean_pdb(self.prep_struc, self.path_to_cleaned_pdb, chains_to_keep=self.run_struc, keep_ligands=ligand, ptm_mode=ptm_mode)
 
         #Gets the fasta_seq
+        # pre_fasta = path_intermediate_score.split('/')[-1].split('.')[0]
         self.fasta_seq_all_tmp=[]
         for chain in [x for x in self.run_struc]:
             self.path_to_cleaned_fasta = os.path.join(self.folder.prepare_cleaning, f'{name}_{chain}.fasta')
+            #os.rename(os.path.join(self.folder.prepare_cleaning, f'{pre_fasta}_{chain}.fasta'), self.path_to_cleaned_fasta)
             with open(self.path_to_cleaned_fasta, 'r') as fp:
                 fasta_lines = fp.readlines()
                 self.fasta_seq = ''
@@ -95,7 +114,7 @@ class structure:
 
     def muscle_align_to_uniprot(self, uniprot_sequence,name='input'):
         """This script aligns the uniprot sequence to the structure sequence using muscle. This should be changed from muscle to biopairwise2 eventially  """
-        
+        print(self.fasta_seq)
         #Making fasta file with both structure sequence and uniprot sequence
         path_to_muscle = rosetta_paths.path_to_muscle
         self.path_to_fasta = os.path.join(self.folder.prepare_checking, 'fasta_file.fasta')
