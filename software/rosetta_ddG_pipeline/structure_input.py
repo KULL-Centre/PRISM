@@ -2,6 +2,7 @@
 
 Author: Anders Frederiksen
 Contribution: Johanna K.S. Tiemann
+Contribution: Aleksandra Panfilova
 
 Date of last major changes: 2020-04-15
 
@@ -448,8 +449,8 @@ class structure:
         with open(path_to_sbatch, 'w') as fp:
             fp.write(f'''#!/bin/sh
 #SBATCH --job-name={self.sys_name}_relax
-#SBATCH --time=24:00:00
-#SBATCH --mem 5000
+#SBATCH --time=96:00:00
+#SBATCH --mem 20GB
 #SBATCH --array=0-19
 #SBATCH --partition={partition}
 
@@ -513,7 +514,7 @@ class structure:
 #SBATCH --job-name={sys_name}_ddg
 #SBATCH --array=0-{len(muts)-1}
 #SBATCH --time=48:00:00
-#SBATCH --mem 2000
+#SBATCH --mem 5000
 #SBATCH --partition={partition}
 #SBATCH --nice 
 LST=(`ls {input_mutfiles}/mutfile*`)

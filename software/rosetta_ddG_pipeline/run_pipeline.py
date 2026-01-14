@@ -82,7 +82,7 @@ def predict_stability(args):
         # Get input files
         
         # Run score_jd2 to kick out bad residues and such
-        shell_command = f'/lustre/hpc/sbinlab/software/Rosetta_2025_Jan_e5e4b27/source/bin/score_jd2.linuxgccrelease -in:file:s {input_dict["STRUC_FILE"]} -out:pdb -ignore_unrecognized_res -overwrite'
+        shell_command = f'/lustre/hpc/sbinlab/software/Rosetta_2025_Jan_e5e4b27/source/bin/score_jd2.linuxgccrelease -in:file:s {input_dict["STRUC_FILE"]} -out:pdb -ignore_unrecognized_res -overwrite -ignore_zero_occupancy'
         print(f'Running score_jd2 for structure cleaning {shell_command}')
         subprocess.call(shell_command, cwd='/'.join(input_dict['STRUC_FILE'].split('/')[0:-1]), shell=True)
         print('end of output from score_jd2')

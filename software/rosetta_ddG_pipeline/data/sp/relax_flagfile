@@ -5,7 +5,6 @@
 -nstruct 1
 -relax:coord_constrain_sidechains 
 -relax:cartesian
--beta
 -score:weights beta_nov16_cart
 -ex1
 -ex2
