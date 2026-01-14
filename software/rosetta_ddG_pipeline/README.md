@@ -11,6 +11,7 @@ The protocol for ∆∆G calculations of membrane proteins has not been publishe
 ## Requirements 
 
 The following python3 packages are required to run the pipeline:
+
     - pandas
     
     - numpy
@@ -21,6 +22,7 @@ The following python3 packages are required to run the pipeline:
     
 
 Required software:
+
     - Rosetta
     
     - PyRosetta (via conda install)
