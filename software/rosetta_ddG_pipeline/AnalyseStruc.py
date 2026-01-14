@@ -5,11 +5,12 @@ from Bio.PDB.PDBParser import PDBParser
 parser = PDBParser(PERMISSIVE=1)
 from Bio.PDB import *
 from Bio import SeqIO
-from Bio import pairwise2
-from Bio.pairwise2 import format_alignment
+from Bio.Align import PairwiseAligner
+#from Bio import pairwise2
 import json
+from ptm_dict import modres
 
-def get_structure_parameters(outpath,structure_id,chain_id,printing=True):
+def get_structure_parameters(outpath,structure_id,chain_id,printing=True, ptm_mode='reverse'):
     """This script creates the .json file containing all the structure and protein information. This is all extracted from the pdb file, so if the information is not in the pdb, it will not be in file.
     
     RESDATA: Information about pdb numbering, rosetta numbering and chain
@@ -17,6 +18,7 @@ def get_structure_parameters(outpath,structure_id,chain_id,printing=True):
     DBREF: Information about protein name, starting and end pos, uniprot ID and more
     ALIGNMENT: Contains alignments between coordinate sequence and reference sequence 
     """
+    global modres
     name = structure_id.split("/")
     name = name[-1].split(".")[-2] 
     structure = parser.get_structure(name, structure_id)
@@ -47,22 +49,35 @@ def get_structure_parameters(outpath,structure_id,chain_id,printing=True):
     resdata_reverse={}
     resdata_reverse2={}
     model = structure[0]
-    
+    modres_new = modres.copy()
+    for aa in aminocodes.keys():
+        modres_new.pop(aa)
+        
     #Making resdata
     true_count = 0
     for chain in structure[0]:
         for residue in chain:
-            if residue.get_id()[0] == " ":
+            
+            if ptm_mode in ['reverse', 'keep']:
+                is_protein_or_ptm = residue.get_id()[0] == " " or residue.get_resname() in modres_new
+            else:
+                is_protein_or_ptm = residue.get_id()[0] == " "
+                
+            if is_protein_or_ptm:
                 count += 1
                 restore_res_id = f"{residue.get_id()[1]}{residue.get_id()[2]}".strip()
                 try:
-                    residue_letter = aminocodes[residue.get_resname()]
+                    if residue.get_resname() in modres_new:
+                        residue_letter = aminocodes[modres_new[residue.get_resname()]]
+                    else:
+                        residue_letter = aminocodes[residue.get_resname()]
                     resdata_reverse[restore_res_id] = count
                     if chain.get_id() in [x for x in chain_id]:
                         true_count += 1
                         resdata[true_count] = residue_letter,restore_res_id,chain.get_id()
                         resdata_reverse2[f'{restore_res_id};{chain.get_id()}'] = true_count
-                except: 
+                except:
+                    print("EXCEPTION: ", chain.get_id(), residue.get_id())
                     residue_letter = str(residue.get_resname())
                     exceptions += 1
                     resdata_reverse[restore_res_id] = count
@@ -136,13 +151,24 @@ def get_structure_parameters(outpath,structure_id,chain_id,printing=True):
                     dbref[ref_count] = refs
     
     #Making alignments using pairwise2
+    aligner = PairwiseAligner()
+    aligner.mode='global'
     align ={}
     for chain in strucdata:
-        
         seq1=strucdata[str(chain)][0]
         seq2=strucdata[str(chain)][1]
-        alignments = pairwise2.align.globalxx(seq1, seq2)
-        align[str(chain)] = alignments
+        #alignments = pairwise2.align.globalxx(seq1, seq2)
+        try:
+            alignments = aligner.align(seq1, seq2)
+            align[str(chain)] = [alignments[0].target, alignments[0].query]
+            print('Successful aligment!')
+            print('Target: ', alignments[0].target)
+            print('Query: ', alignments[0].query)
+        except:
+            print('Empty chain(s)')
+            print('Target: ', seq1)
+            print('Query: ', seq2)
+            align[str(chain)] = []
 
     #Saving in a dictionary
     structure_dic = {"resdata": resdata, "resdata_reverse":resdata_reverse, "resdata_reverse2":resdata_reverse2, "strucdata": strucdata, "DBREF":dbref, "alignment":align}
@@ -156,7 +182,7 @@ def get_structure_parameters(outpath,structure_id,chain_id,printing=True):
     #    for rosnumber in resdata:    
     #        AA, pdbnumber, chainid = resdata[rosnumber]
     #        strucfile.write(strucfile_line.format(str(rosnumber),str(pdbnumber),str(AA),str(chainid)))
-            
+
     #Making json file        
     with open(outpath +f"/structure_{name}.json", 'w') as outfile:
         json.dump(structure_dic, outfile,indent=0)        

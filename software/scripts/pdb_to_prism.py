@@ -239,8 +239,11 @@ def rosetta_energy_to_prism(infile, prism_file, pdbID, chain, tmp_base_dir, unip
     df = df.rename(columns={'energy;variant': 'variant'})
     
     if count:
-        df_count = calc_contacts(infile, pdbID, chain, tmp_base_dir, uniprot_id=uniprot_id, exec_path='/groups/sbinlab/tiemann/repos/getcontacts/')
-        df = pd.merge(df, df_count, on=['variant']).reset_index(drop=True)
+        try:
+            df_count = calc_contacts(infile, pdbID, chain, tmp_base_dir, uniprot_id=uniprot_id, exec_path='/groups/sbinlab/tiemann/repos/getcontacts/')
+            df = pd.merge(df, df_count, on=['variant']).reset_index(drop=True)
+        except:
+            print('Skipping contact calculations: no VMD installation available')
     
     
     meta = {}
@@ -424,7 +427,6 @@ def pdb_to_prism(pdbID, pdb_file=None, output_dir='.', chain='all', fill=False, 
     file_list = dfs_to_prism(merged_df, merged_dic, pdbID, output_dir=output_dir, chain=chain)
 
     return file_list
-
 
 def pdb_renumb(pdb_input, output_dir=None, keepchain='all', chainorder=None, keep_ligand=None, model_nr=1):
     def run_through_lines(pdb_input, keepchain, fp2, resnum=1, lastresstring="", keep_ligand=None, atom_num=1, model_nr=1):

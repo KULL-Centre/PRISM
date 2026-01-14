@@ -1,4 +1,6 @@
-# Copyright (C) 2020-2024 Kristoffer Enoe Johansson <kristoffer.johansson@bio.ku.dk>
+#!/storage1/shared/software/anaconda3/bin/python3
+
+# Copyright (C) 2020-2022 Kristoffer Enoe Johansson <kristoffer.johansson@bio.ku.dk>
 
 """Module for data handling in the PRISM project
 
@@ -12,12 +14,12 @@ See documentation of derived parser and data classes for help.
 See README.md for general file format definitions.
 """
 
-__version__ = "2.0.0"
+__version__ = 1.100
 
-import Bio
+# from Bio import Seq,SeqRecord,SeqIO,pairwise2,SubsMat
+# from Bio.SubsMat import MatrixInfo
 from Bio import Seq,SeqRecord,SeqIO
 from Bio.Align import PairwiseAligner,substitution_matrices
-
 import numpy as np
 import pandas as pd
 import yaml,csv,copy,time
@@ -311,8 +313,7 @@ class PrismParser:
     def __dump_fasta(self, filename, header_list):
         sequences = []
         for header in header_list:
-            # file_id = header['filename'].rsplit(".",1)[0] + "_v" + str(header['version'])
-            file_id = header['filename'].rsplit(".",1)[0]
+            file_id = header['filename'].rsplit(".",1)[0] + "_v" + str(header['version'])
             seq = Seq.Seq(header['protein']['sequence'])
             sequences.append(SeqRecord.SeqRecord(seq, id=file_id, description=""))
         with open(filename, "w", newline='') as file_handle:
@@ -370,7 +371,7 @@ class PrismData:
                 if seq[resi-1] == 'X':
                     seq[resi-1] = aa
                 elif seq[resi-1] != aa:
-                    raise PrismFormatError("Data reference amino acid mismatch at position %d: %s and %s" %
+                    raise PrismFormatError("Data reference amino acid mismatch at position %d: % and %s" %
                                            (resi, seq[resi-1], aa))
         return("".join(seq[:n_res]))
 
@@ -786,16 +787,15 @@ class VariantData(PrismData):
             print("Calc coverage and depth of variants ...", end=" ", flush=True)
 
         # Coverage and depth
-        if ret['number'] > 0:            
-            # Positions with substitutions
-            non_missing_indices = np.where([not b for b in missing_mask])[0]
-            flat_resi_list = [resi for resi_list in self.dataframe['resi'][non_missing_indices] for resi in resi_list]
-            (resi_list,resi_counts) = np.unique(flat_resi_list, return_counts=True)
+        # Positions with substitutions
+        non_missing_indices = np.where([not b for b in missing_mask])[0]
+        flat_resi_list = [resi for resi_list in self.dataframe['resi'][non_missing_indices] for resi in resi_list]
+        (resi_list,resi_counts) = np.unique(flat_resi_list, return_counts=True)
         
-            # Coverage is positions with substitutions per residue in reference sequence
-            ret['coverage'] = len(resi_list)/len(self.metadata['protein']['sequence'])
-            # Depth is the average number of substitutions per position with substitutions
-            ret['depth'] = np.mean(resi_counts)
+        # Coverage is positions with substitutions per residue in reference sequence
+        ret['coverage'] = len(resi_list)/len(self.metadata['protein']['sequence'])
+        # Depth is the average number of substitutions per position with substitutions
+        ret['depth'] = np.mean(resi_counts)
 
         if verbose > 1:
             elapsed_time = time.process_time() - start_time
@@ -927,6 +927,12 @@ class VariantData(PrismData):
         self.check_header_and_data_sequence(verbose=verbose)
         self.check_variants_metadata(no_overwrite=no_overwrite_metadata, verbose=verbose)
 
+    def __align_path_convert(self, alignment):
+        formatted_alignment_lines = format(alignment).split('\n')
+        target_seq = formatted_alignment_lines[0]
+        query_seq = formatted_alignment_lines[2]
+        return {'target':target_seq, 'query':query_seq, 'score':alignment.score}
+    
     def to_new_reference(self, target_seq=None, first_resn=None, verbose=0,
                          min_identity=.8, min_coverage=.1, mismatch="remove", allow_inserts=True, allow_deletions=True):
         """Map variants from data file onto a new reference sequence
@@ -983,8 +989,6 @@ class VariantData(PrismData):
         resi_rm = []
         resi_shift = np.full(n_res_data,resi_shift_init)
         aa_change = {}
-        coverage = 1.0
-        identity = 1.0
         if not target_seq is None:
             if not PrismParser.is_aa_one_nat(None, target_seq, "X"):
                 raise ValueError("Argument target_seq to VariantData.to_new_reference must be a single-letter amino acid string (or None)")
@@ -1001,44 +1005,41 @@ class VariantData(PrismData):
             aligner.mode='global'
             aligner.target_end_gap_score = -0.5
             aligner.query_end_gap_score = 0.0
-
             # Align
             alignments = aligner.align(target_seq.upper(), seq.upper())
-            try:
-                n_alignments = len(alignments)
-            except OverflowError:
-                # highest value of default integer representation (typically 64bit)
-                n_alignments = np.iinfo(np.int64).max
+            # # MatrixInfo supports a wildcard 'X' so use upper case. Open and extend penalty 11 and 1 is blast default
+            # alignments_old = pairwise2.align.globalds(target_seq.upper(), seq.upper(), MatrixInfo.blosum62, -3, -1)
             
             # Check for alternative alignments
-            if n_alignments > 1 and verbose > 0:
-                print("Found %d alignments" % (n_alignments))
+            if len(alignments) > 1 and verbose > 0:
+                print("Found %d alignments" % (len(alignments)))
             if verbose > 0:
                 # Dump verbose number of alignments
-                for ia in range(min([verbose,n_alignments])):
-                    print("==== alignment %d of %d ====" % (ia+1,n_alignments))
+                for ia in range(min([verbose,len(alignments)])):
+                    print("==== alignment %d of %d ====" % (ia+1,len(alignments)))
                     print(alignments[ia])
-                    
+                    # print("==== old alignment %d of %d ====" % (ia+1,len(alignments_old)))
+                    # print(pairwise2.format_alignment(*alignments_old[ia]))
             # Check for equally good alignments, a good alignment has high score
-            max_alignments = 10
-            if n_alignments > 1:
-                # there may be very-very many alignments
-                alignments_scores = np.array([alignments[i].score for i in range(min(n_alignments,max_alignments))])
-                assert all(alignments_scores[0] - alignments_scores[1:] >= 0.0)
+            if len(alignments) > 1:
+                alignments_scores = np.array([a.score for a in alignments])
                 if any(alignments_scores[0] - alignments_scores[1:] < 1e-3):
-                    print("WARNING: There are more alignments for %s with same scores (try verbose). Sores: %s (list capped at %d)" %
-                          (self.metadata['protein']['name'],str(alignments_scores),max_alignments))
+                    print("WARNING: There are alignments for %s with same or better scores (try verbose). Sores: %s" %
+                          (self.metadata['protein']['name'],str(alignments_scores)))
+                # alignments_scores_old = np.array([a[2] for a in alignments_old])
+                # if any(alignments_scores_old[0] - alignments_scores_old[1:] < 1e-3):
+                #     print("WARNING: There are old alignments for %s with same or better scores (try verbose). Sores: %s" %
+                #           (self.metadata['protein']['name'],str(alignments_scores_old)))
                     
-            # Use first alignment, index 0 is target, 1 is query
-            align = alignments[0]
-            assert len(align[0]) == len(align[1])
-            
+            # Use first alignment
+            align = self.__align_path_convert( alignments[0] )
+            assert len(align['target']) == len(align['query'])
             # Number to convert 0-based alignment index to 0-based data (original) residue numbering
             ialign_shift = 0
             n_indel = n_match = n_mismatch = 0
             # Iterate over alignment, possible including gaps
-            for ialign in range(len(align[0])):
-                if align[0,ialign] == '-':
+            for ialign in range(len(align['target'])):
+                if align['target'][ialign] == '-':
                     # Deletion: Position in data sequence not present in target sequence
                     if not allow_deletions:
                         raise PrismValueFail("Aborting alignment due to deletion at position %d which is not allowed" % (ialign+ialign_shift))
@@ -1047,7 +1048,7 @@ class VariantData(PrismData):
                     # Downstream position are shifted to the left
                     resi_shift[(ialign+ialign_shift):] -= 1
                     n_indel += 1
-                elif align[1,ialign] == '-':
+                elif align['query'][ialign] == '-':
                     # Insertion: Position in target sequence not present in data sequence
                     if not allow_inserts:
                         raise PrismValueFail("Aborting alignment due to insertion at position %d which is not allowed" % (ialign+ialign_shift))
@@ -1055,10 +1056,10 @@ class VariantData(PrismData):
                     # Shift conversion number
                     ialign_shift -= 1
                     n_indel += 1
-                elif align[0,ialign] != align[1,ialign]:
+                elif align['target'][ialign] != align['query'][ialign]:
                     # Mismatch of 'X' always allowed since it is always mismatched
                     # Variants matched to X are always removed because position is ambiguous if adjacent to gap and because X is used for numbering offset
-                    if align[0,ialign] == 'X' or align[1,ialign] == 'X':
+                    if align['target'][ialign] == 'X' or align['query'][ialign] == 'X':
                         resi_rm.append(ialign+ialign_shift)
                     elif mismatch == "not_allowed":
                         raise PrismValueFail("Aborting alignment due to mismatch at position %d which is not allowed" % (ialign+ialign_shift))
@@ -1067,7 +1068,7 @@ class VariantData(PrismData):
                         resi_rm.append(ialign+ialign_shift)
                     elif mismatch == "convert":
                         # Change reference amino acid
-                        aa_change[ialign+ialign_shift] = align[0,ialign]
+                        aa_change[ialign+ialign_shift] = align['target'][ialign]
                     else:
                         raise ValueError("mismatch argument must be in [not_allowed,convert,remove]")
                     n_mismatch += 1
@@ -1154,10 +1155,8 @@ class VariantData(PrismData):
         self.dataframe = self.dataframe.drop(self.dataframe.index[ivar_rm], axis=0)
         self.dataframe.index = range(self.dataframe.shape[0])
 
-        return((coverage,identity))
-
     def merge(self, data_list, target_seq=None, first_resn=None, merge='outer', **kwargs):
-        """Merge a VariantData (self) object with a list of VariantData objects into a single object
+        """Merge a list of data files into a single DataFrame and dump it in a file
 
         Parameters
         ----------
@@ -1182,12 +1181,11 @@ class VariantData(PrismData):
             raise ValueError("Allowed merge arguments are left, outer or inner")
 
         merged_data = self.copy()
-        merge_stats = []
 
         if isinstance(data_list, VariantData):
             data_list = [data_list]
         elif len(data_list) < 1:
-            raise ValueError("List of VariantData to merge is empty")
+            raise ValueError("List of data set to merge is empty")
         
         # Target sequence
         if target_seq is None:
@@ -1199,18 +1197,16 @@ class VariantData(PrismData):
             first_resn = int(self.metadata['protein']['first_residue_number']) if 'first_residue_number' in self.metadata['protein'].keys() else 1
         else:
             # Align self data set to target
-            cover_ident = None
             if first_resn is None:
                 first_resn = 1
             else:
                 if first_resn < 0:
                     raise ValueError("Argument first_resn must be non-negative")
             try:
-                cover_ident = merged_data.to_new_reference(target_seq, first_resn, **kwargs)
+                merged_data.to_new_reference(target_seq, first_resn, **kwargs)
             except PrismValueFail as msg:
                 print("Could not align data to target sequence: %s" % (msg))
                 return(None)
-            merge_stats.append(cover_ident)
             
         # Remove the index columns ['n_mut','aa_ref','resi','aa_mut'] before merging
         merged_data.remove_index_columns()
@@ -1229,13 +1225,12 @@ class VariantData(PrismData):
         c = 0
         for data in data_list:
             data_copy = data.copy()
-            cover_ident = None
+            # 2DO: Consider to check uniprot (others are human readable and may have typoes) of data to be merged
             try:
-                cover_ident = data_copy.to_new_reference(target_seq, first_resn, **kwargs)
+                data_copy.to_new_reference(target_seq, first_resn, **kwargs)
             except PrismValueFail as msg:
                 print("Skip merge of file %s: %s" % (data_copy.metadata['filename'],msg))
                 continue
-            merge_stats.append(cover_ident)
             data_copy.remove_index_columns()
             suffix = "_%02d" % (c+1)
             data_copy.dataframe.columns = [data_copy.dataframe.columns[0]] + [s+suffix for s in data_copy.dataframe.columns[1:]]
@@ -1251,10 +1246,7 @@ class VariantData(PrismData):
                 
         # Add the index columns ['n_mut','aa_ref','resi','aa_mut'] again
         merged_data.add_index_columns()
-        # put merging stats in header
-        merged_metadata['merged']['coverage'] = ",".join(["%.1f" % (val[0]*100) for val in merge_stats])
-        merged_metadata['merged']['identity'] = ",".join(["%.1f" % (val[1]*100) for val in merge_stats])
-
+        
         merged_metadata['protein']['sequence'] = target_seq
         if first_resn != 1:
             merged_metadata['protein']['first_residue_number'] = first_resn
@@ -1296,34 +1288,29 @@ class VariantData(PrismData):
 
 
 if __name__ == "__main__":
-    import argparse,sys,os
-    
-    bio_version_list = Bio.__version__.split('.')
-    if not (int(bio_version_list[0]) >= 1 and int(bio_version_list[1]) >= 80):
-        print("WARNING: Data merging requires BioPython version 1.80 or later, you have %s" % (Bio.__version__))
-    
     # Parse commandline arguments
+    import argparse,sys
     arg_parser = argparse.ArgumentParser(description="PRISM data file processing and alignment")
     # positional arguments
     arg_parser.add_argument("files", nargs="+", metavar="DATAFILE",
                         help="Data files to process")
     # keyword arguments
-    arg_parser.add_argument("--dump-header-csv", metavar="FILE",
+    arg_parser.add_argument("--dump_header_csv", metavar="FILE",
                       help="Dump a .csv file containing an overview of file headers")
-    arg_parser.add_argument("--dump-fasta", metavar="FILE", 
+    arg_parser.add_argument("--dump_fasta", metavar="FILE", 
                       help="Dump all sequences in a fasta file")
     arg_parser.add_argument("--parse", action='store_true',
                       help="Read data file(s), run all checks and write new data file(s)")
     arg_parser.add_argument("--merge", metavar="FILE", 
                       help="Merge data files concerning the (approximately) same target protein")
     # A run of this main can only have a single target sequence so to parse more files with different sequence, run multiple times
-    arg_parser.add_argument("--target-seq", metavar="FILE_OR_SEQUENCE",
+    arg_parser.add_argument("--target_seq", metavar="FILE_OR_SEQUENCE",
                       help="Align all output to this sequence, default is the sequence given in the first file")
     arg_parser.add_argument("--saturate", action='store_true',
                       help="In the output data, add rows to cover all 20 substitutions at all considered positions")
-    arg_parser.add_argument("--clean-na", action='store_true',
+    arg_parser.add_argument("--clean_na", action='store_true',
                       help="In the output data, add rows to cover all 20 substitutions at all considered positions")
-    arg_parser.add_argument("--first-res-num", metavar="INT", 
+    arg_parser.add_argument("--first_res_num", metavar="INT", 
                       help="In the output data, assign this number to the first given amino acid of the sequence")
     arg_parser.add_argument("-v","--verbose", action="count", default=0,
                       help="Level of output, default zero is no output")
@@ -1421,7 +1408,7 @@ if __name__ == "__main__":
         for data in data_list:
             if args.target_seq or first_resn:
                 data.to_new_reference(target_seq, first_resn, verbose=args.verbose,
-                                      min_identity=.8, min_coverage=.2, mismatch="remove", allow_inserts=True, allow_deletions=True)
+                                      min_identity=.9, min_coverage=.1, mismatch="remove", allow_inserts=True, allow_deletions=True)
             if args.saturate:
                 data.saturate_variants()
             elif args.clean_na:
@@ -1433,12 +1420,8 @@ if __name__ == "__main__":
     
     # Dump a merged data file if requested
     if args.merge:
-        if os.path.isfile(args.merge):
-            print("ERROR: Will not merge into an existing file '%s'" % (args.merge))
-            sys.exit(2)
-        
         merged_data = data_list[0].merge(data_list[1:], target_seq, first_resn, merge='outer', verbose=args.verbose,
-                                         min_identity=.8, min_coverage=.2, mismatch="remove", allow_inserts=True, allow_deletions=True)
+                                         min_identity=.9, min_coverage=.1, mismatch="remove", allow_inserts=True, allow_deletions=True)
         if merged_data is None:
             print("ERROR: Could not merge data")
             sys.exit(2)    
@@ -1448,4 +1431,4 @@ if __name__ == "__main__":
         elif args.clean_na:
             merged_data.clean_na_variants()
         data_parser.write(args.merge, merged_data)
-        print("Dumped merge of %d data files in %s " % (len(merged_data.metadata['merged']-2), args.merge))
+        print("Dumped merge of %d data files in %s " % (len(merged_data.metadata['merged']), args.merge))

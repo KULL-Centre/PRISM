@@ -211,6 +211,9 @@ def prepare_df(in_df, inclWT=True, drop_multi_mut=False, resisatu=False):
             df['sum_muts'] = 19
             df['sum_incl_wt'] = 20.0
 
+    df['sorter'] = pd.to_numeric(df['resi_comb'].str.split(';').str[0])
+    df.sort_values(by=['sorter'], inplace=True)
+
     return df, drops
 
 
@@ -279,7 +282,7 @@ def combined_mut_func(output_dir, in_df, inclWT=True, drop_multi_mut=False, resi
                     fp.write("".join(mutant_line))
 
 
-def pipeline_combined_mut_func(output_dir, in_df, inclWT=True, drop_multi_mut=False, resisatu=False):
+def pipeline_combined_mut_func(output_dir, in_df, inclWT=True, drop_multi_mut=False, resisatu=False, chains=['A', 'B']):
 
     df, drops = prepare_df(in_df, inclWT=inclWT, drop_multi_mut=drop_multi_mut, resisatu=resisatu)
     
@@ -289,13 +292,13 @@ def pipeline_combined_mut_func(output_dir, in_df, inclWT=True, drop_multi_mut=Fa
             outstring = row['variant']
             mutant_line = [variants.split(':') for variants in row['variant'].split(';')]
             resstring = []
-            for resind, residue in enumerate(mutant_line[0]):
+            for chain, (resind, residue) in zip(chains, enumerate(mutant_line[0])):
                 aa_ref = residue[0]
                 res = residue[1:-1]
                 muts = "".join([ mutant_line[l][resind][-1] for l in range(len(mutant_line)) if mutant_line[l][resind][-1] in AA])
                 if inclWT:
                     muts = aa_ref+muts
-                resstring.append(f'{aa_ref} {res} {muts}')
+                resstring.append(f'{aa_ref} {chain}{res} {muts}')
             fp.write(f"{' '.join(resstring)}\n")
 
 

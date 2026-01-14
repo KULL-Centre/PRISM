@@ -21,8 +21,9 @@ import json
 
 # Third party imports
 from Bio import PDB
-from Bio.Seq import Seq 
-from Bio import pairwise2
+from Bio.Seq import Seq
+#from Bio import pairwise2
+from Bio.Align import PairwiseAligner
 import biolib
 import numpy as np
 import pandas as pd
@@ -90,17 +91,21 @@ def mp_superpose_opm(reference_chain, target, filename, target_chain='A',
 def superpose_struc(bio_ref_struc_raw, bio_target_struc_raw, ref_align_atoms, 
                      seq1, seq1num, maxi1, seq2, seq2num, maxi2, filename, target_chain='A',ref_chain='A',
                      ref_model_id=0, target_model_id=0):
-    seq1 = Seq(seq1)
-    seq2 = Seq(seq2)
-    alignments = pairwise2.align.globalxx(seq1, seq2)
+    # seq1 = Seq(seq1)
+    # seq2 = Seq(seq2)
+    aligner = PairwiseAligner()
+    aligner.mode='global'
+    # Align
+    alignments = aligner.align(seq1, seq2)
+    #alignments = pairwise2.align.globalxx(seq1, seq2)
     maxx = maxi2 if maxi1 < maxi2 else maxi1
     for align in alignments:
-        if maxx == align[-1]:
+        if maxx == align.score:
             break
 
-    seq1 = [align[0][i:i+1] for i in range(0, len(align[0]), 1)]
+    seq1 = [align.target[i:i+1] for i in range(0, len(align.target), 1)]
     seqnum1 = getnums(seq1, seq1num)
-    seq2 = [align[1][i:i+1] for i in range(0, len(align[1]), 1)]
+    seq2 = [align.query[i:i+1] for i in range(0, len(align.query), 1)]
     seqnum2 = getnums(seq2, seq2num)
 
     df = pd.DataFrame(np.array([seq1, seqnum1, seq2, seqnum2]).T, columns=['infile', 'infile_num', 'opm', 'opm_num'])
@@ -685,8 +690,8 @@ def rosetta_relax_mp(folder, SLURM=False, num_struc=20, sys_name='mp', partition
         with open(path_to_sbatch, 'w') as fp:
             fp.write(f'''#!/bin/sh
 #SBATCH --job-name=relax_{sys_name}
-#SBATCH --time=24:00:00
-#SBATCH --mem 5000
+#SBATCH --time=96:00:00
+#SBATCH --mem 20G
 #SBATCH --array=0-{num_struc-1}
 #SBATCH --partition={partition}
 

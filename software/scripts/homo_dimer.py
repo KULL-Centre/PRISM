@@ -115,26 +115,26 @@ def parse_args():
     return args
 
 
-def rechain(pdb_file, output_dir):
-    rechain_pdb = os.path.join(output_dir, f'{os.path.basename(pdb_file)[:-4]}_uniquechain.pdb')
-    with open(pdb_file, 'r') as fp, open(rechain_pdb, 'w') as fp2:
-        for line in fp:
-            if line[0:4] == "ATOM":
-                chain = line[21]
-                new_line = f"{line[:21]}A{line[22:]}"
-                fp2.write(new_line)
-            else:
-                fp2.write(line)
-    return rechain_pdb
+# def rechain(pdb_file, output_dir):
+#     rechain_pdb = os.path.join(output_dir, f'{os.path.basename(pdb_file)[:-4]}_uniquechain.pdb')
+#     with open(pdb_file, 'r') as fp, open(rechain_pdb, 'w') as fp2:
+#         for line in fp:
+#             if line[0:4] == "ATOM":
+#                 chain = line[21]
+#                 new_line = f"{line[:21]}A{line[22:]}"
+#                 fp2.write(new_line)
+#             else:
+#                 fp2.write(line)
+#     return rechain_pdb
 
 
 def create_homodimer_input(pdb_file, prism_file, output_dir, additional=False, inclWT=True):
     #PDB to rosetta numbering
-    renumb_pdb = pdb_renumb(pdb_file, output_dir=output_dir, keepchain='all')
+    #renumb_pdb = pdb_renumb(pdb_file, output_dir=output_dir, keepchain='all')
 
     #get sequence
     pdb_p = PDBParser()
-    structure = pdb_p.get_structure('test', renumb_pdb)
+    structure = pdb_p.get_structure('test', pdb_file)
     model = structure[0]
     all_data = {}
     nchains = []
@@ -191,12 +191,13 @@ def create_homodimer_input(pdb_file, prism_file, output_dir, additional=False, i
     
 
     vari_list = []
-    for index, res in enumerate(alignments1[1]):
-        if (alignments1[1][index-1] != '-') & (alignments1[1][index-1] == alignments2[1][index-1]):
+    i=all_data[list(all_data.keys())[0]][1][0]
+    for index, res in enumerate(alignments1[1], start=i):
+        if (alignments1[1][index-i] != '-') & (alignments1[1][index-i] == alignments2[1][index-i]):
             if index in prism_var.keys():
                 for variant in prism_var[index]:
-                    mut1 = f"{alignments1_nresi[index-1][1]}{alignments1_nresi[index-1][0]}{variant[-1]}"
-                    mut2 = f"{alignments2_nresi[index-1][1]}{alignments2_nresi[index-1][0]}{variant[-1]}"
+                    mut1 = f"{alignments1_nresi[index-i][1]}{alignments1_nresi[index-i][0]}{variant[-1]}"
+                    mut2 = f"{alignments2_nresi[index-i][1]}{alignments2_nresi[index-i][0]}{variant[-1]}"
                     merged_variant = f"{mut1}:{mut2}"
                     vari_list.append(merged_variant)
 
@@ -212,11 +213,11 @@ def create_homodimer_input(pdb_file, prism_file, output_dir, additional=False, i
     if additional:
         residue_files_func(output_dir, df, inclWT=inclWT, drop_multi_mut=False)
         combined_mut_func(output_dir, df, inclWT=inclWT, drop_multi_mut=False)
-    pipeline_combined_mut_func(output_dir, df, inclWT=inclWT, drop_multi_mut=False)
+    pipeline_combined_mut_func(output_dir, df, inclWT=inclWT, drop_multi_mut=False, chains=list(all_data.keys()))
     
-    renamed_chain_pdb = rechain(renumb_pdb, output_dir)
+    #renamed_chain_pdb = rechain(renumb_pdb, output_dir)
 
-    return renamed_chain_pdb, os.path.join(output_dir, 'mutfile_all')
+    return os.path.join(output_dir, 'mutfile_all')
 
 
 def main():

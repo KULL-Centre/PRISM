@@ -5,7 +5,7 @@
 -nstruct 1
 -relax:coord_constrain_sidechains 
 -relax:cartesian
--score:weights beta_nov16_cart
+-score:weights ref2015_cart
 -ex1
 -ex2
 -relax:min_type lbfgs_armijo_nonmonotone

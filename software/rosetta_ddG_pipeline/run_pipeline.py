@@ -13,6 +13,7 @@ import os
 import re
 import shutil
 import sys
+import subprocess
 
 # Third party imports
 # import getopt
@@ -53,6 +54,7 @@ def predict_stability(args):
     mp_span = args.MP_SPAN_INPUT
     verbose = args.VERBOSE
     partition=args.SLURM_PARTITION
+    ptm_mode = args.PTM_MODE
 
 
     SHA_TAG = f'{rosetta_paths.sha}tag{rosetta_paths.tag}'
@@ -78,6 +80,16 @@ def predict_stability(args):
     if mode == 'create' or mode == 'fullrun':
         logger.info(f'Preparation started')
         # Get input files
+        
+        # Run score_jd2 to kick out bad residues and such
+        shell_command = f'/lustre/hpc/sbinlab/software/Rosetta_2025_Jan_e5e4b27/source/bin/score_jd2.linuxgccrelease -in:file:s {input_dict["STRUC_FILE"]} -out:pdb -ignore_unrecognized_res -overwrite -ignore_zero_occupancy'
+        print(f'Running score_jd2 for structure cleaning {shell_command}')
+        subprocess.call(shell_command, cwd='/'.join(input_dict['STRUC_FILE'].split('/')[0:-1]), shell=True)
+        print('end of output from score_jd2')
+        os.remove(input_dict['STRUC_FILE'])
+        score_file_name = input_dict['STRUC_FILE'].split('/')[-1].split('.')[0] + '_0001' + '.pdb'
+        os.rename(os.path.join('/'.join(input_dict['STRUC_FILE'].split('/')[0:-1]), score_file_name),
+                  input_dict['STRUC_FILE'])
         prep_struc = check_path(create_copy(
             input_dict['STRUC_FILE'], folder.prepare_input, name='input.pdb'))
 
@@ -85,7 +97,7 @@ def predict_stability(args):
 
         # Create structure instance
         logger.info(f'Creating structure instance')
-        structure_instance = structure(chain_id,name,folder,prep_struc,run_struc,logger,input_dict,uniprot_accesion=uniprot_accesion)
+        structure_instance = structure(chain_id,name,folder,prep_struc,run_struc,logger,input_dict,uniprot_accesion=uniprot_accesion, ptm_mode=args.PTM_MODE)
         run_name = 'input'
 
         # adjust mp structure if MP_ALIGN_MODE is selected
@@ -120,14 +132,14 @@ def predict_stability(args):
                 sys.exit()
 
         structure_dic = get_structure_parameters(
-            folder.prepare_checking, prep_struc, args.RUN_STRUC)
+            folder.prepare_checking, prep_struc, args.RUN_STRUC, ptm_mode=ptm_mode)
 
         # Cleaning pdb and making fasta based on pdb or uniprot-id if provided
         logger.info(f'Prepare the pdb and extract fasta file')
-        structure_instance.path_to_cleaned_pdb, struc_dic_cleaned = structure_instance.clean_up_and_isolate(ligand=args.LIGAND)
+        structure_instance.path_to_cleaned_pdb, struc_dic_cleaned = structure_instance.clean_up_and_isolate(ligand=args.LIGAND, ligands_to_keep=args.LIGANDS_TO_KEEP, ptm_mode=args.PTM_MODE)
         structure_instance.fasta_seq_full,structure_instance.fasta_seq = pdb_to_fasta_seq(
             structure_instance.path_to_cleaned_pdb,chain_id)
-        if os.path.isfile(uniprot_accesion):
+        if os.path.isfile(chain_id):
             structure_instance.muscle_align_to_uniprot(structure_instance.uniprot_seq)
         else:
             structure_instance.muscle_align_to_uniprot(structure_instance.fasta_seq)
